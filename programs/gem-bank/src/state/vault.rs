@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use jet_proc_macros::assert_size;
 
-#[assert_size(72)]
+#[assert_size(80)]
 #[repr(C)]
 #[account]
 pub struct Vault {
@@ -13,4 +13,7 @@ pub struct Vault {
 
     // has the sole right to move gems in/out of the vault
     pub authority: Pubkey,
+
+    // total number of NFTs stored in the vault
+    pub gem_box_count: u64,
 }

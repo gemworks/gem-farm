@@ -1,14 +1,23 @@
-import {Connection, Keypair, PublicKey,
-  sendAndConfirmTransaction, Signer, SystemProgram, Transaction} from "@solana/web3.js";
-import {BN, Wallet} from "@project-serum/anchor";
 import {
+  Connection,
+  Keypair,
+  PublicKey,
+  sendAndConfirmTransaction,
+  Signer,
+  SystemProgram,
+  Transaction,
+} from '@solana/web3.js';
+import { BN, Wallet } from '@project-serum/anchor';
+import {
+  AccountInfo,
   AccountLayout as TokenAccountLayout,
+  MintInfo,
   NATIVE_MINT,
   Token,
   TOKEN_PROGRAM_ID,
-  u64
-} from "@solana/spl-token";
-import {HasPublicKey, ToBytes, toPublicKeys} from "./types";
+  u64,
+} from '@solana/spl-token';
+import { HasPublicKey, ToBytes, toPublicKeys } from './types';
 
 export class TestToken extends Token {
   decimals: number;
@@ -23,7 +32,7 @@ export class TestToken extends Token {
    * @param amount The amount of tokens
    */
   amount(amount: u64 | number): u64 {
-    if (typeof amount == "number") {
+    if (typeof amount == 'number') {
       amount = new u64(amount);
     }
 
@@ -44,9 +53,7 @@ export class AccountUtils {
     this.authority = this.wallet.payer;
   }
 
-  async updateBlockhash() {
-    this.recentBlockhash = (await this.conn.getRecentBlockhash()).blockhash;
-  }
+  // --------------------------------------- passive
 
   payer(): Keypair {
     return this.wallet.payer;
@@ -61,6 +68,63 @@ export class AccountUtils {
       feePayer: this.wallet.payer.publicKey,
       recentBlockhash: this.recentBlockhash,
     });
+  }
+
+  async deserializeToken(mintPk: PublicKey): Promise<Token> {
+    //doesn't matter which keypair goes here, we just need some key for instantiation
+    const throwawayKp = Keypair.fromSecretKey(
+      Uint8Array.from([
+        208, 175, 150, 242, 88, 34, 108, 88, 177, 16, 168, 75, 115, 181, 199,
+        242, 120, 4, 78, 75, 19, 227, 13, 215, 184, 108, 226, 53, 111, 149, 179,
+        84, 137, 121, 79, 1, 160, 223, 124, 241, 202, 203, 220, 237, 50, 242,
+        57, 158, 226, 207, 203, 188, 43, 28, 70, 110, 214, 234, 251, 15, 249,
+        157, 62, 80,
+      ])
+    );
+    return new Token(this.conn, mintPk, TOKEN_PROGRAM_ID, throwawayKp);
+  }
+
+  async deserializeTokenAccount(
+    mintPk: PublicKey,
+    tokenAccountPk: PublicKey
+  ): Promise<AccountInfo> {
+    const t = await this.deserializeToken(mintPk);
+    return t.getAccountInfo(tokenAccountPk);
+  }
+
+  async deserializeTokenMint(mintPk: PublicKey): Promise<MintInfo> {
+    const t = await this.deserializeToken(mintPk);
+    return t.getMintInfo();
+  }
+
+  /**
+   * Find a program derived address
+   * @param programId The program the address is being derived for
+   * @param seeds The seeds to find the address
+   * @returns The address found and the bump seed required
+   */
+  async findProgramAddress(
+    programId: PublicKey,
+    seeds: (HasPublicKey | ToBytes | Uint8Array | string)[]
+  ): Promise<[PublicKey, number]> {
+    const seed_bytes = seeds.map((s) => {
+      if (typeof s == 'string') {
+        return Buffer.from(s);
+      } else if ('publicKey' in s) {
+        return s.publicKey.toBytes();
+      } else if ('toBytes' in s) {
+        return s.toBytes();
+      } else {
+        return s;
+      }
+    });
+    return await PublicKey.findProgramAddress(seed_bytes, programId);
+  }
+
+  // --------------------------------------- active
+
+  async updateBlockhash() {
+    this.recentBlockhash = (await this.conn.getRecentBlockhash()).blockhash;
   }
 
   /**
@@ -127,7 +191,7 @@ export class AccountUtils {
     owner: PublicKey | HasPublicKey,
     amount: BN
   ): Promise<PublicKey> {
-    if ("publicKey" in owner) {
+    if ('publicKey' in owner) {
       owner = owner.publicKey;
     }
 
@@ -141,7 +205,7 @@ export class AccountUtils {
       );
       return account;
     } else {
-      const account = await token.createAccount(owner);
+      const account = await token.createAssociatedTokenAccount(owner);
       if (amount.toNumber() > 0) {
         await token.mintTo(account, this.authority, [], amount.toNumber());
       }
@@ -154,12 +218,13 @@ export class AccountUtils {
     owner: PublicKey | HasPublicKey,
     amount: number
   ): Promise<[PublicKey, Transaction]> {
-    if ("publicKey" in owner) {
+    if ('publicKey' in owner) {
       owner = owner.publicKey;
     }
 
-    let lamportBalanceNeeded =
-      await Token.getMinBalanceRentForExemptAccount(this.conn);
+    let lamportBalanceNeeded = await Token.getMinBalanceRentForExemptAccount(
+      this.conn
+    );
 
     if (token.publicKey == NATIVE_MINT) {
       lamportBalanceNeeded += amount;
@@ -188,28 +253,18 @@ export class AccountUtils {
     return [newAccount.publicKey, transaction];
   }
 
-  /**
-   * Find a program derived address
-   * @param programId The program the address is being derived for
-   * @param seeds The seeds to find the address
-   * @returns The address found and the bump seed required
+  /*
+   * Creates a mint with 0 decimals, a token account, and funds it with specified amount
    */
-  async findProgramAddress(
-    programId: PublicKey,
-    seeds: (HasPublicKey | ToBytes | Uint8Array | string)[]
-  ): Promise<[PublicKey, number]> {
-    const seed_bytes = seeds.map((s) => {
-      if (typeof s == "string") {
-        return Buffer.from(s);
-      } else if ("publicKey" in s) {
-        return s.publicKey.toBytes();
-      } else if ("toBytes" in s) {
-        return s.toBytes();
-      } else {
-        return s;
-      }
-    });
-    return await PublicKey.findProgramAddress(seed_bytes, programId);
+  async createAndFundTokenAcc(owner: PublicKey, amount: BN) {
+    const token = await this.createToken(0);
+    const mintAuth = (await token.getMintInfo()).mintAuthority;
+    const tokenAcc = await this.createTokenAccount(token, owner, amount);
+    return {
+      tokenMint: token.publicKey,
+      mintAuth,
+      tokenAcc,
+    };
   }
 
   async sendAndConfirmTransaction(
@@ -227,9 +282,7 @@ export class AccountUtils {
     ...transactions: [Transaction, Signer[]][]
   ): Promise<string[]> {
     const signatures = await Promise.all(
-      transactions.map(([t, s]) =>
-        this.conn.sendTransaction(t, s)
-      )
+      transactions.map(([t, s]) => this.conn.sendTransaction(t, s))
     );
     const result = await Promise.all(
       signatures.map((s) => this.conn.confirmTransaction(s))

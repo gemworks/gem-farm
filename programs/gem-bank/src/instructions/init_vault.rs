@@ -32,6 +32,7 @@ pub fn handler(ctx: Context<InitVault>, authority: Pubkey) -> ProgramResult {
     // todo is it wise that we're letting them set the authority w/o checking signature?
     //  what if they accidentally set the wrong one? The vault will be frozen forever.
     vault.authority = authority;
+    vault.gem_box_count = 0;
 
     msg!("vault #{} initialized", new_vault_id);
     Ok(())

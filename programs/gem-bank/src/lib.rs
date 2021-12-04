@@ -11,7 +11,6 @@ pub mod util;
 #[program]
 pub mod gem_bank {
     use super::*;
-    use crate::errors::ErrorCode;
 
     pub fn init_bank(ctx: Context<InitBank>) -> ProgramResult {
         instructions::init_bank::handler(ctx)
@@ -30,5 +29,9 @@ pub mod gem_bank {
         new_authority: Pubkey,
     ) -> ProgramResult {
         instructions::update_vault_authority::handler(ctx, new_authority)
+    }
+
+    pub fn deposit_gem(ctx: Context<DepositGem>, _bump: u8, amount: u64) -> ProgramResult {
+        instructions::deposit_gem::handler(ctx, amount)
     }
 }
