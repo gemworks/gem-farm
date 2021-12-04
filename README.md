@@ -1,4 +1,4 @@
-# shardd core
+# shardd
 
 shardd (*shard·​ed*) is a protocol for breaking up NFTs (gems) into fungible tokens (shards).
 

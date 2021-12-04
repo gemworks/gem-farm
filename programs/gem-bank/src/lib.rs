@@ -10,11 +10,11 @@ pub mod state;
 pub mod util;
 
 #[program]
-pub mod shardd {
+pub mod gem_bank {
     use super::*;
 
-    pub fn init_shardr(ctx: Context<InitShardr>, config: ShardrConfig) -> ProgramResult {
-        instructions::init_shardr::handler(ctx, config)
+    pub fn init_keepr(ctx: Context<InitKeepr>, config: KeeprConfig) -> ProgramResult {
+        instructions::init_keepr::handler(ctx, config)
     }
 
     pub fn init_vault(ctx: Context<InitVault>, _bump: u8) -> ProgramResult {

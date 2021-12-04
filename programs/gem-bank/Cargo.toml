@@ -1,12 +1,12 @@
 [package]
-name = "shardd"
+name = "gem_bank"
 version = "0.1.0"
-description = "shardd NFTs on solana"
+description = "securely store your NFTs"
 edition = "2018"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "shardd"
+name = "gem_bank"
 
 [features]
 no-entrypoint = []

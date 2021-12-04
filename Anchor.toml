@@ -1,5 +1,5 @@
 [programs.localnet]
-shardd = "4bctEZztjcDVUi1WgqYKDJ4LirBKhvg2aS9kDeaFfYbR"
+gem_bank = "4bctEZztjcDVUi1WgqYKDJ4LirBKhvg2aS9kDeaFfYbR"
 test_writer = "FHgUNcN1YmcY7nxaC9g2Ru47U7944t4wrgnuBiFsKRbM"
 
 [registry]

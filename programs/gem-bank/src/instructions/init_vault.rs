@@ -5,12 +5,12 @@ use crate::state::*;
 #[derive(Accounts)]
 #[instruction(bump: u8)]
 pub struct InitVault<'info> {
-    // has to be a PDA, otherwise how do you iterate over all vaults for a given shardr
+    // has to be a PDA, otherwise how do you iterate over all vaults for a given keepr
     #[account(init,
         seeds = [
             b"vault".as_ref(),
-            shardr.key().as_ref(),
-            &(shardr.load()?.vault_count + 1).to_le_bytes(),
+            keepr.key().as_ref(),
+            &(keepr.load()?.vault_count + 1).to_le_bytes(),
         ],
         bump = bump,
         payer = owner,
@@ -18,7 +18,7 @@ pub struct InitVault<'info> {
     pub vault: AccountLoader<'info, Vault>,
     #[account(mut)]
     pub owner: Signer<'info>,
-    pub shardr: AccountLoader<'info, Shardr>,
+    pub keepr: AccountLoader<'info, Keepr>,
     pub system_program: Program<'info, System>,
 }
 
