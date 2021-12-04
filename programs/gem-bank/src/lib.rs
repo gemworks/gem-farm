@@ -13,8 +13,8 @@ pub mod util;
 pub mod gem_bank {
     use super::*;
 
-    pub fn init_keepr(ctx: Context<InitKeepr>, config: KeeprConfig) -> ProgramResult {
-        instructions::init_keepr::handler(ctx, config)
+    pub fn init_bank(ctx: Context<InitBank>) -> ProgramResult {
+        instructions::init_bank::handler(ctx)
     }
 
     pub fn init_vault(ctx: Context<InitVault>, _bump: u8) -> ProgramResult {

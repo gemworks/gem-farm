@@ -19,7 +19,7 @@ static_assertions::const_assert_eq!(SECONDS_PER_YEAR, 60 * 60 * 24 * 365);
 #[assert_size(aligns, 24)]
 #[repr(C)]
 #[derive(Pod, Zeroable, Clone, Copy, AnchorSerialize, AnchorDeserialize)]
-pub struct KeeprConfig {
+pub struct ShardrConfig {
     pub max_curator_fee_pct: u16,
 
     pub min_voters_for_buyout_pct: u16,
@@ -44,7 +44,7 @@ pub const MAX_MIN_BID_INCREASE_PCT: u16 = 10; //10%
 #[assert_size(aligns, 16)]
 #[repr(C)]
 #[derive(Pod, Zeroable, Clone, Copy, AnchorSerialize, AnchorDeserialize)]
-pub struct KeeprLimits {
+pub struct ShardrLimits {
     pub min_min_auction_length_sec: u32,
     pub max_max_auction_length_sec: u32,
 
@@ -56,9 +56,9 @@ pub struct KeeprLimits {
     _reserved: [u8; 2], //needed to align to word size of 8
 }
 
-impl Default for KeeprLimits {
+impl Default for ShardrLimits {
     fn default() -> Self {
-        KeeprLimits {
+        ShardrLimits {
             min_min_auction_length_sec: MIN_MIN_AUCTION_LENGTH_SEC,
             max_max_auction_length_sec: MAX_MAX_AUCTION_LENGTH_SEC,
             min_min_voters_for_buyout_pct: MIN_MIN_VOTERS_FOR_BUYOUT_PCT,
@@ -69,36 +69,14 @@ impl Default for KeeprLimits {
     }
 }
 
-pub const LATEST_KEEPR_VERSION: u64 = 0;
+pub const LATEST_SHARDR_VERSION: u64 = 0;
 
 #[assert_size(96)]
 #[repr(C)]
 #[account(zero_copy)]
-pub struct Keepr {
-    // version of software running on keepr, always inits to latest
+pub struct Shardr {
     pub version: u64,
 
-    pub flags: u64,
-
-    // controls keepr Config and Flags
-    pub master: Pubkey,
-
-    // keeps track of total vault count - can be iterated over to get all vault PDAs
-    pub vault_count: u64,
-
-    pub config: KeeprConfig,
-    pub limits: KeeprLimits,
-}
-
-bitflags::bitflags! {
-    pub struct KeeprFlags: u64 {
-        const FREEZE_UNLOCKED_VAULTS = 1 << 0;
-        const FREEZE_LOCKED_VAULTS = 1 << 1;
-        const FREEZE_AUCTIONED_VAULTS = 1 << 2;
-        const FREEZE_BOUGHT_OUT_VAULTS = 1 << 3;
-        const FREEZE_ALL_VAULTS = Self::FREEZE_UNLOCKED_VAULTS.bits
-                                | Self::FREEZE_LOCKED_VAULTS.bits
-                                | Self::FREEZE_AUCTIONED_VAULTS.bits
-                                | Self::FREEZE_BOUGHT_OUT_VAULTS.bits;
-    }
+    pub config: ShardrConfig,
+    pub limits: ShardrLimits,
 }

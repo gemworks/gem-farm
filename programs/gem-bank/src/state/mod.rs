@@ -1,5 +1,5 @@
-pub mod keepr;
+pub mod bank;
 pub mod vault;
 
-pub use keepr::*;
+pub use bank::*;
 pub use vault::*;
