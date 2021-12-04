@@ -1,0 +1,13 @@
+[package]
+name = "jet-proc-macros"
+version = "0.1.0"
+edition = "2018"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = {version="1.0.57",features=["full","fold"]}
+quote = "1.0.8"
+static_assertions = "1.1.0"
+proc-macro2 = "1.0"

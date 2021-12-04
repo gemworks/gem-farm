@@ -1,0 +1,21 @@
+[package]
+name = "test-writer"
+version = "0.1.0"
+description = "Created with Anchor"
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "test_writer"
+doctest = false
+
+[features]
+no-entrypoint = []
+no-idl = []
+devnet = []
+cpi = ["no-entrypoint"]
+default = []
+
+[dependencies]
+anchor-lang = { git = "https://github.com/jet-lab/anchor" }
+solana-program = "1.7"
