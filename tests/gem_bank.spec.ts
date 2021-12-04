@@ -9,6 +9,8 @@ import {
   SystemProgram,
 } from '@solana/web3.js';
 import { AccountUtils } from './utils/account';
+import { u64 } from '@solana/spl-token';
+import { BankFlags } from './utils/bank';
 
 const { BN } = anchor;
 
@@ -49,7 +51,7 @@ describe('gem bank', () => {
     const bankAcc = await program.account.bank.fetch(bankKp.publicKey);
     vaultId = bankAcc.vaultCount.add(new BN(1));
     assert.equal(bankAcc.manager.toBase58(), managerKp.publicKey.toBase58());
-    assert.equal(bankAcc.vaultCount.toNumber(), 0);
+    assert(bankAcc.vaultCount.eq(new BN(0)));
 
     console.log('bank live');
   });
@@ -71,6 +73,25 @@ describe('gem bank', () => {
       signers: [vaultOwnerKp],
     });
 
+    const bankAcc = await program.account.bank.fetch(bankKp.publicKey);
+    const vaultAcc = await program.account.vault.fetch(vaultPk);
+    assert(bankAcc.vaultCount.eq(new BN(1)));
+    assert(vaultAcc.vaultId.eq(new BN(1)));
+
     console.log('vault live');
+  });
+
+  it('sets bank flags', async () => {
+    const flags = new u64(BankFlags.FreezeAllVaults);
+    await program.rpc.setBankFlags(flags, {
+      accounts: {
+        bank: bankKp.publicKey,
+        manager: managerKp.publicKey,
+      },
+      signers: [managerKp],
+    });
+
+    const bankAcc = await program.account.bank.fetch(bankKp.publicKey);
+    assert(bankAcc.flags.eq(new u64(BankFlags.FreezeAllVaults)));
   });
 });

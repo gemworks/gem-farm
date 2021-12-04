@@ -22,3 +22,4 @@ bytemuck = "1.7.2"
 static_assertions = "1.1.0"
 jet-math = { path = "../../libraries/math" }
 jet-proc-macros = { path = "../../libraries/proc-macros" }
+thiserror = "1.0.30"

@@ -19,6 +19,5 @@ pub fn handler(ctx: Context<InitBank>) -> ProgramResult {
     bank.vault_count = 0;
 
     msg!("bank initialized, version {}", bank.version);
-
     Ok(())
 }

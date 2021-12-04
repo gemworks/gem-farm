@@ -17,15 +17,18 @@ pub struct Bank {
     pub vault_count: u64,
 }
 
+impl Bank {
+    pub fn reset_flags(&mut self, flags: BankFlags) {
+        self.flags = flags.bits();
+    }
+}
+
+// todo make sure these are actually active
 bitflags::bitflags! {
     pub struct BankFlags: u64 {
         const FREEZE_UNLOCKED_VAULTS = 1 << 0;
         const FREEZE_LOCKED_VAULTS = 1 << 1;
-        const FREEZE_AUCTIONED_VAULTS = 1 << 2;
-        const FREEZE_BOUGHT_OUT_VAULTS = 1 << 3;
         const FREEZE_ALL_VAULTS = Self::FREEZE_UNLOCKED_VAULTS.bits
-                                | Self::FREEZE_LOCKED_VAULTS.bits
-                                | Self::FREEZE_AUCTIONED_VAULTS.bits
-                                | Self::FREEZE_BOUGHT_OUT_VAULTS.bits;
+                                | Self::FREEZE_LOCKED_VAULTS.bits;
     }
 }

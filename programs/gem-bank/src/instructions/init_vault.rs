@@ -17,6 +17,7 @@ pub struct InitVault<'info> {
     pub vault: Account<'info, Vault>,
     #[account(mut)]
     pub owner: Signer<'info>,
+    #[account(mut)]
     pub bank: Account<'info, Bank>,
     pub system_program: Program<'info, System>,
 }
@@ -25,9 +26,10 @@ pub fn handler(ctx: Context<InitVault>) -> ProgramResult {
     let bank = &mut ctx.accounts.bank;
     let vault = &mut ctx.accounts.vault;
 
-    bank.vault_count += 1;
-    vault.vault_id = bank.vault_count;
+    let new_vault_id = bank.vault_count + 1;
+    bank.vault_count = new_vault_id;
+    vault.vault_id = new_vault_id;
 
-    msg!("vault #{} initialized", vault.vault_id);
+    msg!("vault #{} initialized", new_vault_id);
     Ok(())
 }
