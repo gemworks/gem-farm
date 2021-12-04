@@ -7,7 +7,7 @@ use crate::state::*;
 pub struct InitVault<'info> {
     #[account(init,
         seeds = [
-            b"bank".as_ref(),
+            b"vault".as_ref(),
             bank.key().as_ref(),
             &(bank.vault_count + 1).to_le_bytes(),
         ],
@@ -22,6 +22,12 @@ pub struct InitVault<'info> {
 }
 
 pub fn handler(ctx: Context<InitVault>) -> ProgramResult {
-    msg!("vault initialized, key {}", ctx.accounts.vault.key());
+    let bank = &mut ctx.accounts.bank;
+    let vault = &mut ctx.accounts.vault;
+
+    bank.vault_count += 1;
+    vault.vault_id = bank.vault_count;
+
+    msg!("vault #{} initialized", vault.vault_id);
     Ok(())
 }

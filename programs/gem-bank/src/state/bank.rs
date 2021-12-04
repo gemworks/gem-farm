@@ -1,5 +1,5 @@
-use anchor_lang::{prelude::*, solana_program::clock::UnixTimestamp};
-use bytemuck::{Pod, Zeroable};
+use anchor_lang::prelude::*;
+
 use jet_proc_macros::assert_size;
 
 pub const LATEST_BANK_VERSION: u64 = 0;
@@ -12,7 +12,7 @@ pub struct Bank {
 
     pub flags: u64,
 
-    pub keeper: Pubkey,
+    pub manager: Pubkey,
 
     pub vault_count: u64,
 }
