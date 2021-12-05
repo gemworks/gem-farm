@@ -11,6 +11,7 @@ import { BN, Wallet } from '@project-serum/anchor';
 import {
   AccountInfo,
   AccountLayout as TokenAccountLayout,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
   MintInfo,
   NATIVE_MINT,
   Token,
@@ -19,48 +20,47 @@ import {
 } from '@solana/spl-token';
 import { HasPublicKey, ToBytes, toPublicKeys } from './types';
 
+export interface ITokenData {
+  tokenMint: PublicKey;
+  tokenAcc: PublicKey;
+  token: TestToken;
+}
+
 export class TestToken extends Token {
   decimals: number;
+  one_unit: u64;
 
   constructor(conn: Connection, token: Token, decimals: number) {
     super(conn, token.publicKey, token.programId, token.payer);
     this.decimals = decimals;
+    this.one_unit = new u64(10).pow(new u64(this.decimals));
   }
 
-  /**
-   * Convert a token amount to the integer format for the mint
-   * @param amount The amount of tokens
-   */
-  amount(amount: u64 | number): u64 {
+  as_int(amount: u64 | number): u64 {
     if (typeof amount == 'number') {
       amount = new u64(amount);
     }
+    return amount.mul(this.one_unit);
+  }
 
-    const one_unit = new u64(10).pow(new u64(this.decimals));
-    return amount.mul(one_unit);
+  as_decimal(amount: u64 | number): u64 {
+    if (typeof amount == 'number') {
+      amount = new u64(amount);
+    }
+    return amount.div(this.one_unit);
   }
 }
 
 export class AccountUtils {
-  private conn: Connection;
-  private wallet: Wallet;
-  private authority: Keypair;
-  private recentBlockhash: string;
+  conn: Connection;
+  wallet: Wallet;
+  authority: Keypair;
+  recentBlockhash: string;
 
   constructor(conn: Connection, funded: Wallet) {
     this.conn = conn;
     this.wallet = funded;
     this.authority = this.wallet.payer;
-  }
-
-  // --------------------------------------- passive
-
-  payer(): Keypair {
-    return this.wallet.payer;
-  }
-
-  connection(): Connection {
-    return this.conn;
   }
 
   transaction(): Transaction {
@@ -70,39 +70,12 @@ export class AccountUtils {
     });
   }
 
-  async deserializeToken(mintPk: PublicKey): Promise<Token> {
-    //doesn't matter which keypair goes here, we just need some key for instantiation
-    const throwawayKp = Keypair.fromSecretKey(
-      Uint8Array.from([
-        208, 175, 150, 242, 88, 34, 108, 88, 177, 16, 168, 75, 115, 181, 199,
-        242, 120, 4, 78, 75, 19, 227, 13, 215, 184, 108, 226, 53, 111, 149, 179,
-        84, 137, 121, 79, 1, 160, 223, 124, 241, 202, 203, 220, 237, 50, 242,
-        57, 158, 226, 207, 203, 188, 43, 28, 70, 110, 214, 234, 251, 15, 249,
-        157, 62, 80,
-      ])
-    );
-    return new Token(this.conn, mintPk, TOKEN_PROGRAM_ID, throwawayKp);
+  async updateBlockhash() {
+    this.recentBlockhash = (await this.conn.getRecentBlockhash()).blockhash;
   }
 
-  async deserializeTokenAccount(
-    mintPk: PublicKey,
-    tokenAccountPk: PublicKey
-  ): Promise<AccountInfo> {
-    const t = await this.deserializeToken(mintPk);
-    return t.getAccountInfo(tokenAccountPk);
-  }
+  // --------------------------------------- PDA
 
-  async deserializeTokenMint(mintPk: PublicKey): Promise<MintInfo> {
-    const t = await this.deserializeToken(mintPk);
-    return t.getMintInfo();
-  }
-
-  /**
-   * Find a program derived address
-   * @param programId The program the address is being derived for
-   * @param seeds The seeds to find the address
-   * @returns The address found and the bump seed required
-   */
   async findProgramAddress(
     programId: PublicKey,
     seeds: (HasPublicKey | ToBytes | Uint8Array | string)[]
@@ -121,50 +94,8 @@ export class AccountUtils {
     return await PublicKey.findProgramAddress(seed_bytes, programId);
   }
 
-  // --------------------------------------- active
+  // --------------------------------------- Wallet
 
-  async updateBlockhash() {
-    this.recentBlockhash = (await this.conn.getRecentBlockhash()).blockhash;
-  }
-
-  /**
-   * Create a new SPL token
-   * @param decimals The number of decimals for the token.
-   * @param authority The account with authority to mint/freeze tokens.
-   * @returns The new token
-   */
-  async createToken(
-    decimals: number,
-    authority: PublicKey = this.authority.publicKey
-  ): Promise<TestToken> {
-    const token = await Token.createMint(
-      this.conn,
-      this.authority,
-      authority,
-      authority,
-      decimals,
-      TOKEN_PROGRAM_ID
-    );
-
-    return new TestToken(this.conn, token, decimals);
-  }
-
-  async createNativeToken() {
-    const token = new Token(
-      this.conn,
-      NATIVE_MINT,
-      TOKEN_PROGRAM_ID,
-      this.authority
-    );
-
-    return new TestToken(this.conn, token, 9);
-  }
-
-  /**
-   * Create a new wallet with some initial funding.
-   * @param lamports The amount of lamports to fund the wallet account with.
-   * @returns The keypair for the new wallet.
-   */
   async createWallet(lamports: number): Promise<Keypair> {
     const wallet = Keypair.generate();
     const fundTx = new Transaction().add(
@@ -179,14 +110,72 @@ export class AccountUtils {
     return wallet;
   }
 
-  /**
-   * Create a new token account with some initial funding.
-   * @param token The token to create an account for
-   * @param owner The account that should own these tokens
-   * @param amount The initial amount of tokens to provide as funding
-   * @returns The address for the created account
-   */
-  async createTokenAccount(
+  // --------------------------------------- Token / Mint
+
+  async deserializeToken(mintPk: PublicKey): Promise<Token> {
+    //doesn't matter which keypair goes here, we just need some key for instantiation
+    const throwawayKp = Keypair.fromSecretKey(
+      Uint8Array.from([
+        208, 175, 150, 242, 88, 34, 108, 88, 177, 16, 168, 75, 115, 181, 199,
+        242, 120, 4, 78, 75, 19, 227, 13, 215, 184, 108, 226, 53, 111, 149, 179,
+        84, 137, 121, 79, 1, 160, 223, 124, 241, 202, 203, 220, 237, 50, 242,
+        57, 158, 226, 207, 203, 188, 43, 28, 70, 110, 214, 234, 251, 15, 249,
+        157, 62, 80,
+      ])
+    );
+    return new Token(this.conn, mintPk, TOKEN_PROGRAM_ID, throwawayKp);
+  }
+
+  async deserializeTokenMint(mintPk: PublicKey): Promise<MintInfo> {
+    const t = await this.deserializeToken(mintPk);
+    return t.getMintInfo();
+  }
+
+  async createToken(
+    decimals: number,
+    authority: PublicKey = this.authority.publicKey
+  ): Promise<TestToken> {
+    const token = await Token.createMint(
+      this.conn,
+      this.authority,
+      authority,
+      authority,
+      decimals,
+      TOKEN_PROGRAM_ID
+    );
+    return new TestToken(this.conn, token, decimals);
+  }
+
+  async createNativeToken() {
+    const token = new Token(
+      this.conn,
+      NATIVE_MINT,
+      TOKEN_PROGRAM_ID,
+      this.authority
+    );
+    return new TestToken(this.conn, token, 9);
+  }
+
+  // --------------------------------------- Token Acc / ATA
+
+  async deserializeTokenAccount(
+    mintPk: PublicKey,
+    tokenAccountPk: PublicKey
+  ): Promise<AccountInfo> {
+    const token = await this.deserializeToken(mintPk);
+    return token.getAccountInfo(tokenAccountPk);
+  }
+
+  async getATA(mintPk: PublicKey, ownerPk: PublicKey): Promise<PublicKey> {
+    return Token.getAssociatedTokenAddress(
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+      TOKEN_PROGRAM_ID,
+      mintPk,
+      ownerPk
+    );
+  }
+
+  async createAndFundATA(
     token: Token,
     owner: PublicKey | HasPublicKey,
     amount: BN
@@ -213,6 +202,16 @@ export class AccountUtils {
     }
   }
 
+  async createMintAndATA(owner: PublicKey, amount: BN): Promise<ITokenData> {
+    const token = await this.createToken(0);
+    const tokenAcc = await this.createAndFundATA(token, owner, amount);
+    return {
+      tokenMint: token.publicKey,
+      tokenAcc,
+      token,
+    } as ITokenData;
+  }
+
   async createTokenAccountTx(
     token: Token,
     owner: PublicKey | HasPublicKey,
@@ -221,15 +220,12 @@ export class AccountUtils {
     if ('publicKey' in owner) {
       owner = owner.publicKey;
     }
-
     let lamportBalanceNeeded = await Token.getMinBalanceRentForExemptAccount(
       this.conn
     );
-
     if (token.publicKey == NATIVE_MINT) {
       lamportBalanceNeeded += amount;
     }
-
     const newAccount = Keypair.generate();
     const transaction = this.transaction().add(
       SystemProgram.createAccount(
@@ -248,24 +244,11 @@ export class AccountUtils {
         owner
       )
     );
-
     transaction.sign(newAccount);
     return [newAccount.publicKey, transaction];
   }
 
-  /*
-   * Creates a mint with 0 decimals, a token account, and funds it with specified amount
-   */
-  async createAndFundTokenAcc(owner: PublicKey, amount: BN) {
-    const token = await this.createToken(0);
-    const mintAuth = (await token.getMintInfo()).mintAuthority;
-    const tokenAcc = await this.createTokenAccount(token, owner, amount);
-    return {
-      tokenMint: token.publicKey,
-      mintAuth,
-      tokenAcc,
-    };
-  }
+  // --------------------------------------- Tx
 
   async sendAndConfirmTransaction(
     transaction: Transaction,

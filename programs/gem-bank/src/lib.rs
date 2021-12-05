@@ -16,22 +16,23 @@ pub mod gem_bank {
         instructions::init_bank::handler(ctx)
     }
 
-    pub fn init_vault(ctx: Context<InitVault>, _bump: u8, authority: Pubkey) -> ProgramResult {
-        instructions::init_vault::handler(ctx, authority)
+    pub fn init_vault(ctx: Context<InitVault>, _bump: u8, owner: Pubkey) -> ProgramResult {
+        instructions::init_vault::handler(ctx, owner)
     }
 
     pub fn set_bank_flags(ctx: Context<SetBankFlags>, flags: u64) -> ProgramResult {
         instructions::set_bank_flags::handler(ctx, flags)
     }
 
-    pub fn update_vault_authority(
-        ctx: Context<UpdateVaultAuthority>,
-        new_authority: Pubkey,
-    ) -> ProgramResult {
-        instructions::update_vault_authority::handler(ctx, new_authority)
+    pub fn update_vault_owner(ctx: Context<UpdateVaultOwner>, new_owner: Pubkey) -> ProgramResult {
+        instructions::update_vault_owner::handler(ctx, new_owner)
     }
 
     pub fn deposit_gem(ctx: Context<DepositGem>, _bump: u8, amount: u64) -> ProgramResult {
         instructions::deposit_gem::handler(ctx, amount)
+    }
+
+    pub fn withdraw_gem(ctx: Context<WithdrawGem>, amount: u64) -> ProgramResult {
+        instructions::withdraw_gem::handler(ctx, amount)
     }
 }

@@ -7,11 +7,17 @@ import {
   PublicKey,
   SystemProgram,
 } from '@solana/web3.js';
-import { AccountUtils } from './utils/account';
-import { AccountInfo, TOKEN_PROGRAM_ID, u64 } from '@solana/spl-token';
+import { AccountUtils, ITokenData } from './utils/account';
+import {
+  AccountInfo,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
+  u64,
+} from '@solana/spl-token';
 import { BankFlags } from './utils/bank';
 import chai, { assert, expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
+import { toBase58 } from './utils/types';
 
 chai.use(chaiAsPromised);
 
@@ -36,34 +42,84 @@ describe('gem bank', () => {
   let managerKp: Keypair;
 
   //vault
-  let vaultCreatorPk: Keypair;
-  let vaultAuthorityKp: Keypair;
+  let vaultOwner1Pk: Keypair;
+  let vaultOwner2Pk: Keypair;
   let vaultPk: PublicKey;
+  let vaultAuthPk: PublicKey;
 
   //gem box
   let gemOwnerKp: Keypair;
   let gemBoxPk: PublicKey;
+  const amount = new BN(Math.ceil(Math.random() * 100));
+  let gem: ITokenData;
 
   before('configures accounts', async () => {
-    someRandomKp = await accUtils.createWallet(10 * LAMPORTS_PER_SOL);
-    managerKp = await accUtils.createWallet(10 * LAMPORTS_PER_SOL);
-    vaultCreatorPk = await accUtils.createWallet(10 * LAMPORTS_PER_SOL);
-    vaultAuthorityKp = await accUtils.createWallet(10 * LAMPORTS_PER_SOL);
-    gemOwnerKp = await accUtils.createWallet(10 * LAMPORTS_PER_SOL);
+    someRandomKp = await accUtils.createWallet(100 * LAMPORTS_PER_SOL);
+
+    managerKp = await accUtils.createWallet(100 * LAMPORTS_PER_SOL);
+
+    vaultOwner1Pk = await accUtils.createWallet(100 * LAMPORTS_PER_SOL);
+    vaultOwner2Pk = await accUtils.createWallet(100 * LAMPORTS_PER_SOL);
+
+    gemOwnerKp = await accUtils.createWallet(100 * LAMPORTS_PER_SOL);
+    gem = await accUtils.createMintAndATA(gemOwnerKp.publicKey, amount);
   });
 
   // --------------------------------------- helpers
 
-  async function getBankState() {
-    return await program.account.bank.fetch(bankKp.publicKey);
+  async function getBankState(bankPk: PublicKey) {
+    return program.account.bank.fetch(bankPk);
   }
 
-  async function getVaultState() {
-    return await program.account.vault.fetch(vaultPk);
+  async function getVaultState(vaultPk: PublicKey) {
+    return program.account.vault.fetch(vaultPk);
   }
 
-  async function getGemBoxState(mintPk: PublicKey): Promise<AccountInfo> {
-    return await accUtils.deserializeTokenAccount(mintPk, gemBoxPk);
+  async function getGemAccState(
+    mintPk: PublicKey,
+    gemAcc: PublicKey
+  ): Promise<AccountInfo> {
+    return accUtils.deserializeTokenAccount(mintPk, gemAcc);
+  }
+
+  async function getVaultPDA(bankPk: PublicKey) {
+    const nextVaultId = (await getBankState(bankPk)).vaultCount.add(new BN(1));
+    return accUtils.findProgramAddress(program.programId, [
+      'vault',
+      bankPk,
+      nextVaultId.toBuffer('le', 8),
+    ]);
+  }
+
+  async function getGemBoxPDA(vaultPk: PublicKey) {
+    const nextGemBoxId = (await getVaultState(vaultPk)).gemBoxCount.add(
+      new BN(1)
+    );
+    return accUtils.findProgramAddress(program.programId, [
+      'gem_box',
+      vaultPk,
+      nextGemBoxId.toBuffer('le', 8),
+    ]);
+  }
+
+  async function getVaultAuthorityPDA(vaultPk: PublicKey) {
+    return accUtils.findProgramAddress(program.programId, [vaultPk]);
+  }
+
+  function printAccounts() {
+    console.log('someRandomKp', someRandomKp.publicKey.toBase58());
+
+    console.log('bankKp', bankKp.publicKey.toBase58());
+    console.log('managerKp', managerKp.publicKey.toBase58());
+
+    console.log('vaultOwner1Pk', vaultOwner1Pk.publicKey.toBase58());
+    console.log('vaultOwner2Pk', vaultOwner2Pk.publicKey.toBase58());
+    console.log('vaultPk', vaultPk.toBase58());
+    console.log('vaultAuthPk', vaultAuthPk.toBase58());
+
+    console.log('gemOwnerKp', gemOwnerKp.publicKey.toBase58());
+    console.log('gemBoxPk', gemBoxPk.toBase58());
+    console.log('gem', toBase58(gem as any));
   }
 
   // --------------------------------------- bank
@@ -78,11 +134,9 @@ describe('gem bank', () => {
       signers: [managerKp, bankKp],
     });
 
-    const bankAcc = await program.account.bank.fetch(bankKp.publicKey);
+    const bankAcc = await getBankState(bankKp.publicKey);
     assert.equal(bankAcc.manager.toBase58(), managerKp.publicKey.toBase58());
     assert(bankAcc.vaultCount.eq(new BN(0)));
-
-    console.log('bank live');
   });
 
   it('sets bank flags', async () => {
@@ -95,13 +149,12 @@ describe('gem bank', () => {
       signers: [managerKp],
     });
 
-    const bankAcc = await program.account.bank.fetch(bankKp.publicKey);
+    const bankAcc = await getBankState(bankKp.publicKey);
     assert(bankAcc.flags.eq(new u64(BankFlags.FreezeAllVaults)));
   });
 
   it('FAILS to set bank flags w/ wrong manager', async () => {
     const flags = new u64(BankFlags.FreezeAllVaults);
-
     await expect(
       program.rpc.setBankFlags(flags, {
         accounts: {
@@ -116,76 +169,62 @@ describe('gem bank', () => {
   // --------------------------------------- vault
 
   it('inits vault', async () => {
-    const nextVaultId = (await getBankState()).vaultCount.add(new BN(1));
-    let bump: number;
-    [vaultPk, bump] = await accUtils.findProgramAddress(program.programId, [
-      'vault',
-      bankKp.publicKey,
-      nextVaultId.toBuffer('le', 8),
-    ]);
-    await program.rpc.initVault(bump, vaultCreatorPk.publicKey, {
+    let bump;
+    [vaultPk, bump] = await getVaultPDA(bankKp.publicKey);
+    await program.rpc.initVault(bump, vaultOwner1Pk.publicKey, {
       accounts: {
         vault: vaultPk,
-        payer: vaultCreatorPk.publicKey,
+        payer: vaultOwner1Pk.publicKey,
         bank: bankKp.publicKey,
         systemProgram: SystemProgram.programId,
       },
-      signers: [vaultCreatorPk],
+      signers: [vaultOwner1Pk],
     });
 
-    const bankAcc = await program.account.bank.fetch(bankKp.publicKey);
-    const vaultAcc = await program.account.vault.fetch(vaultPk);
+    const bankAcc = await getBankState(bankKp.publicKey);
+    const vaultAcc = await getVaultState(vaultPk);
     assert(bankAcc.vaultCount.eq(new BN(1)));
     assert(vaultAcc.vaultId.eq(new BN(1)));
-
-    console.log('vault live');
+    assert.equal(vaultAcc.owner.toBase58, vaultOwner1Pk.publicKey.toBase58);
   });
 
-  it('updates vault authority', async () => {
-    await program.rpc.updateVaultAuthority(vaultAuthorityKp.publicKey, {
+  it('updates vault owner', async () => {
+    await program.rpc.updateVaultOwner(vaultOwner2Pk.publicKey, {
       accounts: {
         vault: vaultPk,
-        authority: vaultCreatorPk.publicKey,
+        owner: vaultOwner1Pk.publicKey,
       },
-      signers: [vaultCreatorPk],
+      signers: [vaultOwner1Pk],
     });
 
-    console.log('vault authority updated');
+    const vaultAcc = await getVaultState(vaultPk);
+    assert.equal(vaultAcc.owner.toBase58, vaultOwner2Pk.publicKey.toBase58);
   });
 
-  it('FAILS to update vault authority w/ wrong existing authority', async () => {
+  it('FAILS to update vault owner w/ wrong existing owner', async () => {
     await expect(
-      program.rpc.updateVaultAuthority(vaultAuthorityKp.publicKey, {
+      program.rpc.updateVaultOwner(vaultOwner2Pk.publicKey, {
         accounts: {
           vault: vaultPk,
-          authority: someRandomKp.publicKey,
+          owner: someRandomKp.publicKey,
         },
         signers: [someRandomKp],
       })
     ).to.be.rejectedWith('has_one');
-
-    console.log('vault authority updated');
   });
 
   // --------------------------------------- gem boxes
 
-  it('accepts gem deposit', async () => {
-    const amount = new BN(Math.floor(Math.random() * 100));
-    const gem = await accUtils.createAndFundTokenAcc(
-      gemOwnerKp.publicKey,
-      amount
-    );
-    const nextGemBoxId = (await getVaultState()).gemBoxCount.add(new BN(1));
+  //this is re-used a few times, so made sense to extract
+  async function makeDeposit() {
     let bump: number;
-    [gemBoxPk, bump] = await accUtils.findProgramAddress(program.programId, [
-      'gem_box',
-      vaultPk,
-      nextGemBoxId.toBuffer('le', 8),
-    ]);
+    [vaultAuthPk, bump] = await getVaultAuthorityPDA(vaultPk);
+    [gemBoxPk, bump] = await getGemBoxPDA(vaultPk);
     await program.rpc.depositGem(bump, amount, {
       accounts: {
         vault: vaultPk,
-        authority: vaultAuthorityKp.publicKey,
+        owner: vaultOwner2Pk.publicKey,
+        authority: vaultAuthPk,
         gemBox: gemBoxPk,
         gemSource: gem.tokenAcc,
         gemMint: gem.tokenMint,
@@ -194,36 +233,31 @@ describe('gem bank', () => {
         systemProgram: SystemProgram.programId,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
       },
-      signers: [vaultAuthorityKp, gemOwnerKp],
+      signers: [vaultOwner2Pk, gemOwnerKp],
     });
-    const gemBox = await getGemBoxState(gem.tokenMint);
+  }
+
+  it('deposits gem', async () => {
+    await makeDeposit();
+
+    const vault = await getVaultState(vaultPk);
+    assert(vault.gemBoxCount.eq(new BN(1)));
+    const gemBox = await getGemAccState(gem.tokenMint, gemBoxPk);
     assert(gemBox.amount.eq(amount));
     assert.equal(gemBox.mint.toBase58(), gem.tokenMint.toBase58());
-    assert.equal(
-      gemBox.owner.toBase58(),
-      vaultAuthorityKp.publicKey.toBase58()
-    );
+    assert.equal(gemBox.owner.toBase58(), vaultAuthPk.toBase58());
   });
 
-  it('FAILS a gem deposit w/ wrong authority', async () => {
-    const amount = new BN(Math.floor(Math.random() * 100));
-    const gem = await accUtils.createAndFundTokenAcc(
-      gemOwnerKp.publicKey,
-      amount
-    );
-    const nextGemBoxId = (await getVaultState()).gemBoxCount.add(new BN(1));
-    let bump: number;
-    [gemBoxPk, bump] = await accUtils.findProgramAddress(program.programId, [
-      'gem_box',
-      vaultPk,
-      nextGemBoxId.toBuffer('le', 8),
-    ]);
+  it('FAILS to deposit gem w/ wrong authority', async () => {
+    const [vaultAuthPk2, bump] = await getVaultAuthorityPDA(vaultPk);
+    const [gemBoxPk2, bump2] = await getGemBoxPDA(vaultPk);
     await expect(
-      program.rpc.depositGem(bump, amount, {
+      program.rpc.depositGem(bump2, amount, {
         accounts: {
           vault: vaultPk,
-          authority: someRandomKp.publicKey,
-          gemBox: gemBoxPk,
+          owner: someRandomKp.publicKey,
+          authority: vaultAuthPk2,
+          gemBox: gemBoxPk2,
           gemSource: gem.tokenAcc,
           gemMint: gem.tokenMint,
           depositor: gemOwnerKp.publicKey,
@@ -233,6 +267,61 @@ describe('gem bank', () => {
         },
         signers: [someRandomKp, gemOwnerKp],
       })
-    ).to.be.rejectedWith('0x0');
+    ).to.be.rejectedWith('has_one');
+  });
+
+  it('withdraws gem to existing ATA', async () => {
+    await program.rpc.withdrawGem(amount, {
+      accounts: {
+        vault: vaultPk,
+        owner: vaultOwner2Pk.publicKey,
+        authority: vaultAuthPk,
+        gemBox: gemBoxPk,
+        gemDestination: gem.tokenAcc,
+        gemMint: gem.tokenMint,
+        receiver: gemOwnerKp.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      },
+      signers: [vaultOwner2Pk],
+    });
+
+    const gemBox = await getGemAccState(gem.tokenMint, gemBoxPk);
+    assert(gemBox.amount.eq(new BN(0)));
+    const gemAcc = await getGemAccState(gem.tokenMint, gem.tokenAcc);
+    assert(gemAcc.amount.eq(amount));
+  });
+
+  it('withdraws gem to missing ATA', async () => {
+    //need another deposit
+    await makeDeposit();
+
+    const missingATA = await accUtils.getATA(
+      gem.tokenMint,
+      someRandomKp.publicKey
+    );
+    await program.rpc.withdrawGem(amount, {
+      accounts: {
+        vault: vaultPk,
+        owner: vaultOwner2Pk.publicKey,
+        authority: vaultAuthPk,
+        gemBox: gemBoxPk,
+        gemDestination: missingATA,
+        gemMint: gem.tokenMint,
+        receiver: someRandomKp.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      },
+      signers: [vaultOwner2Pk],
+    });
+
+    const gemBox = await getGemAccState(gem.tokenMint, gemBoxPk);
+    assert(gemBox.amount.eq(new BN(0)));
+    const gemAcc = await getGemAccState(gem.tokenMint, missingATA);
+    assert(gemAcc.amount.eq(amount));
   });
 });

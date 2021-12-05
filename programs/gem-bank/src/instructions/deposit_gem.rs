@@ -1,16 +1,18 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Mint, Token, Transfer};
+use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
 use crate::state::*;
 
 #[derive(Accounts)]
 #[instruction(bump: u8)]
 pub struct DepositGem<'info> {
-    #[account(mut, has_one = authority)]
+    // needed for seeds derivation + we increment gem box count
+    #[account(mut, has_one = owner, has_one = authority)]
     pub vault: Account<'info, Vault>,
-    // by having authority be a signer, we ensure that only vault authority can deposit into the vault
-    pub authority: Signer<'info>,
-    // todo who should really be set as authority here? whoever will be able to transfer token out afterwards, correct?
+    // this ensures only the owner can deposit
+    pub owner: Signer<'info>,
+    // needed to be set as authority over newly created token PDA
+    pub authority: AccountInfo<'info>,
     #[account(init,
         seeds = [
             b"gem_box".as_ref(),
@@ -22,9 +24,9 @@ pub struct DepositGem<'info> {
         token::authority = authority,
         payer = depositor,
     )]
-    pub gem_box: AccountInfo<'info>,
+    pub gem_box: Account<'info, TokenAccount>,
     #[account(mut)]
-    pub gem_source: AccountInfo<'info>,
+    pub gem_source: Account<'info, TokenAccount>,
     pub gem_mint: Account<'info, Mint>,
     #[account(mut)]
     pub depositor: Signer<'info>,
@@ -48,10 +50,23 @@ impl<'info> DepositGem<'info> {
 }
 
 pub fn handler(ctx: Context<DepositGem>, amount: u64) -> ProgramResult {
+    let vault = &ctx.accounts.vault;
     let gem_box = &ctx.accounts.gem_box;
 
-    token::transfer(ctx.accounts.transfer_ctx(), amount)?;
+    token::transfer(
+        ctx.accounts
+            .transfer_ctx()
+            .with_signer(&[&vault.vault_seeds()]),
+        amount,
+    )?;
 
-    msg!("gem box for {} created", token::accessor::mint(&gem_box)?);
+    let vault = &mut ctx.accounts.vault;
+    vault.gem_box_count += 1;
+
+    msg!(
+        "gem box for {} created and {} gems deposited",
+        gem_box.mint,
+        amount
+    );
     Ok(())
 }
