@@ -214,6 +214,32 @@ describe('gem bank', () => {
     ).to.be.rejectedWith('has_one');
   });
 
+  it('locks vault', async () => {
+    await program.rpc.lockVault({
+      accounts: {
+        vault: vaultPk,
+        owner: vaultOwner2Pk.publicKey,
+      },
+      signers: [vaultOwner2Pk],
+    });
+
+    const vaultAcc = await getVaultState(vaultPk);
+    assert.equal(vaultAcc.locked, true);
+  });
+
+  it('unlocks vault', async () => {
+    await program.rpc.unlockVault({
+      accounts: {
+        vault: vaultPk,
+        owner: vaultOwner2Pk.publicKey,
+      },
+      signers: [vaultOwner2Pk],
+    });
+
+    const vaultAcc = await getVaultState(vaultPk);
+    assert.equal(vaultAcc.locked, false);
+  });
+
   // --------------------------------------- gem boxes
 
   describe('gem boxes', () => {

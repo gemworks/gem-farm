@@ -29,6 +29,7 @@ pub fn handler(ctx: Context<InitVault>, owner: Pubkey) -> ProgramResult {
     let new_vault_id = bank.vault_count + 1;
     bank.vault_count = new_vault_id;
     vault.vault_id = new_vault_id;
+    vault.locked = false;
     vault.gem_box_count = 0;
 
     // todo is it wise that we're letting them set the owner w/o checking signature?
