@@ -23,6 +23,7 @@ import { HasPublicKey, ToBytes, toPublicKeys } from './types';
 export interface ITokenData {
   tokenMint: PublicKey;
   tokenAcc: PublicKey;
+  owner: PublicKey;
   token: TestToken;
 }
 
@@ -208,6 +209,7 @@ export class AccountUtils {
     return {
       tokenMint: token.publicKey,
       tokenAcc,
+      owner,
       token,
     } as ITokenData;
   }

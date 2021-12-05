@@ -34,7 +34,7 @@ describe('gem bank', () => {
   );
 
   // --------------------------------------- state
-
+  //used to test bad transactions with wrong account passed in
   let someRandomKp: Keypair;
 
   //bank
@@ -48,10 +48,29 @@ describe('gem bank', () => {
   let vaultAuthPk: PublicKey;
 
   //gem box
+  let gemAmount: anchor.BN;
   let gemOwnerKp: Keypair;
-  let gemBoxPk: PublicKey;
-  const amount = new BN(Math.ceil(Math.random() * 100));
   let gem: ITokenData;
+  let gemBoxPk: PublicKey;
+  let gemBump: number;
+
+  function printState() {
+    console.log('someRandomKp', someRandomKp.publicKey.toBase58());
+
+    console.log('bankKp', bankKp.publicKey.toBase58());
+    console.log('managerKp', managerKp.publicKey.toBase58());
+
+    console.log('vaultOwner1Pk', vaultOwner1Pk.publicKey.toBase58());
+    console.log('vaultOwner2Pk', vaultOwner2Pk.publicKey.toBase58());
+    console.log('vaultPk', vaultPk.toBase58());
+    console.log('vaultAuthPk', vaultAuthPk.toBase58());
+
+    console.log('amount', gemAmount.toString());
+    console.log('gemOwnerKp', gemOwnerKp.publicKey.toBase58());
+    console.log('gem', toBase58(gem as any));
+    console.log('gemBoxPk', gemBoxPk.toBase58());
+    console.log('gemBump', gemBump);
+  }
 
   before('configures accounts', async () => {
     someRandomKp = await accUtils.createWallet(100 * LAMPORTS_PER_SOL);
@@ -60,9 +79,6 @@ describe('gem bank', () => {
 
     vaultOwner1Pk = await accUtils.createWallet(100 * LAMPORTS_PER_SOL);
     vaultOwner2Pk = await accUtils.createWallet(100 * LAMPORTS_PER_SOL);
-
-    gemOwnerKp = await accUtils.createWallet(100 * LAMPORTS_PER_SOL);
-    gem = await accUtils.createMintAndATA(gemOwnerKp.publicKey, amount);
   });
 
   // --------------------------------------- helpers
@@ -104,22 +120,6 @@ describe('gem bank', () => {
 
   async function getVaultAuthorityPDA(vaultPk: PublicKey) {
     return accUtils.findProgramAddress(program.programId, [vaultPk]);
-  }
-
-  function printAccounts() {
-    console.log('someRandomKp', someRandomKp.publicKey.toBase58());
-
-    console.log('bankKp', bankKp.publicKey.toBase58());
-    console.log('managerKp', managerKp.publicKey.toBase58());
-
-    console.log('vaultOwner1Pk', vaultOwner1Pk.publicKey.toBase58());
-    console.log('vaultOwner2Pk', vaultOwner2Pk.publicKey.toBase58());
-    console.log('vaultPk', vaultPk.toBase58());
-    console.log('vaultAuthPk', vaultAuthPk.toBase58());
-
-    console.log('gemOwnerKp', gemOwnerKp.publicKey.toBase58());
-    console.log('gemBoxPk', gemBoxPk.toBase58());
-    console.log('gem', toBase58(gem as any));
   }
 
   // --------------------------------------- bank
@@ -171,6 +171,7 @@ describe('gem bank', () => {
   it('inits vault', async () => {
     let bump;
     [vaultPk, bump] = await getVaultPDA(bankKp.publicKey);
+    [vaultAuthPk] = await getVaultAuthorityPDA(vaultPk);
     await program.rpc.initVault(bump, vaultOwner1Pk.publicKey, {
       accounts: {
         vault: vaultPk,
@@ -215,49 +216,24 @@ describe('gem bank', () => {
 
   // --------------------------------------- gem boxes
 
-  //this is re-used a few times, so made sense to extract
-  async function makeDeposit() {
-    let bump: number;
-    [vaultAuthPk, bump] = await getVaultAuthorityPDA(vaultPk);
-    [gemBoxPk, bump] = await getGemBoxPDA(vaultPk);
-    await program.rpc.depositGem(bump, amount, {
-      accounts: {
-        vault: vaultPk,
-        owner: vaultOwner2Pk.publicKey,
-        authority: vaultAuthPk,
-        gemBox: gemBoxPk,
-        gemSource: gem.tokenAcc,
-        gemMint: gem.tokenMint,
-        depositor: gemOwnerKp.publicKey,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        systemProgram: SystemProgram.programId,
-        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-      },
-      signers: [vaultOwner2Pk, gemOwnerKp],
+  describe('gem boxes', () => {
+    beforeEach('creates a fresh gem', async () => {
+      //create a fresh gem owner + gem & mint a random amount
+      gemAmount = new BN(Math.ceil(Math.random() * 100));
+      gemOwnerKp = await accUtils.createWallet(100 * LAMPORTS_PER_SOL);
+      gem = await accUtils.createMintAndATA(gemOwnerKp.publicKey, gemAmount);
+
+      //get the next gem box
+      [gemBoxPk, gemBump] = await getGemBoxPDA(vaultPk);
     });
-  }
 
-  it('deposits gem', async () => {
-    await makeDeposit();
-
-    const vault = await getVaultState(vaultPk);
-    assert(vault.gemBoxCount.eq(new BN(1)));
-    const gemBox = await getGemAccState(gem.tokenMint, gemBoxPk);
-    assert(gemBox.amount.eq(amount));
-    assert.equal(gemBox.mint.toBase58(), gem.tokenMint.toBase58());
-    assert.equal(gemBox.owner.toBase58(), vaultAuthPk.toBase58());
-  });
-
-  it('FAILS to deposit gem w/ wrong authority', async () => {
-    const [vaultAuthPk2, bump] = await getVaultAuthorityPDA(vaultPk);
-    const [gemBoxPk2, bump2] = await getGemBoxPDA(vaultPk);
-    await expect(
-      program.rpc.depositGem(bump2, amount, {
+    async function makeDeposit(ownerKp: Keypair) {
+      await program.rpc.depositGem(gemBump, gemAmount, {
         accounts: {
           vault: vaultPk,
-          owner: someRandomKp.publicKey,
-          authority: vaultAuthPk2,
-          gemBox: gemBoxPk2,
+          owner: ownerKp.publicKey,
+          authority: vaultAuthPk,
+          gemBox: gemBoxPk,
           gemSource: gem.tokenAcc,
           gemMint: gem.tokenMint,
           depositor: gemOwnerKp.publicKey,
@@ -265,63 +241,82 @@ describe('gem bank', () => {
           systemProgram: SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         },
-        signers: [someRandomKp, gemOwnerKp],
-      })
-    ).to.be.rejectedWith('has_one');
-  });
+        signers: [ownerKp, gemOwnerKp],
+      });
+    }
 
-  it('withdraws gem to existing ATA', async () => {
-    await program.rpc.withdrawGem(amount, {
-      accounts: {
-        vault: vaultPk,
-        owner: vaultOwner2Pk.publicKey,
-        authority: vaultAuthPk,
-        gemBox: gemBoxPk,
-        gemDestination: gem.tokenAcc,
-        gemMint: gem.tokenMint,
-        receiver: gemOwnerKp.publicKey,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-        systemProgram: SystemProgram.programId,
-        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-      },
-      signers: [vaultOwner2Pk],
+    async function makeWithdrawal(
+      ownerKp: Keypair,
+      destinationAcc: PublicKey,
+      receiverPk: PublicKey
+    ) {
+      await program.rpc.withdrawGem(gemAmount, {
+        accounts: {
+          vault: vaultPk,
+          owner: ownerKp.publicKey,
+          authority: vaultAuthPk,
+          gemBox: gemBoxPk,
+          gemDestination: destinationAcc,
+          gemMint: gem.tokenMint,
+          receiver: receiverPk,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        },
+        signers: [ownerKp],
+      });
+    }
+
+    it('deposits gem', async () => {
+      await makeDeposit(vaultOwner2Pk);
+
+      const vault = await getVaultState(vaultPk);
+      assert(vault.gemBoxCount.eq(new BN(1)));
+      const gemBox = await getGemAccState(gem.tokenMint, gemBoxPk);
+      assert(gemBox.amount.eq(gemAmount));
+      assert.equal(gemBox.mint.toBase58(), gem.tokenMint.toBase58());
+      assert.equal(gemBox.owner.toBase58(), vaultAuthPk.toBase58());
     });
 
-    const gemBox = await getGemAccState(gem.tokenMint, gemBoxPk);
-    assert(gemBox.amount.eq(new BN(0)));
-    const gemAcc = await getGemAccState(gem.tokenMint, gem.tokenAcc);
-    assert(gemAcc.amount.eq(amount));
-  });
-
-  it('withdraws gem to missing ATA', async () => {
-    //need another deposit
-    await makeDeposit();
-
-    const missingATA = await accUtils.getATA(
-      gem.tokenMint,
-      someRandomKp.publicKey
-    );
-    await program.rpc.withdrawGem(amount, {
-      accounts: {
-        vault: vaultPk,
-        owner: vaultOwner2Pk.publicKey,
-        authority: vaultAuthPk,
-        gemBox: gemBoxPk,
-        gemDestination: missingATA,
-        gemMint: gem.tokenMint,
-        receiver: someRandomKp.publicKey,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-        systemProgram: SystemProgram.programId,
-        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-      },
-      signers: [vaultOwner2Pk],
+    it('FAILS to deposit gem w/ wrong owner', async () => {
+      await expect(makeDeposit(someRandomKp)).to.be.rejectedWith('has_one');
     });
 
-    const gemBox = await getGemAccState(gem.tokenMint, gemBoxPk);
-    assert(gemBox.amount.eq(new BN(0)));
-    const gemAcc = await getGemAccState(gem.tokenMint, missingATA);
-    assert(gemAcc.amount.eq(amount));
+    it('withdraws gem to existing ATA', async () => {
+      //make a fresh deposit
+      await makeDeposit(vaultOwner2Pk);
+      await makeWithdrawal(vaultOwner2Pk, gem.tokenAcc, gem.owner);
+
+      const gemBox = await getGemAccState(gem.tokenMint, gemBoxPk);
+      assert(gemBox.amount.eq(new BN(0)));
+      const gemAcc = await getGemAccState(gem.tokenMint, gem.tokenAcc);
+      assert(gemAcc.amount.eq(gemAmount));
+    });
+
+    it('withdraws gem to missing ATA', async () => {
+      //make a fresh deposit
+      await makeDeposit(vaultOwner2Pk);
+
+      const missingATA = await accUtils.getATA(
+        gem.tokenMint,
+        someRandomKp.publicKey
+      );
+      await makeWithdrawal(vaultOwner2Pk, missingATA, someRandomKp.publicKey);
+
+      const gemBox = await getGemAccState(gem.tokenMint, gemBoxPk);
+      assert(gemBox.amount.eq(new BN(0)));
+      const gemAcc = await getGemAccState(gem.tokenMint, missingATA);
+      assert(gemAcc.amount.eq(gemAmount));
+    });
+
+    it('FAILS to withdraw gem w/ wrong owner', async () => {
+      //make a fresh deposit
+      await makeDeposit(vaultOwner2Pk);
+
+      await expect(
+        makeWithdrawal(someRandomKp, gem.tokenAcc, gem.owner)
+      ).to.be.rejectedWith('has_one');
+    });
   });
 });
