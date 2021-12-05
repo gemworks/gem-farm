@@ -1,3 +1,4 @@
+use crate::state::{Bank, BankFlags};
 use anchor_lang::prelude::*;
 use jet_proc_macros::assert_size;
 
@@ -34,5 +35,17 @@ impl Vault {
         [self.authority_seed.as_ref(), &self.authority_bump_seed]
     }
 
-    // pub fn access_granted(&self) -> bool {};
+    pub fn access_suspended(&self, flags: u64) -> Result<bool, ProgramError> {
+        let bank_flags = Bank::read_flags(flags)?;
+
+        if self.locked {
+            return Ok(true);
+        }
+
+        if bank_flags.contains(BankFlags::FREEZE_VAULTS) {
+            return Ok(true);
+        }
+
+        Ok(false)
+    }
 }

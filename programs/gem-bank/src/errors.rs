@@ -10,6 +10,9 @@ pub enum ErrorCode {
 
     #[msg("invalid parameter")]
     InvalidParameter,
+
+    #[msg("vault is currently locked or frozen and cannot be accessed")]
+    VaultAccessSuspended,
 }
 
 impl From<jet_math::Error> for ErrorCode {

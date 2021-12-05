@@ -13,10 +13,7 @@ pub struct SetBankFlags<'info> {
 pub fn handler(ctx: Context<SetBankFlags>, flags: u64) -> ProgramResult {
     let bank = &mut ctx.accounts.bank;
 
-    let flags = match BankFlags::from_bits(flags) {
-        Some(f) => f,
-        None => return Err(ErrorCode::InvalidParameter.into()),
-    };
+    let flags = Bank::read_flags(flags)?;
     bank.reset_flags(flags);
 
     msg!("flags set: {:?}", flags);

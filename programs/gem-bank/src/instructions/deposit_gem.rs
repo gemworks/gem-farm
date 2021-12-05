@@ -1,3 +1,4 @@
+use crate::errors::ErrorCode;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
@@ -6,6 +7,8 @@ use crate::state::*;
 #[derive(Accounts)]
 #[instruction(bump: u8)]
 pub struct DepositGem<'info> {
+    // needed for checking flags
+    pub bank: Account<'info, Bank>,
     // needed for seeds derivation + we increment gem box count
     #[account(mut, has_one = owner, has_one = authority)]
     pub vault: Account<'info, Vault>,
@@ -50,8 +53,13 @@ impl<'info> DepositGem<'info> {
 }
 
 pub fn handler(ctx: Context<DepositGem>, amount: u64) -> ProgramResult {
+    let bank = &ctx.accounts.bank;
     let vault = &ctx.accounts.vault;
     let gem_box = &ctx.accounts.gem_box;
+
+    if vault.access_suspended(bank.flags)? {
+        return Err(ErrorCode::VaultAccessSuspended.into());
+    }
 
     token::transfer(
         ctx.accounts

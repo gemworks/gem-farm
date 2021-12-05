@@ -1,3 +1,4 @@
+use crate::errors::ErrorCode;
 use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
@@ -6,6 +7,8 @@ use crate::state::*;
 
 #[derive(Accounts)]
 pub struct WithdrawGem<'info> {
+    // needed for checking flags
+    pub bank: Account<'info, Bank>,
     // needed for seeds derivation
     #[account(has_one = owner, has_one = authority)]
     pub vault: Account<'info, Vault>,
@@ -46,7 +49,12 @@ impl<'info> WithdrawGem<'info> {
 }
 
 pub fn handler(ctx: Context<WithdrawGem>, amount: u64) -> ProgramResult {
+    let bank = &ctx.accounts.bank;
     let vault = &ctx.accounts.vault;
+
+    if vault.access_suspended(bank.flags)? {
+        return Err(ErrorCode::VaultAccessSuspended.into());
+    }
 
     token::transfer(
         ctx.accounts

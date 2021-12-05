@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use instructions::*;
 
-declare_id!("4bctEZztjcDVUi1WgqYKDJ4LirBKhvg2aS9kDeaFfYbR");
+declare_id!("EnJJ3BxBE3oZZMvBVqg8K9bSnGb7VREpPbZYuHEWLg1n");
 
 pub mod errors;
 pub mod instructions;
@@ -24,12 +24,8 @@ pub mod gem_bank {
         instructions::init_vault::handler(ctx, owner)
     }
 
-    pub fn lock_vault(ctx: Context<LockVault>) -> ProgramResult {
-        instructions::lock_vault::handler(ctx)
-    }
-
-    pub fn unlock_vault(ctx: Context<UnlockVault>) -> ProgramResult {
-        instructions::unlock_vault::handler(ctx)
+    pub fn set_vault_lock(ctx: Context<UnlockVault>, vault_lock: bool) -> ProgramResult {
+        instructions::set_vault_lock::handler(ctx, vault_lock)
     }
 
     pub fn update_vault_owner(ctx: Context<UpdateVaultOwner>, new_owner: Pubkey) -> ProgramResult {

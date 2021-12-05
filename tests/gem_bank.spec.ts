@@ -42,8 +42,8 @@ describe('gem bank', () => {
   let managerKp: Keypair;
 
   //vault
-  let vaultOwner1Pk: Keypair;
-  let vaultOwner2Pk: Keypair;
+  let vaultOwner1Kp: Keypair;
+  let vaultOwner2Kp: Keypair;
   let vaultPk: PublicKey;
   let vaultAuthPk: PublicKey;
 
@@ -60,8 +60,8 @@ describe('gem bank', () => {
     console.log('bankKp', bankKp.publicKey.toBase58());
     console.log('managerKp', managerKp.publicKey.toBase58());
 
-    console.log('vaultOwner1Pk', vaultOwner1Pk.publicKey.toBase58());
-    console.log('vaultOwner2Pk', vaultOwner2Pk.publicKey.toBase58());
+    console.log('vaultOwner1Pk', vaultOwner1Kp.publicKey.toBase58());
+    console.log('vaultOwner2Pk', vaultOwner2Kp.publicKey.toBase58());
     console.log('vaultPk', vaultPk.toBase58());
     console.log('vaultAuthPk', vaultAuthPk.toBase58());
 
@@ -77,8 +77,8 @@ describe('gem bank', () => {
 
     managerKp = await accUtils.createWallet(100 * LAMPORTS_PER_SOL);
 
-    vaultOwner1Pk = await accUtils.createWallet(100 * LAMPORTS_PER_SOL);
-    vaultOwner2Pk = await accUtils.createWallet(100 * LAMPORTS_PER_SOL);
+    vaultOwner1Kp = await accUtils.createWallet(100 * LAMPORTS_PER_SOL);
+    vaultOwner2Kp = await accUtils.createWallet(100 * LAMPORTS_PER_SOL);
   });
 
   // --------------------------------------- helpers
@@ -139,105 +139,51 @@ describe('gem bank', () => {
     assert(bankAcc.vaultCount.eq(new BN(0)));
   });
 
-  it('sets bank flags', async () => {
-    const flags = new u64(BankFlags.FreezeAllVaults);
-    await program.rpc.setBankFlags(flags, {
+  // --------------------------------------- vault
+
+  async function updateVaultOwner(existingOwner: Keypair, newOwner: PublicKey) {
+    await program.rpc.updateVaultOwner(newOwner, {
       accounts: {
         bank: bankKp.publicKey,
-        manager: managerKp.publicKey,
+        vault: vaultPk,
+        owner: existingOwner.publicKey,
       },
-      signers: [managerKp],
+      signers: [existingOwner],
     });
-
-    const bankAcc = await getBankState(bankKp.publicKey);
-    assert(bankAcc.flags.eq(new u64(BankFlags.FreezeAllVaults)));
-  });
-
-  it('FAILS to set bank flags w/ wrong manager', async () => {
-    const flags = new u64(BankFlags.FreezeAllVaults);
-    await expect(
-      program.rpc.setBankFlags(flags, {
-        accounts: {
-          bank: bankKp.publicKey,
-          manager: someRandomKp.publicKey,
-        },
-        signers: [someRandomKp],
-      })
-    ).to.be.rejectedWith('has_one');
-  });
-
-  // --------------------------------------- vault
+  }
 
   it('inits vault', async () => {
     let bump;
     [vaultPk, bump] = await getVaultPDA(bankKp.publicKey);
     [vaultAuthPk] = await getVaultAuthorityPDA(vaultPk);
-    await program.rpc.initVault(bump, vaultOwner1Pk.publicKey, {
+    await program.rpc.initVault(bump, vaultOwner1Kp.publicKey, {
       accounts: {
         vault: vaultPk,
-        payer: vaultOwner1Pk.publicKey,
+        payer: vaultOwner1Kp.publicKey,
         bank: bankKp.publicKey,
         systemProgram: SystemProgram.programId,
       },
-      signers: [vaultOwner1Pk],
+      signers: [vaultOwner1Kp],
     });
 
     const bankAcc = await getBankState(bankKp.publicKey);
     const vaultAcc = await getVaultState(vaultPk);
     assert(bankAcc.vaultCount.eq(new BN(1)));
     assert(vaultAcc.vaultId.eq(new BN(1)));
-    assert.equal(vaultAcc.owner.toBase58, vaultOwner1Pk.publicKey.toBase58);
+    assert.equal(vaultAcc.owner.toBase58, vaultOwner1Kp.publicKey.toBase58);
   });
 
   it('updates vault owner', async () => {
-    await program.rpc.updateVaultOwner(vaultOwner2Pk.publicKey, {
-      accounts: {
-        vault: vaultPk,
-        owner: vaultOwner1Pk.publicKey,
-      },
-      signers: [vaultOwner1Pk],
-    });
+    await updateVaultOwner(vaultOwner1Kp, vaultOwner2Kp.publicKey);
 
     const vaultAcc = await getVaultState(vaultPk);
-    assert.equal(vaultAcc.owner.toBase58, vaultOwner2Pk.publicKey.toBase58);
+    assert.equal(vaultAcc.owner.toBase58, vaultOwner2Kp.publicKey.toBase58);
   });
 
   it('FAILS to update vault owner w/ wrong existing owner', async () => {
     await expect(
-      program.rpc.updateVaultOwner(vaultOwner2Pk.publicKey, {
-        accounts: {
-          vault: vaultPk,
-          owner: someRandomKp.publicKey,
-        },
-        signers: [someRandomKp],
-      })
+      updateVaultOwner(someRandomKp, vaultOwner2Kp.publicKey)
     ).to.be.rejectedWith('has_one');
-  });
-
-  it('locks vault', async () => {
-    await program.rpc.lockVault({
-      accounts: {
-        vault: vaultPk,
-        owner: vaultOwner2Pk.publicKey,
-      },
-      signers: [vaultOwner2Pk],
-    });
-
-    const vaultAcc = await getVaultState(vaultPk);
-    assert.equal(vaultAcc.locked, true);
-  });
-
-  it('unlocks vault', async () => {
-    await program.rpc.unlockVault({
-      accounts: {
-        vault: vaultPk,
-        owner: vaultOwner2Pk.publicKey,
-      },
-      signers: [vaultOwner2Pk],
-    });
-
-    const vaultAcc = await getVaultState(vaultPk);
-    assert.equal(vaultAcc.locked, false);
   });
 
   // --------------------------------------- gem boxes
@@ -256,6 +202,7 @@ describe('gem bank', () => {
     async function makeDeposit(ownerKp: Keypair) {
       await program.rpc.depositGem(gemBump, gemAmount, {
         accounts: {
+          bank: bankKp.publicKey,
           vault: vaultPk,
           owner: ownerKp.publicKey,
           authority: vaultAuthPk,
@@ -278,6 +225,7 @@ describe('gem bank', () => {
     ) {
       await program.rpc.withdrawGem(gemAmount, {
         accounts: {
+          bank: bankKp.publicKey,
           vault: vaultPk,
           owner: ownerKp.publicKey,
           authority: vaultAuthPk,
@@ -295,7 +243,7 @@ describe('gem bank', () => {
     }
 
     it('deposits gem', async () => {
-      await makeDeposit(vaultOwner2Pk);
+      await makeDeposit(vaultOwner2Kp);
 
       const vault = await getVaultState(vaultPk);
       assert(vault.gemBoxCount.eq(new BN(1)));
@@ -311,8 +259,8 @@ describe('gem bank', () => {
 
     it('withdraws gem to existing ATA', async () => {
       //make a fresh deposit
-      await makeDeposit(vaultOwner2Pk);
-      await makeWithdrawal(vaultOwner2Pk, gem.tokenAcc, gem.owner);
+      await makeDeposit(vaultOwner2Kp);
+      await makeWithdrawal(vaultOwner2Kp, gem.tokenAcc, gem.owner);
 
       const gemBox = await getGemAccState(gem.tokenMint, gemBoxPk);
       assert(gemBox.amount.eq(new BN(0)));
@@ -322,13 +270,13 @@ describe('gem bank', () => {
 
     it('withdraws gem to missing ATA', async () => {
       //make a fresh deposit
-      await makeDeposit(vaultOwner2Pk);
+      await makeDeposit(vaultOwner2Kp);
 
       const missingATA = await accUtils.getATA(
         gem.tokenMint,
         someRandomKp.publicKey
       );
-      await makeWithdrawal(vaultOwner2Pk, missingATA, someRandomKp.publicKey);
+      await makeWithdrawal(vaultOwner2Kp, missingATA, someRandomKp.publicKey);
 
       const gemBox = await getGemAccState(gem.tokenMint, gemBoxPk);
       assert(gemBox.amount.eq(new BN(0)));
@@ -338,11 +286,111 @@ describe('gem bank', () => {
 
     it('FAILS to withdraw gem w/ wrong owner', async () => {
       //make a fresh deposit
-      await makeDeposit(vaultOwner2Pk);
+      await makeDeposit(vaultOwner2Kp);
 
       await expect(
         makeWithdrawal(someRandomKp, gem.tokenAcc, gem.owner)
       ).to.be.rejectedWith('has_one');
+    });
+
+    // --------------------------------------- vault lock
+
+    async function setVaultLock(vaultLocked: boolean) {
+      await program.rpc.setVaultLock(vaultLocked, {
+        accounts: {
+          bank: bankKp.publicKey,
+          vault: vaultPk,
+          owner: vaultOwner2Kp.publicKey,
+        },
+        signers: [vaultOwner2Kp],
+      });
+    }
+
+    it('un/locks vault successfully', async () => {
+      //lock the vault
+      await setVaultLock(true);
+      let vaultAcc = await getVaultState(vaultPk);
+      assert.equal(vaultAcc.locked, true);
+      //deposit should fail
+      await expect(makeDeposit(vaultOwner2Kp)).to.be.rejectedWith(
+        'vault is currently locked or frozen and cannot be accessed'
+      );
+
+      //unlock the vault
+      await setVaultLock(false);
+      vaultAcc = await getVaultState(vaultPk);
+      assert.equal(vaultAcc.locked, false);
+      //make a real deposit, we need this to try to withdraw later
+      await makeDeposit(vaultOwner2Kp);
+
+      //lock the vault
+      await setVaultLock(true);
+      //withdraw should fail
+      await expect(
+        makeWithdrawal(vaultOwner2Kp, gem.tokenAcc, gem.owner)
+      ).to.be.rejectedWith(
+        'vault is currently locked or frozen and cannot be accessed'
+      );
+
+      //finally unlock the vault
+      await setVaultLock(false);
+      //should be able to withdraw
+      await makeWithdrawal(vaultOwner2Kp, gem.tokenAcc, gem.owner);
+    });
+
+    // --------------------------------------- bank flags
+
+    async function setBankFlags(flags, bankManagerKp?: Keypair) {
+      await program.rpc.setBankFlags(new u64(flags), {
+        accounts: {
+          bank: bankKp.publicKey,
+          manager: bankManagerKp
+            ? bankManagerKp.publicKey
+            : managerKp.publicKey,
+        },
+        signers: [bankManagerKp ?? managerKp],
+      });
+    }
+
+    it('sets bank flags', async () => {
+      //freeze vaults
+      await setBankFlags(BankFlags.FreezeVaults);
+      const bankAcc = await getBankState(bankKp.publicKey);
+      assert(bankAcc.flags.eq(new u64(BankFlags.FreezeVaults)));
+      await expect(
+        updateVaultOwner(vaultOwner2Kp, vaultOwner1Kp.publicKey)
+      ).to.be.rejectedWith(
+        'vault is currently locked or frozen and cannot be accessed'
+      );
+      await expect(setVaultLock(true)).to.be.rejectedWith(
+        'vault is currently locked or frozen and cannot be accessed'
+      );
+      await expect(makeDeposit(vaultOwner2Kp)).to.be.rejectedWith(
+        'vault is currently locked or frozen and cannot be accessed'
+      );
+
+      //remove flags to be able to do a real deposit - else can't withdraw
+      await setBankFlags(0);
+      await makeDeposit(vaultOwner2Kp);
+
+      //freeze vaults again
+      await setBankFlags(BankFlags.FreezeVaults);
+      await expect(
+        makeWithdrawal(vaultOwner2Kp, gem.tokenAcc, gem.owner)
+      ).to.be.rejectedWith(
+        'vault is currently locked or frozen and cannot be accessed'
+      );
+
+      //unfreeze vault in the end
+      await setBankFlags(0);
+    });
+
+    it('FAILS to set bank flags w/ wrong manager', async () => {
+      await expect(
+        setBankFlags(BankFlags.FreezeVaults, someRandomKp)
+      ).to.be.rejectedWith('has_one');
+      //unfreeze vault in the end
+      await setBankFlags(0);
     });
   });
 });
