@@ -113,9 +113,9 @@ export class AccountUtils {
 
   // --------------------------------------- Token / Mint
 
-  async deserializeToken(mintPk: PublicKey): Promise<Token> {
+  async deserializeToken(mint: PublicKey): Promise<Token> {
     //doesn't matter which keypair goes here, we just need some key for instantiation
-    const throwawayKp = Keypair.fromSecretKey(
+    const throwawayKeypair = Keypair.fromSecretKey(
       Uint8Array.from([
         208, 175, 150, 242, 88, 34, 108, 88, 177, 16, 168, 75, 115, 181, 199,
         242, 120, 4, 78, 75, 19, 227, 13, 215, 184, 108, 226, 53, 111, 149, 179,
@@ -124,11 +124,11 @@ export class AccountUtils {
         157, 62, 80,
       ])
     );
-    return new Token(this.conn, mintPk, TOKEN_PROGRAM_ID, throwawayKp);
+    return new Token(this.conn, mint, TOKEN_PROGRAM_ID, throwawayKeypair);
   }
 
-  async deserializeTokenMint(mintPk: PublicKey): Promise<MintInfo> {
-    const t = await this.deserializeToken(mintPk);
+  async deserializeTokenMint(mint: PublicKey): Promise<MintInfo> {
+    const t = await this.deserializeToken(mint);
     return t.getMintInfo();
   }
 
@@ -160,19 +160,19 @@ export class AccountUtils {
   // --------------------------------------- Token Acc / ATA
 
   async deserializeTokenAccount(
-    mintPk: PublicKey,
-    tokenAccountPk: PublicKey
+    mint: PublicKey,
+    tokenAccount: PublicKey
   ): Promise<AccountInfo> {
-    const token = await this.deserializeToken(mintPk);
-    return token.getAccountInfo(tokenAccountPk);
+    const token = await this.deserializeToken(mint);
+    return token.getAccountInfo(tokenAccount);
   }
 
-  async getATA(mintPk: PublicKey, ownerPk: PublicKey): Promise<PublicKey> {
+  async getATA(mint: PublicKey, owner: PublicKey): Promise<PublicKey> {
     return Token.getAssociatedTokenAddress(
       ASSOCIATED_TOKEN_PROGRAM_ID,
       TOKEN_PROGRAM_ID,
-      mintPk,
-      ownerPk
+      mint,
+      owner
     );
   }
 
