@@ -171,7 +171,7 @@ describe('looper', () => {
     const pdas = await program.account.gemDepositReceipt.all([
       {
         memcmp: {
-          offset: 8, // need to prepend 8 bytes for anchor's disc
+          offset: 8, //  need to prepend 8 bytes for anchor's disc
           bytes: vault.vault.toBase58(),
         },
       },
