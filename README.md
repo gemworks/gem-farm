@@ -1,8 +1,7 @@
-# shardd
+# Gem Bank 
 
-shardd (*shard·​ed*) is a protocol for breaking up NFTs (gems) into fungible tokens (shards).
+Gem Bank let's you safely store and manage your NFT (gem) collection.
 
-Once sharded, you can do all kinds of cool stuff like lending, derivatives, and what not.
+Useful for individuals / groups of friends / DAOs who want a single convenient place for all of their NFTs to live in.
 
 Built with [anchor](https://github.com/project-serum/anchor) on Solana.
-

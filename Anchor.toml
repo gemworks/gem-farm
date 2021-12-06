@@ -1,7 +1,5 @@
 [programs.localnet]
 gem_bank = "EnJJ3BxBE3oZZMvBVqg8K9bSnGb7VREpPbZYuHEWLg1n"
-#shardr = "7W6HbxTxPdZENZjLATJohEcuhethD35fN43Adn6CFQCj"
-#test_writer = "FHgUNcN1YmcY7nxaC9g2Ru47U7944t4wrgnuBiFsKRbM"
 
 [registry]
 url = "https://anchor.projectserum.com"

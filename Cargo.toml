@@ -1,6 +1,5 @@
 [workspace]
 members = [
     "programs/*",
-    "libraries/math",
     "libraries/proc-macros",
 ]

@@ -14,9 +14,3 @@ pub enum ErrorCode {
     #[msg("vault is currently locked or frozen and cannot be accessed")]
     VaultAccessSuspended,
 }
-
-impl From<jet_math::Error> for ErrorCode {
-    fn from(_: jet_math::Error) -> ErrorCode {
-        ErrorCode::ArithmeticError
-    }
-}
