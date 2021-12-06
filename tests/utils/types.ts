@@ -1,18 +1,12 @@
-/**
- * Utilities for writing integration tests
- *
- * @module
- */
-
-import {BN} from "@project-serum/anchor";
-import {PublicKey,} from "@solana/web3.js";
+import { BN } from '@project-serum/anchor';
+import { PublicKey } from '@solana/web3.js';
 
 export interface ToBytes {
-    toBytes(): Uint8Array;
+  toBytes(): Uint8Array;
 }
 
 export interface HasPublicKey {
-    publicKey: PublicKey;
+  publicKey: PublicKey;
 }
 
 //todo missing arrays
@@ -26,19 +20,20 @@ export interface HasPublicKey {
  * @returns The object as a`BN`
  */
 export function toBN(obj: any): any {
-    if (typeof obj == "number") {
-        return new BN(obj);
-    } else if (typeof obj == "object") {
-        const bnObj = {};
+  if (typeof obj == 'number') {
+    return new BN(obj);
+  } else if (typeof obj == 'object') {
+    const bnObj = {};
 
-        for (const field in obj) {
-            bnObj[field] = toBN(obj[field]);
-        }
-
-        return bnObj;
+    for (const field in obj) {
+      // @ts-ignore
+      bnObj[field] = toBN(obj[field]);
     }
 
-    return obj;
+    return bnObj;
+  }
+
+  return obj;
 }
 
 //todo missing arrays
@@ -48,23 +43,26 @@ export function toBN(obj: any): any {
  * @param obj The object to convert
  */
 export function toPublicKeys(
-    obj: Record<string, string | PublicKey | HasPublicKey | any>
+  obj: Record<string, string | PublicKey | HasPublicKey | any>
 ): any {
-    const newObj = {};
+  const newObj = {};
 
-    for (const key in obj) {
-        const value = obj[key];
+  for (const key in obj) {
+    const value = obj[key];
 
-        if (typeof value == "string") {
-            newObj[key] = new PublicKey(value);
-        } else if (typeof value == "object" && "publicKey" in value) {
-            newObj[key] = value.publicKey;
-        } else {
-            newObj[key] = value;
-        }
+    if (typeof value == 'string') {
+      // @ts-ignore
+      newObj[key] = new PublicKey(value);
+    } else if (typeof value == 'object' && 'publicKey' in value) {
+      // @ts-ignore
+      newObj[key] = value.publicKey;
+    } else {
+      // @ts-ignore
+      newObj[key] = value;
     }
+  }
 
-    return newObj;
+  return newObj;
 }
 
 //todo missing arrays
@@ -74,32 +72,37 @@ export function toPublicKeys(
  * @param obj The object to convert
  */
 export function toBase58(
-    obj: Record<string, string | PublicKey | HasPublicKey>
+  obj: Record<string, string | PublicKey | HasPublicKey>
 ): any {
-    const newObj = {};
+  const newObj = {};
 
-    for (const key in obj) {
-        const value = obj[key];
+  for (const key in obj) {
+    const value = obj[key];
 
-        if (value == undefined) {
-            continue;
-        } else if (typeof value == "string") {
-            newObj[key] = value;
-        } else if ("publicKey" in value) {
-            newObj[key] = value.publicKey.toBase58();
-        } else if ("toBase58" in value && typeof value.toBase58 == "function") {
-            newObj[key] = value.toBase58();
-        } else {
-            newObj[key] = value;
-        }
+    if (value == undefined) {
+      continue;
+    } else if (typeof value == 'string') {
+      // @ts-ignore
+      newObj[key] = value;
+    } else if ('publicKey' in value) {
+      // @ts-ignore
+      newObj[key] = value.publicKey.toBase58();
+    } else if ('toBase58' in value && typeof value.toBase58 == 'function') {
+      // @ts-ignore
+      newObj[key] = value.toBase58();
+    } else {
+      // @ts-ignore
+      newObj[key] = value;
     }
+  }
 
-    return newObj;
+  return newObj;
 }
 
 export async function pause(ms: number) {
-  await new Promise(response => setTimeout(() => {
-      response(0)
+  await new Promise((response) =>
+    setTimeout(() => {
+      response(0);
     }, ms)
   );
 }

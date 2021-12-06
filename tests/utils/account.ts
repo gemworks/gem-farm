@@ -55,24 +55,10 @@ export class TestToken extends Token {
 export class AccountUtils {
   conn: Connection;
   wallet: Wallet;
-  authority: Keypair;
-  recentBlockhash: string;
 
   constructor(conn: Connection, funded: Wallet) {
     this.conn = conn;
     this.wallet = funded;
-    this.authority = this.wallet.payer;
-  }
-
-  transaction(): Transaction {
-    return new Transaction({
-      feePayer: this.wallet.payer.publicKey,
-      recentBlockhash: this.recentBlockhash,
-    });
-  }
-
-  async updateBlockhash() {
-    this.recentBlockhash = (await this.conn.getRecentBlockhash()).blockhash;
   }
 
   // --------------------------------------- PDA
@@ -107,7 +93,7 @@ export class AccountUtils {
       })
     );
 
-    await this.sendAndConfirmTransaction(fundTx, [this.authority]);
+    await this.sendAndConfirmTransaction(fundTx, [this.wallet.payer]);
     return wallet;
   }
 
@@ -134,11 +120,11 @@ export class AccountUtils {
 
   async createToken(
     decimals: number,
-    authority: PublicKey = this.authority.publicKey
+    authority: PublicKey = this.wallet.payer.publicKey
   ): Promise<TestToken> {
     const token = await Token.createMint(
       this.conn,
-      this.authority,
+      this.wallet.payer,
       authority,
       authority,
       decimals,
@@ -152,7 +138,7 @@ export class AccountUtils {
       this.conn,
       NATIVE_MINT,
       TOKEN_PROGRAM_ID,
-      this.authority
+      this.wallet.payer
     );
     return new TestToken(this.conn, token, 9);
   }
@@ -190,14 +176,14 @@ export class AccountUtils {
         this.conn,
         TOKEN_PROGRAM_ID,
         owner,
-        this.authority,
+        this.wallet.payer,
         amount.toNumber()
       );
       return account;
     } else {
       const account = await token.createAssociatedTokenAccount(owner);
       if (amount.toNumber() > 0) {
-        await token.mintTo(account, this.authority, [], amount.toNumber());
+        await token.mintTo(account, this.wallet.payer, [], amount.toNumber());
       }
       return account;
     }
@@ -228,8 +214,12 @@ export class AccountUtils {
     if (token.publicKey == NATIVE_MINT) {
       lamportBalanceNeeded += amount;
     }
+    const tx = new Transaction({
+      feePayer: this.wallet.payer.publicKey,
+      recentBlockhash: (await this.conn.getRecentBlockhash()).blockhash,
+    });
     const newAccount = Keypair.generate();
-    const transaction = this.transaction().add(
+    const transaction = tx.add(
       SystemProgram.createAccount(
         toPublicKeys({
           fromPubkey: this.wallet.payer,
