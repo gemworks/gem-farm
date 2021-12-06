@@ -8,7 +8,7 @@ use crate::state::*;
 #[derive(Accounts)]
 pub struct WithdrawGem<'info> {
     // needed for checking flags
-    pub bank: Account<'info, Bank>,
+    pub bank: Box<Account<'info, Bank>>,
     // needed for seeds derivation
     #[account(has_one = owner, has_one = authority)]
     pub vault: Account<'info, Vault>,
@@ -18,14 +18,16 @@ pub struct WithdrawGem<'info> {
     // needed to sign token transfer
     pub authority: AccountInfo<'info>,
     #[account(mut)]
-    pub gem_box: Account<'info, TokenAccount>,
+    pub gem_box: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub gem_deposit_receipt: Box<Account<'info, GemDepositReceipt>>,
     #[account(init_if_needed,
         associated_token::mint = gem_mint,
         associated_token::authority = receiver,
         payer = owner,
     )]
-    pub gem_destination: Account<'info, TokenAccount>,
-    pub gem_mint: Account<'info, Mint>,
+    pub gem_destination: Box<Account<'info, TokenAccount>>,
+    pub gem_mint: Box<Account<'info, Mint>>,
     pub receiver: AccountInfo<'info>,
     #[account(address = anchor_spl::token::ID)]
     pub token_program: Program<'info, Token>,
@@ -49,7 +51,8 @@ impl<'info> WithdrawGem<'info> {
 }
 
 pub fn handler(ctx: Context<WithdrawGem>, amount: u64) -> ProgramResult {
-    let bank = &ctx.accounts.bank;
+    let bank = &*ctx.accounts.bank;
+    let gem_box = &*ctx.accounts.gem_box;
     let vault = &ctx.accounts.vault;
 
     if vault.access_suspended(bank.flags)? {
@@ -63,5 +66,22 @@ pub fn handler(ctx: Context<WithdrawGem>, amount: u64) -> ProgramResult {
         amount,
     )?;
 
+    // needs to go after transfer, otherwise borrow conflict
+    let gdr = &mut *ctx.accounts.gem_deposit_receipt;
+
+    // todo turn this into a math lib
+    gdr.gem_amount = gdr
+        .gem_amount
+        .checked_sub(amount)
+        .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
+
+    // todo if amount 0, we should close both the GDR and the gem box
+
+    // this check is semi-useless but won't hurt
+    if gdr.gem_amount != gem_box.amount - amount {
+        return Err(ErrorCode::AmountMismatch.into());
+    }
+
+    msg!("{} gems withdrawn from ${} gem box", amount, gem_box.key());
     Ok(())
 }

@@ -1,8 +1,8 @@
 import * as anchor from '@project-serum/anchor';
-import { BN } from '@project-serum/anchor';
 import { PublicKey } from '@solana/web3.js';
 import { AccountInfo } from '@solana/spl-token';
 import { AccountUtils } from '../utils/account';
+import { GemBank } from '../../target/types/gem_bank';
 
 export enum BankFlags {
   FreezeVaults = 1 << 0,
@@ -10,9 +10,9 @@ export enum BankFlags {
 
 export class GemBankUtils extends AccountUtils {
   provider: anchor.Provider;
-  program: anchor.Program;
+  program: anchor.Program<GemBank>;
 
-  constructor(provider: anchor.Provider, program: anchor.Program) {
+  constructor(provider: anchor.Provider, program: anchor.Program<GemBank>) {
     super(provider.connection, provider.wallet as anchor.Wallet);
     this.provider = provider;
     this.program = program;
@@ -26,27 +26,35 @@ export class GemBankUtils extends AccountUtils {
     return this.program.account.vault.fetch(vault);
   }
 
+  async getGDRAcc(GDR: PublicKey) {
+    return this.program.account.gemDepositReceipt.fetch(GDR);
+  }
+
   async getGemAcc(mint: PublicKey, gemAcc: PublicKey): Promise<AccountInfo> {
     return this.deserializeTokenAccount(mint, gemAcc);
   }
 
-  async getNextVaultPDA(bank: PublicKey) {
-    const nextVaultId = (await this.getBankAcc(bank)).vaultCount.add(new BN(1));
+  async getVaultPDA(bank: PublicKey, founder: PublicKey) {
     return this.findProgramAddress(this.program.programId, [
       'vault',
       bank,
-      nextVaultId.toBuffer('le', 8),
+      founder,
     ]);
   }
 
-  async getNextGemBoxPDA(vault: PublicKey) {
-    const nextGemBoxId = (await this.getVaultAcc(vault)).gemBoxCount.add(
-      new BN(1)
-    );
+  async getGemBoxPDA(vault: PublicKey, mint: PublicKey) {
     return this.findProgramAddress(this.program.programId, [
       'gem_box',
       vault,
-      nextGemBoxId.toBuffer('le', 8),
+      mint,
+    ]);
+  }
+
+  async getGdrPDA(vault: PublicKey, mint: PublicKey) {
+    return this.findProgramAddress(this.program.programId, [
+      'gem_deposit_receipt',
+      vault,
+      mint,
     ]);
   }
 

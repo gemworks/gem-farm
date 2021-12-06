@@ -13,4 +13,7 @@ pub enum ErrorCode {
 
     #[msg("vault is currently locked or frozen and cannot be accessed")]
     VaultAccessSuspended,
+
+    #[msg("recorded token amount in GDR != actual amount in gem box")]
+    AmountMismatch,
 }

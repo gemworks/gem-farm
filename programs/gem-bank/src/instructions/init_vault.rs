@@ -1,3 +1,4 @@
+use crate::errors::ErrorCode;
 use anchor_lang::prelude::*;
 
 use crate::state::*;
@@ -5,20 +6,21 @@ use crate::state::*;
 #[derive(Accounts)]
 #[instruction(bump: u8)]
 pub struct InitVault<'info> {
+    #[account(mut)]
+    pub bank: Account<'info, Bank>,
     #[account(init,
         seeds = [
             b"vault".as_ref(),
             bank.key().as_ref(),
-            &(bank.vault_count + 1).to_le_bytes(),
+            founder.key().as_ref(),
         ],
         bump = bump,
-        payer = payer,
+        payer = founder,
         space = 8 + std::mem::size_of::<Vault>())]
     pub vault: Account<'info, Vault>,
     #[account(mut)]
-    pub payer: Signer<'info>,
-    #[account(mut)]
-    pub bank: Account<'info, Bank>,
+    // (!) used for PDA initial derivation - CANNOT BE CHANGED
+    pub founder: Signer<'info>,
     pub system_program: Program<'info, System>,
 }
 
@@ -26,12 +28,13 @@ pub fn handler(ctx: Context<InitVault>, owner: Pubkey) -> ProgramResult {
     let bank = &mut ctx.accounts.bank;
     let vault = &mut ctx.accounts.vault;
 
-    let new_vault_id = bank.vault_count + 1;
-    bank.vault_count = new_vault_id;
-    vault.vault_id = new_vault_id;
-    vault.locked = false;
-    vault.gem_box_count = 0;
+    // todo do some testing if stored correctly
+    bank.vault_count = bank
+        .vault_count
+        .checked_add(1)
+        .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
 
+    vault.bank = bank.key();
     // todo is it wise that we're letting them set the owner w/o checking signature?
     //  what if they accidentally set the wrong one? The vault will be frozen forever.
     vault.owner = owner;
@@ -43,6 +46,9 @@ pub fn handler(ctx: Context<InitVault>, owner: Pubkey) -> ProgramResult {
     vault.authority_seed = vault_address;
     vault.authority_bump_seed = [bump];
 
-    msg!("vault #{} initialized", new_vault_id);
+    vault.locked = false;
+    vault.gem_box_count = 0;
+
+    msg!("new vault founded by {}", &ctx.accounts.founder.key());
     Ok(())
 }

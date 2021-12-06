@@ -32,7 +32,12 @@ pub mod gem_bank {
         instructions::update_vault_owner::handler(ctx, new_owner)
     }
 
-    pub fn deposit_gem(ctx: Context<DepositGem>, _bump: u8, amount: u64) -> ProgramResult {
+    pub fn deposit_gem(
+        ctx: Context<DepositGem>,
+        _bump_gem_box: u8,
+        _bump_gdr: u8,
+        amount: u64,
+    ) -> ProgramResult {
         instructions::deposit_gem::handler(ctx, amount)
     }
 
