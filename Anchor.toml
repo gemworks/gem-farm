@@ -5,7 +5,7 @@ gem_bank = "EnJJ3BxBE3oZZMvBVqg8K9bSnGb7VREpPbZYuHEWLg1n"
 url = "https://anchor.projectserum.com"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "/Users/ilmoi/.config/solana/id.json"
 
 [scripts]
