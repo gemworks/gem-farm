@@ -12,15 +12,15 @@ pub struct InitVault<'info> {
         seeds = [
             b"vault".as_ref(),
             bank.key().as_ref(),
-            founder.key().as_ref(),
+            creator.key().as_ref(),
         ],
         bump = bump,
-        payer = founder,
+        payer = creator,
         space = 8 + std::mem::size_of::<Vault>())]
     pub vault: Account<'info, Vault>,
     #[account(mut)]
     // (!) used for PDA initial derivation - CANNOT BE CHANGED
-    pub founder: Signer<'info>,
+    pub creator: Signer<'info>,
     pub system_program: Program<'info, System>,
 }
 
@@ -49,6 +49,6 @@ pub fn handler(ctx: Context<InitVault>, owner: Pubkey) -> ProgramResult {
     vault.locked = false;
     vault.gem_box_count = 0;
 
-    msg!("new vault founded by {}", &ctx.accounts.founder.key());
+    msg!("new vault founded by {}", &ctx.accounts.creator.key());
     Ok(())
 }

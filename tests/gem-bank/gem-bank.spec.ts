@@ -36,7 +36,7 @@ describe('gem bank', () => {
   let manager: Keypair;
 
   //vault
-  let vaultFounder: Keypair;
+  let vaultCreator: Keypair;
   let vaultOwner: Keypair;
   let vault: PublicKey;
   let vaultAuthority: PublicKey;
@@ -56,7 +56,7 @@ describe('gem bank', () => {
     console.log('bank', bank.publicKey.toBase58());
     console.log('manager', manager.publicKey.toBase58());
 
-    console.log('vaultFounder', vaultFounder.publicKey.toBase58());
+    console.log('vaultCreator', vaultCreator.publicKey.toBase58());
     console.log('vaultOwner', vaultOwner.publicKey.toBase58());
     console.log('vault', vault.toBase58());
     console.log('vaultAuth', vaultAuthority.toBase58());
@@ -73,7 +73,7 @@ describe('gem bank', () => {
 
     manager = await gb.createWallet(100 * LAMPORTS_PER_SOL);
 
-    vaultFounder = await gb.createWallet(100 * LAMPORTS_PER_SOL);
+    vaultCreator = await gb.createWallet(100 * LAMPORTS_PER_SOL);
     vaultOwner = await gb.createWallet(100 * LAMPORTS_PER_SOL);
   });
 
@@ -111,29 +111,29 @@ describe('gem bank', () => {
     let bump;
     [vault, bump] = await gb.getVaultPDA(
       bank.publicKey,
-      vaultFounder.publicKey
+      vaultCreator.publicKey
     );
     [vaultAuthority] = await gb.getVaultAuthorityPDA(vault);
-    //intentionally setting founder as owner, so that we can change later
-    await program.rpc.initVault(bump, vaultFounder.publicKey, {
+    //intentionally setting creator as owner, so that we can change later
+    await program.rpc.initVault(bump, vaultCreator.publicKey, {
       accounts: {
         bank: bank.publicKey,
         vault: vault,
-        founder: vaultFounder.publicKey,
+        creator: vaultCreator.publicKey,
         systemProgram: SystemProgram.programId,
       },
-      signers: [vaultFounder],
+      signers: [vaultCreator],
     });
 
     const bankAcc = await gb.getBankAcc(bank.publicKey);
     const vaultAcc = await gb.getVaultAcc(vault);
     assert(bankAcc.vaultCount.eq(new BN(1)));
     assert.equal(vaultAcc.bank.toBase58, bank.publicKey.toBase58);
-    assert.equal(vaultAcc.owner.toBase58, vaultFounder.publicKey.toBase58);
+    assert.equal(vaultAcc.owner.toBase58, vaultCreator.publicKey.toBase58);
   });
 
   it('updates vault owner', async () => {
-    await updateVaultOwner(vaultFounder, vaultOwner.publicKey);
+    await updateVaultOwner(vaultCreator, vaultOwner.publicKey);
 
     const vaultAcc = await gb.getVaultAcc(vault);
     assert.equal(vaultAcc.owner.toBase58, vaultOwner.publicKey.toBase58);
@@ -324,7 +324,7 @@ describe('gem bank', () => {
       const bankAcc = await gb.getBankAcc(bank.publicKey);
       assert(bankAcc.flags.eq(new u64(BankFlags.FreezeVaults)));
       await expect(
-        updateVaultOwner(vaultOwner, vaultFounder.publicKey)
+        updateVaultOwner(vaultOwner, vaultCreator.publicKey)
       ).to.be.rejectedWith(
         'vault is currently locked or frozen and cannot be accessed'
       );

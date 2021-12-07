@@ -34,11 +34,11 @@ export class GemBankUtils extends AccountUtils {
     return this.deserializeTokenAccount(mint, gemAcc);
   }
 
-  async getVaultPDA(bank: PublicKey, founder: PublicKey) {
+  async getVaultPDA(bank: PublicKey, creator: PublicKey) {
     return this.findProgramAddress(this.program.programId, [
       'vault',
       bank,
-      founder,
+      creator,
     ]);
   }
 

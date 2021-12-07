@@ -1,8 +1,14 @@
 <template>
-  <!--<div>-->
-  <!--  <router-link to="/">Home</router-link> |-->
-  <!--</div>-->
-  <router-view />
+  <div class="p-10">
+    <router-view />
+  </div>
 </template>
 
-<style></style>
+<style>
+* {
+  font-family: 'Press Start 2P', monospace;
+}
+input[type='radio']:checked + span {
+  @apply text-black;
+}
+</style>

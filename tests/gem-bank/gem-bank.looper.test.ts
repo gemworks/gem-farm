@@ -67,7 +67,7 @@ describe('looper', () => {
       accounts: {
         bank: bank.publicKey,
         vault: vault,
-        founder: vaultOwner.publicKey,
+        creator: vaultOwner.publicKey,
         systemProgram: SystemProgram.programId,
       },
       signers: [vaultOwner],
