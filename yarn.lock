@@ -31,9 +31,9 @@
     hash.js "1.1.7"
 
 "@metaplex/js@^4.8.0":
-  version "4.8.0"
-  resolved "https://registry.yarnpkg.com/@metaplex/js/-/js-4.8.0.tgz#2da39ad887c5dc8900368e2d14e922d49d2edc31"
-  integrity sha512-gs6hFTAUnT26ULLxx42P44oaXczuY8R7c2P8tH5Mcprj18HLa6aCvVkSbqNUnsAWgKAW3bZf5x9+mkMzFx2czw==
+  version "4.9.0"
+  resolved "https://registry.yarnpkg.com/@metaplex/js/-/js-4.9.0.tgz#867478cd7ea43d02d7af7acf19af4faca944e0d0"
+  integrity sha512-pwT1frXny4RmrQZd9p0SG+GT+EF29eD1JJy5ZxFlIWgOdUhGszlHzLIp9Mi08SZUjo8YnKghzR2ZmckbuDT8Vg==
   dependencies:
     "@solana/spl-token" "^0.1.8"
     "@solana/web3.js" "^1.30.2"
@@ -68,9 +68,9 @@
     toml "^3.0.0"
 
 "@project-serum/borsh@^0.2.2":
-  version "0.2.2"
-  resolved "https://registry.yarnpkg.com/@project-serum/borsh/-/borsh-0.2.2.tgz#63e558f2d6eb6ab79086bf499dea94da3182498f"
-  integrity sha512-Ms+aWmGVW6bWd3b0+MWwoaYig2QD0F90h0uhr7AzY3dpCb5e2S6RsRW02vFTfa085pY2VLB7nTZNbFECQ1liTg==
+  version "0.2.3"
+  resolved "https://registry.yarnpkg.com/@project-serum/borsh/-/borsh-0.2.3.tgz#1d705c5887484cb6a127dd5feff58e90cbfcb558"
+  integrity sha512-lH9zEYADZE3cxrgiFym8+jbUE3NM/LH+WOKYcUjs65CT10Q64Hv45bcAAa/phwYk4Tpz0uQ1x+ergFaAoGt67Q==
   dependencies:
     bn.js "^5.1.2"
     buffer-layout "^1.2.0"
@@ -172,9 +172,9 @@
   integrity sha512-scN0hAWyLVAvLR9AyW7HoFF5sJZglyBsbPuHO4fv7JRvfmPBMfp1ozWqOf/e4wwPNxezBZXRfWzMb6iFLgEVRA==
 
 "@types/node@*":
-  version "16.11.11"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-16.11.11.tgz#6ea7342dfb379ea1210835bada87b3c512120234"
-  integrity sha512-KB0sixD67CeecHC33MYn+eYARkqTheIRNuu97y2XMjR7Wu3XibO1vaY6VBV6O/a89SPI81cEUIYT87UqUWlZNw==
+  version "16.11.12"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-16.11.12.tgz#ac7fb693ac587ee182c3780c26eb65546a1a3c10"
+  integrity sha512-+2Iggwg7PxoO5Kyhvsq9VarmPbIelXP070HMImEpbtGCoyWNINQj4wzjbQCXzdHTRXnqufutJb5KAURZANNBAw==
 
 "@types/node@^12.12.54":
   version "12.20.37"
@@ -1018,9 +1018,9 @@ picomatch@^2.0.4, picomatch@^2.2.1:
   integrity sha512-lY1Q/PiJGC2zOv/z391WOTD+Z02bCgsFfvxoXXf6h7kv9o+WmsmzYqrAwY63sNgOxE4xEdq0WyUnXfKeBrSvYw==
 
 prettier@^2.5.0:
-  version "2.5.0"
-  resolved "https://registry.yarnpkg.com/prettier/-/prettier-2.5.0.tgz#a6370e2d4594e093270419d9cc47f7670488f893"
-  integrity sha512-FM/zAKgWTxj40rH03VxzIPdXmj39SwSjwG0heUcNFwI+EMZJnY93yAiKXM3dObIKAM5TA88werc8T/EwhB45eg==
+  version "2.5.1"
+  resolved "https://registry.yarnpkg.com/prettier/-/prettier-2.5.1.tgz#fff75fa9d519c54cf0fce328c1017d94546bc56a"
+  integrity sha512-vBZcPRUR5MZJwoyi3ZoyQlc1rXeEck8KgeC9AwwOn+exuxLxq5toTRDTSaVrXHxelDMHy9zlicw8u66yxoSUFg==
 
 randombytes@^2.1.0:
   version "2.1.0"
