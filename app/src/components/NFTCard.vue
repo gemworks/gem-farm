@@ -24,7 +24,7 @@ export default defineComponent({
     const toggleSelect = () => {
       selected.value = !selected.value;
       ctx.emit('selected', {
-        mint: props.nft.mint,
+        nft: props.nft,
         selected: selected.value,
       });
     };

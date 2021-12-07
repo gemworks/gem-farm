@@ -44,7 +44,6 @@ pub struct DepositGem<'info> {
     pub gem_mint: Box<Account<'info, Mint>>,
     #[account(mut)]
     pub depositor: Signer<'info>,
-    #[account(address = anchor_spl::token::ID)]
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,

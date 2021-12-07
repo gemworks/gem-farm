@@ -3,8 +3,8 @@
     <img
       src="../assets/play.png"
       alt="right"
-      :width="40"
-      :height="40"
+      :width="60"
+      :height="60"
       :class="{ left: left }"
     />
   </button>

@@ -1,0 +1,1 @@
+cp ./target/idl/gem_bank.json ./app/public

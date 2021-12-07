@@ -56,9 +56,9 @@ export class AccountUtils {
   conn: Connection;
   wallet: Wallet;
 
-  constructor(conn: Connection, funded: Wallet) {
+  constructor(conn: Connection, wallet: Wallet) {
     this.conn = conn;
-    this.wallet = funded;
+    this.wallet = wallet;
   }
 
   // --------------------------------------- PDA

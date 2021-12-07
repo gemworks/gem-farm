@@ -1,6 +1,5 @@
 import * as anchor from '@project-serum/anchor';
-import { BN, Program } from '@project-serum/anchor';
-import { GemBank } from '../../target/types/gem_bank';
+import { BN } from '@project-serum/anchor';
 import {
   Keypair,
   LAMPORTS_PER_SOL,
@@ -22,10 +21,10 @@ chai.use(chaiAsPromised);
 
 describe('gem bank', () => {
   const provider = anchor.Provider.env();
-  anchor.setProvider(provider);
-  const program = anchor.workspace.GemBank as Program<GemBank>;
-
-  const gb = new GemBankUtils(provider, program);
+  const gb = new GemBankUtils(
+    provider.connection,
+    provider.wallet as anchor.Wallet
+  );
 
   // --------------------------------------- state
   //used to test bad transactions with wrong account passed in
@@ -80,7 +79,7 @@ describe('gem bank', () => {
   // --------------------------------------- bank
 
   it('inits bank', async () => {
-    await program.rpc.initBank({
+    await gb.program.rpc.initBank({
       accounts: {
         bank: bank.publicKey,
         manager: manager.publicKey,
@@ -89,7 +88,7 @@ describe('gem bank', () => {
       signers: [manager, bank],
     });
 
-    const bankAcc = await gb.getBankAcc(bank.publicKey);
+    const bankAcc = await gb.fetchBankAcc(bank.publicKey);
     assert.equal(bankAcc.manager.toBase58(), manager.publicKey.toBase58());
     assert(bankAcc.vaultCount.eq(new BN(0)));
   });
@@ -97,7 +96,7 @@ describe('gem bank', () => {
   // --------------------------------------- vault
 
   async function updateVaultOwner(existingOwner: Keypair, newOwner: PublicKey) {
-    await program.rpc.updateVaultOwner(newOwner, {
+    await gb.program.rpc.updateVaultOwner(newOwner, {
       accounts: {
         bank: bank.publicKey,
         vault: vault,
@@ -109,13 +108,13 @@ describe('gem bank', () => {
 
   it('inits vault', async () => {
     let bump;
-    [vault, bump] = await gb.getVaultPDA(
+    [vault, bump] = await gb.findVaultPDA(
       bank.publicKey,
       vaultCreator.publicKey
     );
-    [vaultAuthority] = await gb.getVaultAuthorityPDA(vault);
+    [vaultAuthority] = await gb.findVaultAuthorityPDA(vault);
     //intentionally setting creator as owner, so that we can change later
-    await program.rpc.initVault(bump, vaultCreator.publicKey, {
+    await gb.program.rpc.initVault(bump, vaultCreator.publicKey, {
       accounts: {
         bank: bank.publicKey,
         vault: vault,
@@ -125,8 +124,8 @@ describe('gem bank', () => {
       signers: [vaultCreator],
     });
 
-    const bankAcc = await gb.getBankAcc(bank.publicKey);
-    const vaultAcc = await gb.getVaultAcc(vault);
+    const bankAcc = await gb.fetchBankAcc(bank.publicKey);
+    const vaultAcc = await gb.fetchVaultAcc(vault);
     assert(bankAcc.vaultCount.eq(new BN(1)));
     assert.equal(vaultAcc.bank.toBase58, bank.publicKey.toBase58);
     assert.equal(vaultAcc.owner.toBase58, vaultCreator.publicKey.toBase58);
@@ -135,7 +134,7 @@ describe('gem bank', () => {
   it('updates vault owner', async () => {
     await updateVaultOwner(vaultCreator, vaultOwner.publicKey);
 
-    const vaultAcc = await gb.getVaultAcc(vault);
+    const vaultAcc = await gb.fetchVaultAcc(vault);
     assert.equal(vaultAcc.owner.toBase58, vaultOwner.publicKey.toBase58);
   });
 
@@ -149,7 +148,7 @@ describe('gem bank', () => {
 
   describe('gem boxes', () => {
     async function makeDeposit(owner: Keypair) {
-      await program.rpc.depositGem(gemBump, GDRBump, gemAmount, {
+      await gb.program.rpc.depositGem(gemBump, GDRBump, gemAmount, {
         accounts: {
           bank: bank.publicKey,
           vault: vault,
@@ -173,7 +172,7 @@ describe('gem bank', () => {
       destinationAcc: PublicKey,
       receiver: PublicKey
     ) {
-      await program.rpc.withdrawGem(gemAmount, {
+      await gb.program.rpc.withdrawGem(gemAmount, {
         accounts: {
           bank: bank.publicKey,
           vault: vault,
@@ -200,22 +199,22 @@ describe('gem bank', () => {
       gem = await gb.createMintAndATA(gemOwner.publicKey, gemAmount);
 
       //get the next gem box / gdr
-      [gemBox, gemBump] = await gb.getGemBoxPDA(vault, gem.tokenMint);
-      [GDR, GDRBump] = await gb.getGdrPDA(vault, gem.tokenMint);
+      [gemBox, gemBump] = await gb.findGemBoxPDA(vault, gem.tokenMint);
+      [GDR, GDRBump] = await gb.findGdrPDA(vault, gem.tokenMint);
     });
 
     it('deposits gem', async () => {
       await makeDeposit(vaultOwner);
 
-      const vaultAcc = await gb.getVaultAcc(vault);
+      const vaultAcc = await gb.fetchVaultAcc(vault);
       assert(vaultAcc.gemBoxCount.eq(new BN(1)));
-      const gemBoxAcc = await gb.getGemAcc(gem.tokenMint, gemBox);
+      const gemBoxAcc = await gb.fetchGemAcc(gem.tokenMint, gemBox);
       assert(gemBoxAcc.amount.eq(gemAmount));
       assert.equal(gemBoxAcc.mint.toBase58(), gem.tokenMint.toBase58());
       assert.equal(gemBoxAcc.owner.toBase58(), vaultAuthority.toBase58());
 
       printState();
-      const GDRAcc = await gb.getGDRAcc(GDR);
+      const GDRAcc = await gb.fetchGDRAcc(GDR);
       assert.equal(GDRAcc.vault.toBase58(), vault.toBase58());
       assert.equal(GDRAcc.gemBoxAddress.toBase58(), gemBox.toBase58());
       assert.equal(GDRAcc.gemMint.toBase58(), gem.tokenMint.toBase58());
@@ -231,11 +230,11 @@ describe('gem bank', () => {
       await makeDeposit(vaultOwner);
       await makeWithdrawal(vaultOwner, gem.tokenAcc, gem.owner);
 
-      const gemBoxAcc = await gb.getGemAcc(gem.tokenMint, gemBox);
+      const gemBoxAcc = await gb.fetchGemAcc(gem.tokenMint, gemBox);
       assert(gemBoxAcc.amount.eq(new BN(0)));
-      const gemAcc = await gb.getGemAcc(gem.tokenMint, gem.tokenAcc);
+      const gemAcc = await gb.fetchGemAcc(gem.tokenMint, gem.tokenAcc);
       assert(gemAcc.amount.eq(gemAmount));
-      const GDRAcc = await gb.getGDRAcc(GDR);
+      const GDRAcc = await gb.fetchGDRAcc(GDR);
       assert(GDRAcc.gemAmount.eq(new BN(0)));
     });
 
@@ -246,9 +245,9 @@ describe('gem bank', () => {
       const missingATA = await gb.getATA(gem.tokenMint, randomWallet.publicKey);
       await makeWithdrawal(vaultOwner, missingATA, randomWallet.publicKey);
 
-      const gemBoxAcc = await gb.getGemAcc(gem.tokenMint, gemBox);
+      const gemBoxAcc = await gb.fetchGemAcc(gem.tokenMint, gemBox);
       assert(gemBoxAcc.amount.eq(new BN(0)));
-      const gemAcc = await gb.getGemAcc(gem.tokenMint, missingATA);
+      const gemAcc = await gb.fetchGemAcc(gem.tokenMint, missingATA);
       assert(gemAcc.amount.eq(gemAmount));
     });
 
@@ -264,7 +263,7 @@ describe('gem bank', () => {
     // --------------------------------------- vault lock
 
     async function setVaultLock(vaultLocked: boolean) {
-      await program.rpc.setVaultLock(vaultLocked, {
+      await gb.program.rpc.setVaultLock(vaultLocked, {
         accounts: {
           bank: bank.publicKey,
           vault: vault,
@@ -277,7 +276,7 @@ describe('gem bank', () => {
     it('un/locks vault successfully', async () => {
       //lock the vault
       await setVaultLock(true);
-      let vaultAcc = await gb.getVaultAcc(vault);
+      let vaultAcc = await gb.fetchVaultAcc(vault);
       assert.equal(vaultAcc.locked, true);
       //deposit should fail
       await expect(makeDeposit(vaultOwner)).to.be.rejectedWith(
@@ -286,7 +285,7 @@ describe('gem bank', () => {
 
       //unlock the vault
       await setVaultLock(false);
-      vaultAcc = await gb.getVaultAcc(vault);
+      vaultAcc = await gb.fetchVaultAcc(vault);
       assert.equal(vaultAcc.locked, false);
       //make a real deposit, we need this to try to withdraw later
       await makeDeposit(vaultOwner);
@@ -309,7 +308,7 @@ describe('gem bank', () => {
     // --------------------------------------- bank flags
 
     async function setBankFlags(flags: number, bankManager?: Keypair) {
-      await program.rpc.setBankFlags(new u64(flags), {
+      await gb.program.rpc.setBankFlags(new u64(flags), {
         accounts: {
           bank: bank.publicKey,
           manager: bankManager ? bankManager.publicKey : manager.publicKey,
@@ -321,7 +320,7 @@ describe('gem bank', () => {
     it('sets bank flags', async () => {
       //freeze vaults
       await setBankFlags(BankFlags.FreezeVaults);
-      const bankAcc = await gb.getBankAcc(bank.publicKey);
+      const bankAcc = await gb.fetchBankAcc(bank.publicKey);
       assert(bankAcc.flags.eq(new u64(BankFlags.FreezeVaults)));
       await expect(
         updateVaultOwner(vaultOwner, vaultCreator.publicKey)

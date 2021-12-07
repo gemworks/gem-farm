@@ -1,6 +1,5 @@
 import * as anchor from '@project-serum/anchor';
-import { BN, Program } from '@project-serum/anchor';
-import { GemBank } from '../../target/types/gem_bank';
+import { BN } from '@project-serum/anchor';
 import { GemBankUtils } from './gem-bank';
 import {
   Keypair,
@@ -32,10 +31,10 @@ interface IVault {
  */
 describe('looper', () => {
   const provider = anchor.Provider.env();
-  anchor.setProvider(provider);
-  const program = anchor.workspace.GemBank as Program<GemBank>;
-
-  const gb = new GemBankUtils(provider, program as any);
+  const gb = new GemBankUtils(
+    provider.connection,
+    provider.wallet as anchor.Wallet
+  );
 
   // --------------------------------------- state
   const bank = Keypair.generate();
@@ -44,9 +43,9 @@ describe('looper', () => {
 
   // --------------------------------------- looper
 
-  async function spawnBank() {
+  async function startBank() {
     manager = await gb.createWallet(100 * LAMPORTS_PER_SOL);
-    await program.rpc.initBank({
+    await gb.program.rpc.initBank({
       accounts: {
         bank: bank.publicKey,
         manager: manager.publicKey,
@@ -56,14 +55,14 @@ describe('looper', () => {
     });
   }
 
-  async function addVault() {
+  async function createVault() {
     const vaultOwner = await gb.createWallet(100 * LAMPORTS_PER_SOL);
-    const [vault, bump] = await gb.getVaultPDA(
+    const [vault, bump] = await gb.findVaultPDA(
       bank.publicKey,
       vaultOwner.publicKey
     );
-    const [vaultAuth] = await gb.getVaultAuthorityPDA(vault);
-    await program.rpc.initVault(bump, vaultOwner.publicKey, {
+    const [vaultAuth] = await gb.findVaultAuthorityPDA(vault);
+    await gb.program.rpc.initVault(bump, vaultOwner.publicKey, {
       accounts: {
         bank: bank.publicKey,
         vault: vault,
@@ -87,10 +86,10 @@ describe('looper', () => {
     const gem = await gb.createMintAndATA(gemOwner.publicKey, gemAmount);
 
     //get the next gem box
-    const [gemBox, gemBump] = await gb.getGemBoxPDA(v.vault, gem.tokenMint);
-    const [GDR, GDRBump] = await gb.getGdrPDA(v.vault, gem.tokenMint);
+    const [gemBox, gemBump] = await gb.findGemBoxPDA(v.vault, gem.tokenMint);
+    const [GDR, GDRBump] = await gb.findGdrPDA(v.vault, gem.tokenMint);
 
-    await program.rpc.depositGem(gemBump, GDRBump, gemAmount, {
+    await gb.program.rpc.depositGem(gemBump, GDRBump, gemAmount, {
       accounts: {
         bank: bank.publicKey,
         vault: v.vault,
@@ -109,20 +108,17 @@ describe('looper', () => {
     });
   }
 
-  /*
-   * The idea for this fn is to test how quickly you can deserialize a large Nr of vaults + gemBoxes
-   */
   async function looper() {
     const nVaults = 10;
     const nGemsPerVault = 10;
 
-    await spawnBank();
+    await startBank();
     console.log('bank ready');
 
     //vaults
     const vaultPromises = [];
     for (let i = 0; i < nVaults; i++) {
-      vaultPromises.push(addVault());
+      vaultPromises.push(createVault());
       // console.log(`vault ${i + 1} added`);
     }
     await Promise.all(vaultPromises);
@@ -140,56 +136,12 @@ describe('looper', () => {
     console.log('gems ready');
   }
 
-  async function readBankPDAs() {
-    const pdas = await program.account.bank.all();
-    console.log(`found a total of ${pdas.length} BANK pdas`);
-    return pdas;
-  }
-
-  async function readVaultPDAs() {
-    const v = await program.account.vault.fetch(vaults[0].vault);
-    console.log(v.bank.toBase58());
-
-    //https://project-serum.github.io/anchor/ts/classes/accountclient.html#all
-    const pdas = await program.account.vault.all([
-      {
-        memcmp: {
-          offset: 8, //need to prepend 8 bytes for anchor's disc
-          bytes: bank.publicKey.toBase58(),
-        },
-      },
-    ]);
-    console.log(
-      `found a total of ${
-        pdas.length
-      } VAULT pdas for bank ${bank.publicKey.toBase58()}`
-    );
-    return pdas;
-  }
-
-  async function readGemBoxPDAs(vault: IVault) {
-    const pdas = await program.account.gemDepositReceipt.all([
-      {
-        memcmp: {
-          offset: 8, //  need to prepend 8 bytes for anchor's disc
-          bytes: vault.vault.toBase58(),
-        },
-      },
-    ]);
-    console.log(
-      `found a total of ${
-        pdas.length
-      } GEM BOX pdas for vault ${vault.vault.toBase58()}`
-    );
-    return pdas;
-  }
-
   it('creates A LOT of PDAs & reads them back correctly', async () => {
     await looper();
 
-    const bankPDAs = await readBankPDAs();
-    const vaultPDAs = await readVaultPDAs();
-    const gemBoxPDAs = await readGemBoxPDAs(vaults[0]);
+    const bankPDAs = await gb.fetchAllBankPDAs();
+    const vaultPDAs = await gb.fetchAllVaultPDAs();
+    const gemBoxPDAs = await gb.fetchAllGdrPDAs(vaults[0].vault);
 
     assert.equal(bankPDAs.length, 1);
     assert.equal(vaultPDAs.length, 10);

@@ -29,9 +29,7 @@ pub struct WithdrawGem<'info> {
     pub gem_destination: Box<Account<'info, TokenAccount>>,
     pub gem_mint: Box<Account<'info, Mint>>,
     pub receiver: AccountInfo<'info>,
-    #[account(address = anchor_spl::token::ID)]
     pub token_program: Program<'info, Token>,
-    #[account(address = anchor_spl::associated_token::ID)]
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,

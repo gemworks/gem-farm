@@ -1,4 +1,5 @@
 <template>
+  <TheNavBar />
   <div class="p-10">
     <router-view />
   </div>
@@ -12,3 +13,9 @@ input[type='radio']:checked + span {
   @apply text-black;
 }
 </style>
+<script>
+import TheNavBar from '@/components/TheNavBar';
+export default {
+  components: { TheNavBar },
+};
+</script>

@@ -1,0 +1,420 @@
+{
+  "version": "0.0.0",
+  "name": "gem_bank",
+  "instructions": [
+    {
+      "name": "initBank",
+      "accounts": [
+        {
+          "name": "bank",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "manager",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "setBankFlags",
+      "accounts": [
+        {
+          "name": "bank",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "manager",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "flags",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "initVault",
+      "accounts": [
+        {
+          "name": "bank",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "vault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "creator",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "bump",
+          "type": "u8"
+        },
+        {
+          "name": "owner",
+          "type": "publicKey"
+        }
+      ]
+    },
+    {
+      "name": "setVaultLock",
+      "accounts": [
+        {
+          "name": "bank",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "vault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "vaultLock",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "updateVaultOwner",
+      "accounts": [
+        {
+          "name": "bank",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "vault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "newOwner",
+          "type": "publicKey"
+        }
+      ]
+    },
+    {
+      "name": "depositGem",
+      "accounts": [
+        {
+          "name": "bank",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "vault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "gemBox",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gemDepositReceipt",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gemSource",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gemMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "depositor",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "bumpGemBox",
+          "type": "u8"
+        },
+        {
+          "name": "bumpGdr",
+          "type": "u8"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "withdrawGem",
+      "accounts": [
+        {
+          "name": "bank",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "vault",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "gemBox",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gemDepositReceipt",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gemDestination",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gemMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "receiver",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Bank",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "version",
+            "type": "u64"
+          },
+          {
+            "name": "flags",
+            "type": "u64"
+          },
+          {
+            "name": "manager",
+            "type": "publicKey"
+          },
+          {
+            "name": "vaultCount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GemDepositReceipt",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "vault",
+            "type": "publicKey"
+          },
+          {
+            "name": "gemBoxAddress",
+            "type": "publicKey"
+          },
+          {
+            "name": "gemMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "gemAmount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Vault",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bank",
+            "type": "publicKey"
+          },
+          {
+            "name": "owner",
+            "type": "publicKey"
+          },
+          {
+            "name": "authority",
+            "type": "publicKey"
+          },
+          {
+            "name": "authoritySeed",
+            "type": "publicKey"
+          },
+          {
+            "name": "authorityBumpSeed",
+            "type": {
+              "array": [
+                "u8",
+                1
+              ]
+            }
+          },
+          {
+            "name": "locked",
+            "type": "bool"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "gemBoxCount",
+            "type": "u64"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "code": 300,
+      "name": "ArithmeticError",
+      "msg": "failed to perform some math operation safely"
+    },
+    {
+      "code": 301,
+      "name": "UnknownInstruction",
+      "msg": "unknown instruction"
+    },
+    {
+      "code": 302,
+      "name": "InvalidParameter",
+      "msg": "invalid parameter"
+    },
+    {
+      "code": 303,
+      "name": "VaultAccessSuspended",
+      "msg": "vault is currently locked or frozen and cannot be accessed"
+    },
+    {
+      "code": 304,
+      "name": "AmountMismatch",
+      "msg": "recorded token amount in GDR != actual amount in gem box"
+    }
+  ],
+  "metadata": {
+    "address": "EnJJ3BxBE3oZZMvBVqg8K9bSnGb7VREpPbZYuHEWLg1n"
+  }
+}
