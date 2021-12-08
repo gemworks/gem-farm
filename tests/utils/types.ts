@@ -110,3 +110,12 @@ export async function pause(ms: number) {
 export function isKp(toCheck: PublicKey | Keypair) {
   return toCheck instanceof Keypair;
 }
+
+export function stringToBytes(str: string) {
+  const myBuffer = [];
+  const buffer = new Buffer(str);
+  for (let i = 0; i < buffer.length; i++) {
+    myBuffer.push(buffer[i]);
+  }
+  return myBuffer;
+}

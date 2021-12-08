@@ -2,7 +2,7 @@ use crate::state::{Bank, BankFlags};
 use anchor_lang::prelude::*;
 use jet_proc_macros::assert_size;
 
-#[assert_size(176)]
+#[assert_size(208)]
 #[repr(C)]
 #[account]
 pub struct Vault {
@@ -25,6 +25,8 @@ pub struct Vault {
     pub locked: bool,
 
     pub _reserved: [u8; 6],
+
+    pub name: [u8; 32],
 
     // total number of NFTs stored in the vault
     pub gem_box_count: u64,

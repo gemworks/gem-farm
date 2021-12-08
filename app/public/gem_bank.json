@@ -76,6 +76,10 @@
         {
           "name": "owner",
           "type": "publicKey"
+        },
+        {
+          "name": "name",
+          "type": "string"
         }
       ]
     },
@@ -220,7 +224,7 @@
         },
         {
           "name": "vault",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -388,6 +392,15 @@
             }
           },
           {
+            "name": "name",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
             "name": "gemBoxCount",
             "type": "u64"
           }
@@ -428,6 +441,6 @@
     }
   ],
   "metadata": {
-    "address": "CAC7ta8MG92tLrMZSCWHYub2WYDAVvvQvY8frFi2R3HN"
+    "address": "EcUEgj2r1UZR34ueYQCyyVtrGip5eJryU96R8XfL4yXZ"
   }
 }

@@ -5,7 +5,7 @@ import { ITokenData } from '../utils/account';
 import { u64 } from '@solana/spl-token';
 import chai, { assert, expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { toBase58 } from '../utils/types';
+import { stringToBytes, toBase58 } from '../utils/types';
 import { BankFlags, GemBankClient } from './gem-bank.client';
 
 chai.use(chaiAsPromised);
@@ -80,13 +80,15 @@ describe('gem bank', () => {
     ({ vault } = await gb.createVault(
       bank.publicKey,
       vaultCreator,
-      vaultCreator.publicKey
+      vaultCreator.publicKey,
+      'test_vault'
     ));
 
     const bankAcc = await gb.fetchBankAcc(bank.publicKey);
     assert(bankAcc.vaultCount.eq(new BN(1)));
 
     const vaultAcc = await gb.fetchVaultAcc(vault);
+    expect(vaultAcc.name).to.deep.include.members(stringToBytes('test_vault'));
     assert.equal(vaultAcc.bank.toBase58, bank.publicKey.toBase58);
     assert.equal(vaultAcc.owner.toBase58, vaultCreator.publicKey.toBase58);
     assert.equal(vaultAcc.creator.toBase58, vaultCreator.publicKey.toBase58);

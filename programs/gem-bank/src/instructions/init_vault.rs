@@ -1,6 +1,7 @@
 use crate::errors::ErrorCode;
 use crate::math::*;
 use anchor_lang::prelude::*;
+use std::io::Write;
 
 use crate::state::*;
 
@@ -25,7 +26,7 @@ pub struct InitVault<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(ctx: Context<InitVault>, owner: Pubkey) -> ProgramResult {
+pub fn handler(ctx: Context<InitVault>, owner: Pubkey, name: String) -> ProgramResult {
     let bank = &mut ctx.accounts.bank;
     let vault = &mut ctx.accounts.vault;
 
@@ -43,6 +44,7 @@ pub fn handler(ctx: Context<InitVault>, owner: Pubkey) -> ProgramResult {
     vault.authority_bump_seed = [bump];
 
     vault.locked = false;
+    (&mut vault.name[..]).write_all(name.as_bytes())?;
     vault.gem_box_count = 0;
 
     msg!("new vault founded by {}", &ctx.accounts.creator.key());

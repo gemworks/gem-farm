@@ -42,7 +42,8 @@ describe('looper', () => {
     const { vault, vaultAuth } = await gb.createVault(
       bank.publicKey,
       vaultOwner,
-      vaultOwner.publicKey
+      vaultOwner.publicKey,
+      'test_vault'
     );
 
     vaults.push({

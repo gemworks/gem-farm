@@ -168,7 +168,8 @@ export class GemBankClient extends AccountUtils {
   async createVault(
     bank: PublicKey,
     creator: PublicKey | Keypair,
-    owner: PublicKey
+    owner: PublicKey,
+    name: string
   ) {
     const creatorPk = isKp(creator)
       ? (<Keypair>creator).publicKey
@@ -180,7 +181,7 @@ export class GemBankClient extends AccountUtils {
     if (isKp(creator)) signers.push(<Keypair>creator);
 
     console.log('creating vault at', vault.toBase58());
-    const txSig = await this.program.rpc.initVault(vaultBump, owner, {
+    const txSig = await this.program.rpc.initVault(vaultBump, owner, name, {
       accounts: {
         bank,
         vault,

@@ -42,7 +42,12 @@ export class GemBank extends GemBankClient {
   }
 
   async createVaultWallet(bank: PublicKey) {
-    return this.createVault(bank, this.wallet.publicKey, this.wallet.publicKey);
+    return this.createVault(
+      bank,
+      this.wallet.publicKey,
+      this.wallet.publicKey,
+      'test_vault'
+    );
   }
 
   async setVaultLockWallet(
