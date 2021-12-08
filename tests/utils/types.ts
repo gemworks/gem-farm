@@ -1,5 +1,5 @@
 import { BN } from '@project-serum/anchor';
-import { PublicKey } from '@solana/web3.js';
+import { Keypair, PublicKey } from '@solana/web3.js';
 
 export interface ToBytes {
   toBytes(): Uint8Array;
@@ -105,4 +105,8 @@ export async function pause(ms: number) {
       response(0);
     }, ms)
   );
+}
+
+export function isKp(toCheck: PublicKey | Keypair) {
+  return toCheck instanceof Keypair;
 }

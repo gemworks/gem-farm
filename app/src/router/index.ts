@@ -1,23 +1,23 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
-import Your from '../views/Your.vue';
-import All from '../views/All.vue';
-import Find from '../views/Find.vue';
+import YourVault from '../views/YourVault.vue';
+import AllVaults from '../views/AllVaults.vue';
+import FindVaults from '../views/FindVault.vue';
 
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
     name: 'Your vault',
-    component: Your,
+    component: YourVault,
   },
   {
     path: '/',
     name: 'Find vault',
-    component: Find,
+    component: FindVaults,
   },
   {
     path: '/all',
     name: 'All vaults',
-    component: All,
+    component: AllVaults,
   },
 ];
 

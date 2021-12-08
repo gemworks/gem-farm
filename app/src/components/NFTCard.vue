@@ -23,6 +23,7 @@ export default defineComponent({
 
     const toggleSelect = () => {
       selected.value = !selected.value;
+      console.log('selected', props.nft.mint.toBase58());
       ctx.emit('selected', {
         nft: props.nft,
         selected: selected.value,

@@ -81,7 +81,7 @@ export class AccountUtils {
     return await PublicKey.findProgramAddress(seed_bytes, programId);
   }
 
-  // --------------------------------------- Wallet
+  // --------------------------------------- Wallet / Keypair
 
   async createWallet(lamports: number): Promise<Keypair> {
     const wallet = Keypair.generate();
