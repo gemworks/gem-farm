@@ -14,7 +14,7 @@ pub struct WithdrawGem<'info> {
     // needed for checking flags
     pub bank: Box<Account<'info, Bank>>,
     // needed for seeds derivation
-    #[account(mut, has_one = owner, has_one = authority)]
+    #[account(mut, has_one = bank, has_one = owner, has_one = authority)]
     pub vault: Account<'info, Vault>,
     // this ensures only the owner can withdraw
     #[account(mut)]

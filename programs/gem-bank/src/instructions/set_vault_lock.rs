@@ -6,7 +6,7 @@ use anchor_lang::prelude::*;
 pub struct UnlockVault<'info> {
     // needed for checking flags
     pub bank: Account<'info, Bank>,
-    #[account(mut, has_one = owner)]
+    #[account(mut, has_one = bank, has_one = owner)]
     pub vault: Account<'info, Vault>,
     pub owner: Signer<'info>,
 }
