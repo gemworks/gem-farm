@@ -350,6 +350,10 @@
             "type": "publicKey"
           },
           {
+            "name": "creator",
+            "type": "publicKey"
+          },
+          {
             "name": "authority",
             "type": "publicKey"
           },
@@ -415,6 +419,6 @@
     }
   ],
   "metadata": {
-    "address": "EnJJ3BxBE3oZZMvBVqg8K9bSnGb7VREpPbZYuHEWLg1n"
+    "address": "CAC7ta8MG92tLrMZSCWHYub2WYDAVvvQvY8frFi2R3HN"
   }
 }

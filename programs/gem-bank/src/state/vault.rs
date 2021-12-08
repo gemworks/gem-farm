@@ -2,7 +2,7 @@ use crate::state::{Bank, BankFlags};
 use anchor_lang::prelude::*;
 use jet_proc_macros::assert_size;
 
-#[assert_size(144)]
+#[assert_size(176)]
 #[repr(C)]
 #[account]
 pub struct Vault {
@@ -11,6 +11,9 @@ pub struct Vault {
 
     // has the sole right to update Vault state, incl. changing authority
     pub owner: Pubkey,
+
+    // created the vault, this PK is baked into the derived PDA
+    pub creator: Pubkey,
 
     // has the sole right to move gems in/out of the vault
     pub authority: Pubkey,

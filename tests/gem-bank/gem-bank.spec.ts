@@ -98,6 +98,7 @@ describe('gem bank', () => {
     const vaultAcc = await gb.fetchVaultAcc(vault);
     assert.equal(vaultAcc.bank.toBase58, bank.publicKey.toBase58);
     assert.equal(vaultAcc.owner.toBase58, vaultCreator.publicKey.toBase58);
+    assert.equal(vaultAcc.creator.toBase58, vaultCreator.publicKey.toBase58);
   });
 
   it('updates vault owner', async () => {

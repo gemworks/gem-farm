@@ -1,7 +1,9 @@
 <template>
   <ConfigPane />
 
-  <div v-if="!wallet" class="m-5 mb-10 text-center">Pls connect wallet :(</div>
+  <div v-if="!wallet" class="m-5 mb-10 text-center">
+    Pls connect (burner) wallet
+  </div>
   <div v-else>
     <!--control buttons-->
     <div class="m-5 mb-10 flex justify-center">
@@ -251,15 +253,15 @@ export default defineComponent({
     const vaultLocked = ref<boolean>(false);
 
     const startBank = async () => {
-      const { bank } = await gb.startBankWallet();
-      bank.value = bank.publicKey;
-      console.log('bank created', bank.publicKey.toBase58());
+      const { bank: fetchedBank } = await gb.startBankWallet();
+      bank.value = fetchedBank.publicKey;
+      console.log('bank created', fetchedBank.publicKey.toBase58());
     };
 
     const createVault = async () => {
-      const { vault } = await gb.createVaultWallet(bank.value);
-      vault.value = vault;
-      console.log('vault created', vault.pubkey.toBase58());
+      const { vault: fetchedVault } = await gb.createVaultWallet(bank.value);
+      vault.value = fetchedVault;
+      console.log('vault created', fetchedVault.toBase58());
     };
 
     const setVaultLock = async () => {

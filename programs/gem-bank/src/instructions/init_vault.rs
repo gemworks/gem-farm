@@ -38,6 +38,7 @@ pub fn handler(ctx: Context<InitVault>, owner: Pubkey) -> ProgramResult {
     // todo is it wise that we're letting them set the owner w/o checking signature?
     //  what if they accidentally set the wrong one? The vault will be frozen forever.
     vault.owner = owner;
+    vault.creator = ctx.accounts.creator.key();
 
     let vault_address = vault.key();
     let authority_seed = &[vault_address.as_ref()];
