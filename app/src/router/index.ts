@@ -10,7 +10,7 @@ const routes: Array<RouteRecordRaw> = [
     component: YourVault,
   },
   {
-    path: '/',
+    path: '/find',
     name: 'Find vault',
     component: FindVaults,
   },

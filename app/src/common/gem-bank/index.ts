@@ -22,15 +22,20 @@ export class GemBank extends GemBankClient {
 
   async startBankWallet() {
     const bank = Keypair.generate();
-    return await this.startBank(bank, this.wallet.publicKey);
+    const txSig = await this.startBank(bank, this.wallet.publicKey);
+    return { bank, txSig };
   }
 
   async createVaultWallet(bank: PublicKey) {
-    return await this.createVault(
-      bank,
-      this.wallet.publicKey,
-      this.wallet.publicKey
-    );
+    return this.createVault(bank, this.wallet.publicKey, this.wallet.publicKey);
+  }
+
+  async setVaultLockWallet(
+    bank: PublicKey,
+    vault: PublicKey,
+    vaultLocked: boolean
+  ) {
+    return this.setVaultLock(bank, vault, this.wallet.publicKey, vaultLocked);
   }
 
   async depositGemWallet(
