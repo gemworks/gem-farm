@@ -255,7 +255,7 @@
         },
         {
           "name": "receiver",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -280,6 +280,10 @@
         }
       ],
       "args": [
+        {
+          "name": "bump",
+          "type": "u8"
+        },
         {
           "name": "amount",
           "type": "u64"
@@ -416,6 +420,11 @@
       "code": 304,
       "name": "AmountMismatch",
       "msg": "recorded token amount in GDR != actual amount in gem box"
+    },
+    {
+      "code": 305,
+      "name": "AccountDidNotSerialize",
+      "msg": "anchor serialization issue"
     }
   ],
   "metadata": {

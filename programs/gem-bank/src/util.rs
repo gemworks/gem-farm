@@ -4,6 +4,7 @@ use anchor_lang::__private::CLOSED_ACCOUNT_DISCRIMINATOR;
 use anchor_lang::prelude::*;
 
 use crate::errors::ErrorCode;
+use crate::math::*;
 
 pub fn close_account(
     pda_to_close: &mut AccountInfo,
@@ -11,9 +12,8 @@ pub fn close_account(
 ) -> ProgramResult {
     // Transfer tokens from the account to the sol_destination.
     let dest_starting_lamports = sol_destination.lamports();
-    **sol_destination.lamports.borrow_mut() = dest_starting_lamports
-        .checked_add(pda_to_close.lamports())
-        .unwrap();
+    **sol_destination.lamports.borrow_mut() =
+        dest_starting_lamports.try_add(pda_to_close.lamports())?;
     **pda_to_close.lamports.borrow_mut() = 0;
 
     // Mark the account discriminator as closed.

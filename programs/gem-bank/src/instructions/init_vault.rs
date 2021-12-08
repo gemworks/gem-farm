@@ -1,4 +1,5 @@
 use crate::errors::ErrorCode;
+use crate::math::*;
 use anchor_lang::prelude::*;
 
 use crate::state::*;
@@ -29,10 +30,7 @@ pub fn handler(ctx: Context<InitVault>, owner: Pubkey) -> ProgramResult {
     let vault = &mut ctx.accounts.vault;
 
     // todo do some testing if stored correctly
-    bank.vault_count = bank
-        .vault_count
-        .checked_add(1)
-        .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
+    bank.vault_count = bank.vault_count.try_add(1)?;
 
     vault.bank = bank.key();
     // todo is it wise that we're letting them set the owner w/o checking signature?

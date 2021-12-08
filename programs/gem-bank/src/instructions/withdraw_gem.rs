@@ -1,11 +1,12 @@
-use crate::errors::ErrorCode;
 use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token::accessor::authority;
 use anchor_spl::token::{self, CloseAccount, Mint, Token, TokenAccount, Transfer};
 
+use crate::errors::ErrorCode;
+use crate::math::*;
 use crate::state::*;
-use crate::util::{close_account, close_pda_account};
+use crate::util::close_account;
 
 #[derive(Accounts)]
 #[instruction(bump: u8)]
@@ -88,12 +89,7 @@ pub fn handler(ctx: Context<WithdrawGem>, amount: u64) -> ProgramResult {
 
     // needs to go after transfer, otherwise borrow conflict
     let gdr = &mut *ctx.accounts.gem_deposit_receipt;
-
-    // todo turn this into a math lib
-    gdr.gem_amount = gdr
-        .gem_amount
-        .checked_sub(amount)
-        .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
+    gdr.gem_amount = gdr.gem_amount.try_sub(amount)?;
 
     // this check is semi-useless but won't hurt
     if gdr.gem_amount != gem_box.amount - amount {

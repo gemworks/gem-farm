@@ -5,6 +5,7 @@ declare_id!("CAC7ta8MG92tLrMZSCWHYub2WYDAVvvQvY8frFi2R3HN");
 
 pub mod errors;
 pub mod instructions;
+pub mod math;
 pub mod state;
 pub mod util;
 
