@@ -83,12 +83,12 @@ pub fn handler(ctx: Context<DepositGem>, amount: u64) -> ProgramResult {
     let vault = &mut ctx.accounts.vault;
     let gdr = &mut *ctx.accounts.gem_deposit_receipt;
 
-    vault.gem_box_count = vault.gem_box_count.try_add(1)?;
+    vault.gem_box_count.try_self_add(1)?;
 
     gdr.vault = vault.key();
     gdr.gem_box_address = gem_box.key();
     gdr.gem_mint = gem_box.mint;
-    gdr.gem_amount = gdr.gem_amount.try_add(amount)?;
+    gdr.gem_amount.try_self_add(amount)?;
 
     // this check is semi-useless but won't hurt
     if gdr.gem_amount != gem_box.amount + amount {

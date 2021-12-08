@@ -14,7 +14,7 @@ pub struct WithdrawGem<'info> {
     // needed for checking flags
     pub bank: Box<Account<'info, Bank>>,
     // needed for seeds derivation
-    #[account(has_one = owner, has_one = authority)]
+    #[account(mut, has_one = owner, has_one = authority)]
     pub vault: Account<'info, Vault>,
     // this ensures only the owner can withdraw
     #[account(mut)]
@@ -89,7 +89,7 @@ pub fn handler(ctx: Context<WithdrawGem>, amount: u64) -> ProgramResult {
 
     // needs to go after transfer, otherwise borrow conflict
     let gdr = &mut *ctx.accounts.gem_deposit_receipt;
-    gdr.gem_amount = gdr.gem_amount.try_sub(amount)?;
+    gdr.gem_amount.try_self_sub(amount)?;
 
     // this check is semi-useless but won't hurt
     if gdr.gem_amount != gem_box.amount - amount {
@@ -104,11 +104,17 @@ pub fn handler(ctx: Context<WithdrawGem>, amount: u64) -> ProgramResult {
                 .close_context()
                 .with_signer(&[&vault.vault_seeds()]),
         )?;
+
         // close GDR
         // again, these need to be deserialized separately or get borrow conflicts
         let receiver = &mut ctx.accounts.receiver;
         let gdr = &mut (*ctx.accounts.gem_deposit_receipt).to_account_info();
+
         close_account(gdr, receiver);
+
+        // update gem box count on vault
+        let vault = &mut ctx.accounts.vault;
+        vault.gem_box_count.try_self_sub(1)?;
     }
 
     msg!("{} gems withdrawn from ${} gem box", amount, gem_box.key());

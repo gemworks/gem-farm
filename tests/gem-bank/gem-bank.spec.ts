@@ -179,7 +179,13 @@ describe('gem bank', () => {
     it('withdraws gem to existing ATA', async () => {
       ({ gemBox, GDR } = await prepDeposit(vaultOwner)); //make a fresh deposit
 
+      const vaultAcc = await gb.fetchVaultAcc(vault);
+      const oldCount = vaultAcc.gemBoxCount.toNumber();
+
       await prepWithdrawal(vaultOwner, gem.tokenAcc, gem.owner, gemAmount);
+
+      const vaultAcc2 = await gb.fetchVaultAcc(vault);
+      assert.equal(vaultAcc2.gemBoxCount.toNumber(), oldCount - 1);
 
       const gemAcc = await gb.fetchGemAcc(gem.tokenMint, gem.tokenAcc);
       assert(gemAcc.amount.eq(gemAmount));
@@ -204,11 +210,9 @@ describe('gem bank', () => {
       assert(gemAcc.amount.eq(smallerAmount));
 
       const gemBoxAcc = await gb.fetchGemAcc(gem.tokenMint, gemBox);
-      console.log(gemBoxAcc.amount);
       assert(gemBoxAcc.amount.eq(new BN(1)));
 
       const GDRAcc = await gb.fetchGDRAcc(GDR);
-      console.log(GDRAcc.gemAmount);
       assert(GDRAcc.gemAmount.eq(new BN(1)));
     });
 

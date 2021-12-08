@@ -29,8 +29,7 @@ pub fn handler(ctx: Context<InitVault>, owner: Pubkey) -> ProgramResult {
     let bank = &mut ctx.accounts.bank;
     let vault = &mut ctx.accounts.vault;
 
-    // todo do some testing if stored correctly
-    bank.vault_count = bank.vault_count.try_add(1)?;
+    bank.vault_count.try_self_add(1)?;
 
     vault.bank = bank.key();
     // todo is it wise that we're letting them set the owner w/o checking signature?

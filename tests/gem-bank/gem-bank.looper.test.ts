@@ -105,8 +105,18 @@ describe('looper', () => {
     const vaultPDAs = await gb.fetchAllVaultPDAs();
     const gdrPDAs = await gb.fetchAllGdrPDAs();
 
+    //verify correct # of accounts created
     assert.equal(bankPDAs.length, 1);
     assert.equal(vaultPDAs.length, nVaults);
     assert.equal(gdrPDAs.length, nVaults * nGemsPerVault);
+
+    //verify correct # of accounts stored
+    const bankAcc = await gb.fetchBankAcc(bank.publicKey);
+    assert(bankAcc.vaultCount.eq(new BN(nVaults)));
+
+    for (const v of vaults) {
+      const vaultAcc = await gb.fetchVaultAcc(v.vault);
+      assert(vaultAcc.gemBoxCount.eq(new BN(nGemsPerVault)));
+    }
   });
 });
