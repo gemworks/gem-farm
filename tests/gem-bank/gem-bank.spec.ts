@@ -1,17 +1,8 @@
 import * as anchor from '@project-serum/anchor';
 import { BN } from '@project-serum/anchor';
-import {
-  Keypair,
-  LAMPORTS_PER_SOL,
-  PublicKey,
-  SystemProgram,
-} from '@solana/web3.js';
+import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import { ITokenData } from '../utils/account';
-import {
-  ASSOCIATED_TOKEN_PROGRAM_ID,
-  TOKEN_PROGRAM_ID,
-  u64,
-} from '@solana/spl-token';
+import { u64 } from '@solana/spl-token';
 import chai, { assert, expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { toBase58 } from '../utils/types';
@@ -142,7 +133,8 @@ describe('gem bank', () => {
     async function prepWithdrawal(
       owner: Keypair,
       destinationAcc: PublicKey,
-      receiver: PublicKey
+      receiver: PublicKey,
+      gemAmount: BN
     ) {
       return gb.withdrawGem(
         bank.publicKey,
@@ -187,36 +179,67 @@ describe('gem bank', () => {
     it('withdraws gem to existing ATA', async () => {
       ({ gemBox, GDR } = await prepDeposit(vaultOwner)); //make a fresh deposit
 
-      await prepWithdrawal(vaultOwner, gem.tokenAcc, gem.owner);
-
-      const gemBoxAcc = await gb.fetchGemAcc(gem.tokenMint, gemBox);
-      assert(gemBoxAcc.amount.eq(new BN(0)));
+      await prepWithdrawal(vaultOwner, gem.tokenAcc, gem.owner, gemAmount);
 
       const gemAcc = await gb.fetchGemAcc(gem.tokenMint, gem.tokenAcc);
       assert(gemAcc.amount.eq(gemAmount));
 
+      //these accounts are expected to close on emptying the gem box
+      await expect(gb.fetchGemAcc(gem.tokenMint, gemBox)).to.be.rejectedWith(
+        'Failed to find account'
+      );
+      await expect(gb.fetchGDRAcc(GDR)).to.be.rejectedWith(
+        'Account does not exist'
+      );
+    });
+
+    it('withdraws gem to existing ATA (but does not empty)', async () => {
+      const smallerAmount = gemAmount.sub(new BN(1));
+
+      ({ gemBox, GDR } = await prepDeposit(vaultOwner)); //make a fresh deposit
+
+      await prepWithdrawal(vaultOwner, gem.tokenAcc, gem.owner, smallerAmount);
+
+      const gemAcc = await gb.fetchGemAcc(gem.tokenMint, gem.tokenAcc);
+      assert(gemAcc.amount.eq(smallerAmount));
+
+      const gemBoxAcc = await gb.fetchGemAcc(gem.tokenMint, gemBox);
+      console.log(gemBoxAcc.amount);
+      assert(gemBoxAcc.amount.eq(new BN(1)));
+
       const GDRAcc = await gb.fetchGDRAcc(GDR);
-      assert(GDRAcc.gemAmount.eq(new BN(0)));
+      console.log(GDRAcc.gemAmount);
+      assert(GDRAcc.gemAmount.eq(new BN(1)));
     });
 
     it('withdraws gem to missing ATA', async () => {
       ({ gemBox, GDR } = await prepDeposit(vaultOwner)); //make a fresh deposit
 
       const missingATA = await gb.getATA(gem.tokenMint, randomWallet.publicKey);
-      await prepWithdrawal(vaultOwner, missingATA, randomWallet.publicKey);
-
-      const gemBoxAcc = await gb.fetchGemAcc(gem.tokenMint, gemBox);
-      assert(gemBoxAcc.amount.eq(new BN(0)));
+      await prepWithdrawal(
+        vaultOwner,
+        missingATA,
+        randomWallet.publicKey,
+        gemAmount
+      );
 
       const gemAcc = await gb.fetchGemAcc(gem.tokenMint, missingATA);
       assert(gemAcc.amount.eq(gemAmount));
+
+      //these accounts are expected to close on emptying the gem box
+      await expect(gb.fetchGemAcc(gem.tokenMint, gemBox)).to.be.rejectedWith(
+        'Failed to find account'
+      );
+      await expect(gb.fetchGDRAcc(GDR)).to.be.rejectedWith(
+        'Account does not exist'
+      );
     });
 
     it('FAILS to withdraw gem w/ wrong owner', async () => {
       await prepDeposit(vaultOwner); //make a fresh deposit
 
       await expect(
-        prepWithdrawal(randomWallet, gem.tokenAcc, gem.owner)
+        prepWithdrawal(randomWallet, gem.tokenAcc, gem.owner, gemAmount)
       ).to.be.rejectedWith('has_one');
     });
 
@@ -247,7 +270,7 @@ describe('gem bank', () => {
       await prepLock(true);
       //withdraw should fail
       await expect(
-        prepWithdrawal(vaultOwner, gem.tokenAcc, gem.owner)
+        prepWithdrawal(vaultOwner, gem.tokenAcc, gem.owner, gemAmount)
       ).to.be.rejectedWith(
         'vault is currently locked or frozen and cannot be accessed'
       );
@@ -255,7 +278,7 @@ describe('gem bank', () => {
       //finally unlock the vault
       await prepLock(false);
       //should be able to withdraw
-      await prepWithdrawal(vaultOwner, gem.tokenAcc, gem.owner);
+      await prepWithdrawal(vaultOwner, gem.tokenAcc, gem.owner, gemAmount);
     });
 
     // --------------------------------------- bank flags
@@ -293,7 +316,7 @@ describe('gem bank', () => {
       //freeze vaults again
       await prepFlags(manager, BankFlags.FreezeVaults);
       await expect(
-        prepWithdrawal(vaultOwner, gem.tokenAcc, gem.owner)
+        prepWithdrawal(vaultOwner, gem.tokenAcc, gem.owner, gemAmount)
       ).to.be.rejectedWith(
         'vault is currently locked or frozen and cannot be accessed'
       );

@@ -1,5 +1,5 @@
 <template>
-  <div v-for="v in fetchedVaults" class="my-10">
+  <div v-for="v in fetchedVaults" :key="v.publicKey.toBase58()" class="my-10">
     <NFTGrid :title="v.publicKey.toBase58()" :nfts="v.nfts" />
   </div>
 </template>

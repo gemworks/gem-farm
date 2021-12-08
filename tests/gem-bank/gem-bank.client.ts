@@ -328,7 +328,7 @@ export class GemBankClient extends AccountUtils {
     console.log(
       `withdrawing ${gemAmount} gems from ${gemBox.toBase58()}, GDR ${GDR.toBase58()}`
     );
-    const txSig = await this.program.rpc.withdrawGem(gemAmount, {
+    const txSig = await this.program.rpc.withdrawGem(gemBump, gemAmount, {
       accounts: {
         bank,
         vault,

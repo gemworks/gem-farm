@@ -9,13 +9,13 @@ pub struct Vault {
     // each vault is registered with a single bank, used for indexing
     pub bank: Pubkey,
 
-    // has the sole right to update Vault state, incl. changing authority
+    // has the sole right to update Vault state, incl. assigning someone else as owner
     pub owner: Pubkey,
 
-    // created the vault, this PK is baked into the derived PDA
+    // baked into vault's PDA - NOT CHANGEABLE
     pub creator: Pubkey,
 
-    // has the sole right to move gems in/out of the vault
+    // signs off on any token transfers out of the gem boxes controlled by the vault
     pub authority: Pubkey,
 
     pub authority_seed: Pubkey,

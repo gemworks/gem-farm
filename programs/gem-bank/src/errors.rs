@@ -16,4 +16,7 @@ pub enum ErrorCode {
 
     #[msg("recorded token amount in GDR != actual amount in gem box")]
     AmountMismatch,
+
+    #[msg("anchor serialization issue")]
+    AccountDidNotSerialize,
 }
