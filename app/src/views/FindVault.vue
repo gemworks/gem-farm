@@ -116,7 +116,6 @@ export default defineComponent({
 
     const loadByVaultCreator = async () => {
       const vaults = await gb.fetchAllVaultPDAs();
-      console.log(vaults);
       if (vaults && vaults.length) {
         const vault = vaults.filter(
           (v: any) => v.account.creator.toBase58() === vaultCreator.value
