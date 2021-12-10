@@ -5,7 +5,7 @@ import { ITokenData } from '../utils/account';
 import { u64 } from '@solana/spl-token';
 import chai, { assert, expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { stringToBytes, toBase58 } from '../utils/types';
+import { pause, stringToBytes, toBase58 } from '../utils/types';
 import { BankFlags, GemBankClient } from './gem-bank.client';
 import { createMetadata } from '../utils/metaplex';
 

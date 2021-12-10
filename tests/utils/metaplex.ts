@@ -1,6 +1,7 @@
 import { actions, programs, Wallet } from '@metaplex/js';
 import { Connection, PublicKey } from '@solana/web3.js';
 import fs from 'fs';
+import { pause } from './types';
 
 export async function createMetadata(
   connection: Connection,
@@ -18,8 +19,16 @@ export async function createMetadata(
     metadataData,
     updateAuthority,
   });
+
+  console.log('pausing');
+  await pause(2000); //necessary for metadata to propagate, even on localnet
+
   const metadata = await programs.metadata.Metadata.getPDA(editionMint);
   console.log('Created Metadata:', txId, metadata.toBase58());
+
+  const m = await programs.metadata.Metadata.load(connection, metadata);
+  console.log(m);
+
   return metadata;
 }
 

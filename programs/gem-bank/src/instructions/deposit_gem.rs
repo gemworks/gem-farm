@@ -75,13 +75,6 @@ fn assert_valid_metadata(
     metadata_program: &Pubkey,
 ) -> bool {
     // 1 verify the owner of the account is metaplex's metadata program
-
-    // todo if the owner check is failing does that mean it didn't init?
-    let m = Metadata::from_account_info(gem_metadata).unwrap();
-    msg!("{:?}", m);
-
-    msg!("owner is {}", gem_metadata.owner);
-    msg!("metadata program: {}", metadata_program);
     assert_eq!(gem_metadata.owner, metadata_program);
 
     // 2 verify the PDA seeds
@@ -96,11 +89,7 @@ fn assert_valid_metadata(
     true
 }
 
-fn deserialize_metadata(gem_metadata: &AccountInfo) -> Result<Metadata, ProgramError> {
-    Metadata::from_account_info(gem_metadata)
-}
-
-// fn assert_whitelisted_other(ctx: &Context<DepositGem>) -> ProgramResult {
+// fn assert_whitelisted_nft(ctx: &Context<DepositGem>) -> ProgramResult {
 //     // let bank = &*ctx.accounts.bank;
 //     // let remaining_accs = &mut ctx.remaining_accounts.iter();
 //     // let untrusted_metadata = next_account_info(remaining_accs)?;
@@ -114,38 +103,42 @@ fn deserialize_metadata(gem_metadata: &AccountInfo) -> Result<Metadata, ProgramE
 //     Ok(())
 // }
 
-// fn assert_whitelisted_mint(ctx: &Context<DepositGem>) -> ProgramResult {
-//     let bank = &*ctx.accounts.bank;
-//     let remaining_accs = &mut ctx.remaining_accounts.iter();
-//     let mint_whitelist_proof = next_account_info(remaining_accs)?;
-//
-//     let base_seeds = [b"whitelist".as_ref(), bank.key().as_ref()];
-//
-//     if bank.whitelisted_mints > 0 {
-//         let mut seeds = base_seeds.clone().to_vec();
-//         seeds.push(mint.key().as_ref());
-//         let whitelist_proof = Pubkey::find_program_address(seeds.as_slice(), ctx.program_id);
-//     }
-//
-//     if bank.whitelisted_creators > 0 {}
-//
-//     if bank.whitelisted_update_authorities > 0 {}
-//
-//     Ok(())
-// }
+fn assert_whitelisted(ctx: &Context<DepositGem>) -> ProgramResult {
+    let bank = &*ctx.accounts.bank;
+    let remaining_accs = &mut ctx.remaining_accounts.iter();
+    let mint_whitelist_proof = next_account_info(remaining_accs)?;
+    let creator_whitelist_proof = next_account_info(remaining_accs)?;
+    let authority_whitelist_proof = next_account_info(remaining_accs)?;
+    let metadata = next_account_info(remaining_accs)?;
+
+    let base_seeds = [b"whitelist".as_ref(), bank.key().as_ref()];
+
+    if bank.whitelisted_mints > 0 {
+        let mut seeds = base_seeds.clone().to_vec();
+        seeds.push(mint.key().as_ref());
+        let whitelist_proof = Pubkey::find_program_address(seeds.as_slice(), ctx.program_id);
+    }
+
+    if bank.whitelisted_creators > 0 {}
+
+    if bank.whitelisted_update_authorities > 0 {}
+
+    Ok(())
+}
 
 // todo or vs and
 pub fn handler(ctx: Context<DepositGem>, amount: u64) -> ProgramResult {
     // if a whitelist exists, verify token whitelisted
-    // let bank = &*ctx.accounts.bank;
-    //
-    // if bank.whitelisted_mints > 0 {
-    //     assert_whitelisted_mint(&ctx)?;
-    // }
-    //
-    // if bank.whitelisted_creators > 0 || bank.whitelisted_update_authorities > 0 {
-    //     assert_whitelisted_other(&ctx)?;
-    // }
+    let bank = &*ctx.accounts.bank;
+
+    if bank.whitelisted_mints > 0
+        || bank.whitelisted_creators > 0
+        || bank.whitelisted_update_authorities > 0
+    {
+        assert_whitelisted(&ctx)?;
+    }
+
+    let m = Metadata::from_account_info(&ctx.accounts.gem_metadata)?;
 
     // verify vault not suspended
     let bank = &*ctx.accounts.bank;
