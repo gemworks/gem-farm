@@ -39,6 +39,60 @@ pub trait TryRem: Sized {
     fn try_rem(self, rhs: Self) -> Result<Self, ProgramError>;
 }
 
+//todo can the below be DRYed up using a macro?
+
+// --------------------------------------- u32
+
+impl TrySub for u32 {
+    fn try_sub(self, rhs: Self) -> Result<Self, ProgramError> {
+        self.checked_sub(rhs)
+            .ok_or(ErrorCode::ArithmeticError.into())
+    }
+    fn try_self_sub(&mut self, rhs: Self) -> ProgramResult {
+        *self = self.try_sub(rhs)?;
+        Ok(())
+    }
+}
+
+impl TryAdd for u32 {
+    fn try_add(self, rhs: Self) -> Result<Self, ProgramError> {
+        self.checked_add(rhs)
+            .ok_or(ErrorCode::ArithmeticError.into())
+    }
+    fn try_self_add(&mut self, rhs: Self) -> ProgramResult {
+        *self = self.try_add(rhs)?;
+        Ok(())
+    }
+}
+
+impl TryDiv<u32> for u32 {
+    fn try_floor_div(self, rhs: u32) -> Result<Self, ProgramError> {
+        self.checked_div(rhs)
+            .ok_or(ErrorCode::ArithmeticError.into())
+    }
+}
+
+impl TryMul<u32> for u32 {
+    fn try_mul(self, rhs: u32) -> Result<Self, ProgramError> {
+        self.checked_mul(rhs)
+            .ok_or(ErrorCode::ArithmeticError.into())
+    }
+}
+
+impl TryPow<u32> for u32 {
+    fn try_pow(self, rhs: u32) -> Result<Self, ProgramError> {
+        self.checked_pow(rhs)
+            .ok_or(ErrorCode::ArithmeticError.into())
+    }
+}
+
+impl TryRem for u32 {
+    fn try_rem(self, rhs: Self) -> Result<Self, ProgramError> {
+        self.checked_rem(rhs)
+            .ok_or(ErrorCode::ArithmeticError.into())
+    }
+}
+
 // --------------------------------------- u64
 
 impl TrySub for u64 {
@@ -93,6 +147,7 @@ impl TryRem for u64 {
 
 // --------------------------------------- tests
 
+// todo need more extensive testing, probably a test for each type
 #[cfg(test)]
 mod tests {
     use super::*;

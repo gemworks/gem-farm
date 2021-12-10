@@ -26,22 +26,24 @@ pub struct InitVault<'info> {
 }
 
 pub fn handler(ctx: Context<InitVault>, owner: Pubkey, name: String) -> ProgramResult {
+    // record total number of vaults in bank's state
     let bank = &mut ctx.accounts.bank;
     let vault = &mut ctx.accounts.vault;
 
     bank.vault_count.try_self_add(1)?;
 
-    vault.bank = bank.key();
-    vault.owner = owner;
-    vault.creator = ctx.accounts.creator.key();
-
+    // derive the authority responsible for all token transfers within the new vault
     let vault_address = vault.key();
     let authority_seed = &[vault_address.as_ref()];
     let (authority, bump) = Pubkey::find_program_address(authority_seed, ctx.program_id);
+
+    // record vault's state
+    vault.bank = bank.key();
+    vault.owner = owner;
+    vault.creator = ctx.accounts.creator.key();
     vault.authority = authority;
     vault.authority_seed = vault_address;
     vault.authority_bump_seed = [bump];
-
     vault.locked = false;
     (&mut vault.name[..]).write_all(name.as_bytes())?;
     vault.gem_box_count = 0;

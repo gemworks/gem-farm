@@ -297,7 +297,7 @@ describe('gem bank', () => {
       //freeze vaults
       await prepFlags(manager, BankFlags.FreezeVaults);
       const bankAcc = await gb.fetchBankAcc(bank.publicKey);
-      assert(bankAcc.flags.eq(new u64(BankFlags.FreezeVaults)));
+      assert.equal(bankAcc.flags, BankFlags.FreezeVaults);
       await expect(
         gb.updateVaultOwner(
           bank.publicKey,

@@ -16,6 +16,9 @@ pub fn handler(ctx: Context<InitBank>) -> ProgramResult {
 
     bank.version = LATEST_BANK_VERSION;
     bank.manager = ctx.accounts.manager.key();
+    bank.whitelisted_creators = 0;
+    bank.whitelisted_update_authorities = 0;
+    bank.whitelisted_mints = 0;
     bank.vault_count = 0;
 
     msg!("bank initialized, version {}", bank.version);

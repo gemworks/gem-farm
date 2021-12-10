@@ -1,8 +1,6 @@
 use anchor_lang::prelude::*;
-use jet_proc_macros::assert_size;
 
 /// GDR is necessary to locate all gem boxes for a given bank/vault
-#[assert_size(104)]
 #[account]
 pub struct GemDepositReceipt {
     // each gem gox sits inside a single vault

@@ -16,7 +16,7 @@ pub mod gem_bank {
         instructions::init_bank::handler(ctx)
     }
 
-    pub fn set_bank_flags(ctx: Context<SetBankFlags>, flags: u64) -> ProgramResult {
+    pub fn set_bank_flags(ctx: Context<SetBankFlags>, flags: u8) -> ProgramResult {
         instructions::set_bank_flags::handler(ctx, flags)
     }
 
@@ -48,5 +48,13 @@ pub mod gem_bank {
 
     pub fn withdraw_gem(ctx: Context<WithdrawGem>, _bump: u8, amount: u64) -> ProgramResult {
         instructions::withdraw_gem::handler(ctx, amount)
+    }
+
+    pub fn add_to_whitelist(
+        ctx: Context<AddToWhitelist>,
+        _bump: u8,
+        whitelist_type: u8,
+    ) -> ProgramResult {
+        instructions::add_to_whitelist::handler(ctx, whitelist_type)
     }
 }

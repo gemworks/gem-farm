@@ -24,8 +24,7 @@ pub struct DepositGem<'info> {
         bump = bump_gem_box,
         token::mint = gem_mint,
         token::authority = authority,
-        payer = depositor,
-    )]
+        payer = depositor)]
     pub gem_box: Box<Account<'info, TokenAccount>>,
     #[account(init_if_needed,
         seeds = [
@@ -35,8 +34,7 @@ pub struct DepositGem<'info> {
         ],
         bump = bump_gdr,
         payer = depositor,
-        space = 8 + std::mem::size_of::<GemDepositReceipt>()
-    )]
+        space = 8 + std::mem::size_of::<GemDepositReceipt>())]
     pub gem_deposit_receipt: Box<Account<'info, GemDepositReceipt>>,
     #[account(mut)]
     pub gem_source: Box<Account<'info, TokenAccount>>,
@@ -62,8 +60,8 @@ impl<'info> DepositGem<'info> {
 }
 
 pub fn handler(ctx: Context<DepositGem>, amount: u64) -> ProgramResult {
+    // verify not suspended & do the transfer
     let bank = &*ctx.accounts.bank;
-    let gem_box = &*ctx.accounts.gem_box;
     let vault = &ctx.accounts.vault;
 
     if vault.access_suspended(bank.flags)? {
@@ -77,11 +75,14 @@ pub fn handler(ctx: Context<DepositGem>, amount: u64) -> ProgramResult {
         amount,
     )?;
 
-    // these 2 need to go after transfer, otherwise borrow conflict
+    // record total number of gem boxes in vault's state
     let vault = &mut ctx.accounts.vault;
-    let gdr = &mut *ctx.accounts.gem_deposit_receipt;
 
     vault.gem_box_count.try_self_add(1)?;
+
+    // record a gdr
+    let gdr = &mut *ctx.accounts.gem_deposit_receipt;
+    let gem_box = &*ctx.accounts.gem_box;
 
     gdr.vault = vault.key();
     gdr.gem_box_address = gem_box.key();

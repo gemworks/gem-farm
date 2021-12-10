@@ -249,7 +249,7 @@ export class GemBankClient extends AccountUtils {
     if (isKp(manager)) signers.push(<Keypair>manager);
 
     console.log('setting bank flags to', flags);
-    const txSig = await this.program.rpc.setBankFlags(new u64(flags), {
+    const txSig = await this.program.rpc.setBankFlags(flags, {
       accounts: {
         bank,
         manager: manager ? (<Keypair>manager).publicKey : manager,

@@ -1,0 +1,52 @@
+use anchor_lang::prelude::*;
+
+use crate::state::*;
+use crate::utils::math::*;
+
+#[derive(Accounts)]
+#[instruction(bump: u8)]
+pub struct AddToWhitelist<'info> {
+    #[account(mut, has_one = manager)]
+    bank: Account<'info, Bank>,
+    manager: Signer<'info>,
+    address_to_whitelist: AccountInfo<'info>,
+    // todo - is there any way someone could create this pda outside of this ix to fake-whitelist themselves?
+    #[account(init_if_needed,
+        seeds = [
+            b"whitelist".as_ref(),
+            bank.key().as_ref(),
+            address_to_whitelist.key().as_ref(),
+        ],
+        bump = bump,
+        payer = manager,
+        space = 8 + std::mem::size_of::<WhitelistProof>())]
+    whitelist_proof: Account<'info, WhitelistProof>,
+    system_program: Program<'info, System>,
+}
+
+pub fn handler(ctx: Context<AddToWhitelist>, whitelist_type: u8) -> ProgramResult {
+    // create/update whitelist proof
+    let proof = &mut ctx.accounts.whitelist_proof;
+    let whitelist_type = WhitelistProof::read_type(whitelist_type)?;
+
+    proof.reset_type(whitelist_type);
+
+    // update total whitelist count
+    let bank = &mut ctx.accounts.bank;
+
+    if whitelist_type.contains(WhitelistType::CREATOR) {
+        bank.whitelisted_creators.try_self_add(1)?;
+    }
+    if whitelist_type.contains(WhitelistType::UPDATE_AUTHORITY) {
+        bank.whitelisted_update_authorities.try_self_add(1)?;
+    }
+    if whitelist_type.contains(WhitelistType::MINT) {
+        bank.whitelisted_mints.try_self_add(1)?;
+    }
+
+    msg!(
+        "{} added to whitelist",
+        &ctx.accounts.address_to_whitelist.key()
+    );
+    Ok(())
+}

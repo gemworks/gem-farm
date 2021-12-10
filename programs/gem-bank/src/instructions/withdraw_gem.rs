@@ -29,16 +29,14 @@ pub struct WithdrawGem<'info> {
             vault.key().as_ref(),
             gem_mint.key().as_ref(),
         ],
-        bump = bump,
-    )]
+        bump = bump)]
     pub gem_box: Account<'info, TokenAccount>,
     #[account(mut)]
     pub gem_deposit_receipt: Box<Account<'info, GemDepositReceipt>>,
     #[account(init_if_needed,
         associated_token::mint = gem_mint,
         associated_token::authority = receiver,
-        payer = owner,
-    )]
+        payer = owner)]
     pub gem_destination: Box<Account<'info, TokenAccount>>,
     pub gem_mint: Box<Account<'info, Mint>>,
     #[account(mut)]
@@ -74,8 +72,8 @@ impl<'info> WithdrawGem<'info> {
 }
 
 pub fn handler(ctx: Context<WithdrawGem>, amount: u64) -> ProgramResult {
+    // verify not suspended & do the transfer
     let bank = &*ctx.accounts.bank;
-    let gem_box = &ctx.accounts.gem_box;
     let vault = &ctx.accounts.vault;
 
     if vault.access_suspended(bank.flags)? {
@@ -89,8 +87,10 @@ pub fn handler(ctx: Context<WithdrawGem>, amount: u64) -> ProgramResult {
         amount,
     )?;
 
-    // needs to go after transfer, otherwise borrow conflict
+    // update the gdr
     let gdr = &mut *ctx.accounts.gem_deposit_receipt;
+    let gem_box = &ctx.accounts.gem_box;
+
     gdr.gem_amount.try_self_sub(amount)?;
 
     // this check is semi-useless but won't hurt
@@ -108,13 +108,12 @@ pub fn handler(ctx: Context<WithdrawGem>, amount: u64) -> ProgramResult {
         )?;
 
         // close GDR
-        // again, these need to be deserialized separately or get borrow conflicts
         let receiver = &mut ctx.accounts.receiver;
         let gdr = &mut (*ctx.accounts.gem_deposit_receipt).to_account_info();
 
-        close_account(gdr, receiver);
+        close_account(gdr, receiver)?;
 
-        // update gem box count on vault
+        // decrement gem box count stored in vault's state
         let vault = &mut ctx.accounts.vault;
         vault.gem_box_count.try_self_sub(1)?;
     }
