@@ -72,7 +72,7 @@ impl<'info> WithdrawGem<'info> {
 }
 
 pub fn handler(ctx: Context<WithdrawGem>, amount: u64) -> ProgramResult {
-    // verify not suspended & do the transfer
+    // verify vault not suspended
     let bank = &*ctx.accounts.bank;
     let vault = &ctx.accounts.vault;
 
@@ -80,6 +80,7 @@ pub fn handler(ctx: Context<WithdrawGem>, amount: u64) -> ProgramResult {
         return Err(ErrorCode::VaultAccessSuspended.into());
     }
 
+    // do the transfer
     token::transfer(
         ctx.accounts
             .transfer_ctx()

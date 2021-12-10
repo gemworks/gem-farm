@@ -8,8 +8,9 @@ import {
 } from '@solana/spl-token';
 import { AccountUtils } from '../utils/account';
 import { GemBank } from '../../target/types/gem_bank';
-import { Connection } from '@metaplex/js';
+import { Connection } from '@solana/web3.js';
 import { isKp } from '../utils/types';
+import { MetadataProgram } from '@metaplex-foundation/mpl-token-metadata';
 
 export enum BankFlags {
   FreezeVaults = 1 << 0,
@@ -266,6 +267,7 @@ export class GemBankClient extends AccountUtils {
     gemAmount: BN,
     gemMint: PublicKey,
     gemSource: PublicKey,
+    gemMetadata: PublicKey,
     depositor: PublicKey | Keypair
   ) {
     const [gemBox, gemBump] = await this.findGemBoxPDA(vault, gemMint);
@@ -295,11 +297,13 @@ export class GemBankClient extends AccountUtils {
           gemDepositReceipt: GDR,
           gemSource,
           gemMint,
+          gemMetadata,
           depositor: isKp(depositor)
             ? (<Keypair>depositor).publicKey
             : depositor,
           tokenProgram: TOKEN_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
+          metadataProgram: MetadataProgram.PUBKEY,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         },
         signers,

@@ -1,10 +1,13 @@
 use anchor_lang::prelude::*;
+use anchor_spl::token::accessor::mint;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
+use metaplex_token_metadata::state::Metadata;
+use std::str::FromStr;
 
 use crate::{errors::ErrorCode, state::*, utils::math::*};
 
 #[derive(Accounts)]
-#[instruction(bump_gem_box: u8, bump_gdr: u8)]
+#[instruction(bump_gem_box: u8, bump_gdr: u8, bump_metadata: u8)]
 pub struct DepositGem<'info> {
     // needed for checking flags
     pub bank: Box<Account<'info, Bank>>,
@@ -39,10 +42,17 @@ pub struct DepositGem<'info> {
     #[account(mut)]
     pub gem_source: Box<Account<'info, TokenAccount>>,
     pub gem_mint: Box<Account<'info, Mint>>,
+    #[account(constraint = assert_valid_metadata(
+        &gem_metadata,
+        &gem_mint.key(),
+        &metadata_program.key()))]
+    pub gem_metadata: AccountInfo<'info>,
     #[account(mut)]
     pub depositor: Signer<'info>,
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
+    #[account(address = Pubkey::from_str("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s").unwrap())]
+    pub metadata_program: AccountInfo<'info>,
     pub rent: Sysvar<'info, Rent>,
 }
 
@@ -59,8 +69,85 @@ impl<'info> DepositGem<'info> {
     }
 }
 
+fn assert_valid_metadata(
+    gem_metadata: &AccountInfo,
+    gem_mint: &Pubkey,
+    metadata_program: &Pubkey,
+) -> bool {
+    // 1 verify the owner of the account is metaplex's metadata program
+
+    // todo if the owner check is failing does that mean it didn't init?
+    let m = Metadata::from_account_info(gem_metadata).unwrap();
+    msg!("{:?}", m);
+
+    msg!("owner is {}", gem_metadata.owner);
+    msg!("metadata program: {}", metadata_program);
+    assert_eq!(gem_metadata.owner, metadata_program);
+
+    // 2 verify the PDA seeds
+    let metadata_seed = &[
+        b"metadata".as_ref(),
+        metadata_program.as_ref(),
+        gem_mint.as_ref(),
+    ];
+    let (metadata_addr, _bump) = Pubkey::find_program_address(metadata_seed, &metadata_program);
+    assert_eq!(metadata_addr, gem_metadata.key());
+
+    true
+}
+
+fn deserialize_metadata(gem_metadata: &AccountInfo) -> Result<Metadata, ProgramError> {
+    Metadata::from_account_info(gem_metadata)
+}
+
+// fn assert_whitelisted_other(ctx: &Context<DepositGem>) -> ProgramResult {
+//     // let bank = &*ctx.accounts.bank;
+//     // let remaining_accs = &mut ctx.remaining_accounts.iter();
+//     // let untrusted_metadata = next_account_info(remaining_accs)?;
+//     //
+//     // let base_seeds = [b"whitelist".as_ref(), bank.key().as_ref()];
+//     //
+//     // if bank.whitelisted_creators > 0 {}
+//     //
+//     // if bank.whitelisted_update_authorities > 0 {}
+//
+//     Ok(())
+// }
+
+// fn assert_whitelisted_mint(ctx: &Context<DepositGem>) -> ProgramResult {
+//     let bank = &*ctx.accounts.bank;
+//     let remaining_accs = &mut ctx.remaining_accounts.iter();
+//     let mint_whitelist_proof = next_account_info(remaining_accs)?;
+//
+//     let base_seeds = [b"whitelist".as_ref(), bank.key().as_ref()];
+//
+//     if bank.whitelisted_mints > 0 {
+//         let mut seeds = base_seeds.clone().to_vec();
+//         seeds.push(mint.key().as_ref());
+//         let whitelist_proof = Pubkey::find_program_address(seeds.as_slice(), ctx.program_id);
+//     }
+//
+//     if bank.whitelisted_creators > 0 {}
+//
+//     if bank.whitelisted_update_authorities > 0 {}
+//
+//     Ok(())
+// }
+
+// todo or vs and
 pub fn handler(ctx: Context<DepositGem>, amount: u64) -> ProgramResult {
-    // verify not suspended & do the transfer
+    // if a whitelist exists, verify token whitelisted
+    // let bank = &*ctx.accounts.bank;
+    //
+    // if bank.whitelisted_mints > 0 {
+    //     assert_whitelisted_mint(&ctx)?;
+    // }
+    //
+    // if bank.whitelisted_creators > 0 || bank.whitelisted_update_authorities > 0 {
+    //     assert_whitelisted_other(&ctx)?;
+    // }
+
+    // verify vault not suspended
     let bank = &*ctx.accounts.bank;
     let vault = &ctx.accounts.vault;
 
@@ -68,6 +155,7 @@ pub fn handler(ctx: Context<DepositGem>, amount: u64) -> ProgramResult {
         return Err(ErrorCode::VaultAccessSuspended.into());
     }
 
+    // do the transfer
     token::transfer(
         ctx.accounts
             .transfer_ctx()
@@ -77,7 +165,6 @@ pub fn handler(ctx: Context<DepositGem>, amount: u64) -> ProgramResult {
 
     // record total number of gem boxes in vault's state
     let vault = &mut ctx.accounts.vault;
-
     vault.gem_box_count.try_self_add(1)?;
 
     // record a gdr

@@ -7,7 +7,7 @@ pub const LATEST_BANK_VERSION: u16 = 0;
 #[repr(C)]
 #[account]
 pub struct Bank {
-    pub manager: Pubkey, //todo need tests for findXPDA functions, in case I move fields around
+    pub manager: Pubkey,
 
     pub version: u16,
 

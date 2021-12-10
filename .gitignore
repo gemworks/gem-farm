@@ -139,7 +139,7 @@ __pycache__/
 *$py.class
 
 # C extensions
-*.so
+#*.so
 
 # Distribution / packaging
 .Python
@@ -291,7 +291,7 @@ Cargo.lock
 *.pdb
 
 # fuzzers - cargo-fuzz
-artifacts/
+#artifacts/
 corpus/
 
 # fuzzers - honggfuzz
