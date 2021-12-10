@@ -1,9 +1,8 @@
-use crate::errors::ErrorCode;
-use crate::math::*;
-use anchor_lang::prelude::*;
 use std::io::Write;
 
-use crate::state::*;
+use anchor_lang::prelude::*;
+
+use crate::{state::*, utils::math::*};
 
 #[derive(Accounts)]
 #[instruction(bump: u8)]

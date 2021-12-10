@@ -1,9 +1,7 @@
-use crate::errors::ErrorCode;
-use crate::math::*;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
-use crate::state::*;
+use crate::{errors::ErrorCode, state::*, utils::math::*};
 
 #[derive(Accounts)]
 #[instruction(bump_gem_box: u8, bump_gdr: u8)]

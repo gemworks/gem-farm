@@ -1,12 +1,14 @@
 use anchor_lang::prelude::*;
-use anchor_spl::associated_token::AssociatedToken;
-use anchor_spl::token::accessor::authority;
-use anchor_spl::token::{self, CloseAccount, Mint, Token, TokenAccount, Transfer};
+use anchor_spl::{
+    associated_token::AssociatedToken,
+    token::{self, CloseAccount, Mint, Token, TokenAccount, Transfer},
+};
 
-use crate::errors::ErrorCode;
-use crate::math::*;
-use crate::state::*;
-use crate::util::close_account;
+use crate::{
+    errors::ErrorCode,
+    state::*,
+    utils::{close_account, math::*},
+};
 
 #[derive(Accounts)]
 #[instruction(bump: u8)]

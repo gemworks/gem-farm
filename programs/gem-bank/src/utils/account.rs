@@ -1,10 +1,8 @@
 use std::io::Write;
 
-use anchor_lang::__private::CLOSED_ACCOUNT_DISCRIMINATOR;
-use anchor_lang::prelude::*;
+use anchor_lang::{__private::CLOSED_ACCOUNT_DISCRIMINATOR, prelude::*};
 
-use crate::errors::ErrorCode;
-use crate::math::*;
+use crate::{errors::ErrorCode, utils::math::*};
 
 pub fn close_account(
     pda_to_close: &mut AccountInfo,

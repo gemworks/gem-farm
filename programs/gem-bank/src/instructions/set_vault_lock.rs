@@ -1,6 +1,6 @@
-use crate::errors::ErrorCode;
-use crate::state::*;
 use anchor_lang::prelude::*;
+
+use crate::{errors::ErrorCode, state::*};
 
 #[derive(Accounts)]
 pub struct UnlockVault<'info> {

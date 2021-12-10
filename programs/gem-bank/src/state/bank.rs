@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
+use jet_proc_macros::assert_size;
 
 use crate::errors::ErrorCode;
-use jet_proc_macros::assert_size;
 
 pub const LATEST_BANK_VERSION: u64 = 0;
 

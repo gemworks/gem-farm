@@ -5,9 +5,8 @@ declare_id!("EcUEgj2r1UZR34ueYQCyyVtrGip5eJryU96R8XfL4yXZ");
 
 pub mod errors;
 pub mod instructions;
-pub mod math;
 pub mod state;
-pub mod util;
+pub mod utils;
 
 #[program]
 pub mod gem_bank {

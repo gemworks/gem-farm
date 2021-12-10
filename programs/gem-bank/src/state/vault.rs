@@ -1,6 +1,7 @@
-use crate::state::{Bank, BankFlags};
 use anchor_lang::prelude::*;
 use jet_proc_macros::assert_size;
+
+use crate::state::{Bank, BankFlags};
 
 #[assert_size(208)]
 #[repr(C)]
