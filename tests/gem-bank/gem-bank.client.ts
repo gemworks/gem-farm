@@ -1,14 +1,13 @@
 import * as anchor from '@project-serum/anchor';
+import { BN, Idl, Program, Provider, Wallet } from '@project-serum/anchor';
 import { Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
 import {
   AccountInfo,
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
-  u64,
 } from '@solana/spl-token';
 import { AccountUtils } from '../utils/account';
 import { GemBank } from '../../target/types/gem_bank';
-import { BN, Idl, Program, Provider, Wallet } from '@project-serum/anchor';
 import { Connection } from '@metaplex/js';
 import { isKp } from '../utils/types';
 
@@ -103,7 +102,7 @@ export class GemBankClient extends AccountUtils {
       ? [
           {
             memcmp: {
-              offset: 24, //need to prepend 8 bytes for anchor's disc
+              offset: 8, //need to prepend 8 bytes for anchor's disc
               bytes: manager.toBase58(),
             },
           },

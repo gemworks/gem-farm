@@ -9,6 +9,7 @@ interface IGem {
   gem: ITokenData;
   gemBox: PublicKey;
   gemOwner: Keypair;
+  gemAmount: BN;
 }
 
 interface IVault {
@@ -19,9 +20,9 @@ interface IVault {
 }
 
 /*
- * The purpose of this test is to
- * 1) create A LOT of deposits and see how they work
- * 2) try to locate the appropriate PDAs, which will be used in FE
+ * The purpose of this test is to:
+ * 1) create A LOT of concurrent deposits -> make sure the program can handle
+ * 2) test finding & deserializing appropriate PDA state accounts
  */
 describe('looper', () => {
   const provider = anchor.Provider.env();
@@ -34,6 +35,7 @@ describe('looper', () => {
   const nGemsPerVault = 5;
 
   const bank = Keypair.generate();
+  const manager = gb.wallet.publicKey;
   let vaults: IVault[] = [];
 
   async function prepVault() {
@@ -72,13 +74,29 @@ describe('looper', () => {
       gem,
       gemBox,
       gemOwner,
+      gemAmount,
     });
   }
 
-  async function looper() {
+  async function prepGemWithdrawal(vault: IVault, gemIdx: number) {
+    const gem = vault.gemBoxes[gemIdx];
+    const gemDest = await gb.getATA(gem.gem.tokenMint, gem.gemOwner.publicKey);
+
+    await gb.withdrawGem(
+      bank.publicKey,
+      vault.vault,
+      vault.vaultOwner,
+      gem.gemAmount,
+      gem.gem.tokenMint,
+      gemDest,
+      gem.gemOwner.publicKey
+    );
+  }
+
+  async function depositLooper() {
     //bank
-    await gb.startBank(bank, gb.wallet.publicKey);
-    console.log('bank ready');
+    await gb.startBank(bank, manager);
+    console.log('bank started');
 
     //vaults
     const vaultPromises = [];
@@ -86,7 +104,7 @@ describe('looper', () => {
       vaultPromises.push(prepVault());
     }
     await Promise.all(vaultPromises);
-    console.log('vaults ready');
+    console.log('vaults created');
 
     //gems
     const gemPromises: any[] = [];
@@ -96,28 +114,68 @@ describe('looper', () => {
       }
     });
     await Promise.all(gemPromises);
-    console.log('gems ready');
+    console.log('gems deposited');
   }
 
-  it('creates A LOT of PDAs & reads them back correctly', async () => {
-    await looper();
+  async function withdrawalLooper() {
+    const promises: any[] = [];
+    vaults.forEach((v: IVault) => {
+      for (let i = 0; i < nGemsPerVault; i++) {
+        promises.push(prepGemWithdrawal(v, i));
+      }
+    });
+    await Promise.all(promises);
+    console.log('gems withdrawn');
+  }
 
-    const bankPDAs = await gb.fetchAllBankPDAs();
-    const vaultPDAs = await gb.fetchAllVaultPDAs();
-    const gdrPDAs = await gb.fetchAllGdrPDAs();
+  it('creates A LOT of PDAs & fetches them correctly', async () => {
+    await depositLooper();
 
-    //verify correct # of accounts created
+    // --------------------------------------- w/o constraints
+    let bankPDAs = await gb.fetchAllBankPDAs();
+    let vaultPDAs = await gb.fetchAllVaultPDAs();
+    let gdrPDAs = await gb.fetchAllGdrPDAs();
+
+    //verify correct # of accounts found
     assert.equal(bankPDAs.length, 1);
     assert.equal(vaultPDAs.length, nVaults);
     assert.equal(gdrPDAs.length, nVaults * nGemsPerVault);
 
     //verify correct # of accounts stored
-    const bankAcc = await gb.fetchBankAcc(bank.publicKey);
+    let bankAcc = await gb.fetchBankAcc(bank.publicKey);
     assert(bankAcc.vaultCount.eq(new BN(nVaults)));
 
     for (const v of vaults) {
       const vaultAcc = await gb.fetchVaultAcc(v.vault);
       assert(vaultAcc.gemBoxCount.eq(new BN(nGemsPerVault)));
+    }
+
+    // --------------------------------------- w/ constraints
+    bankPDAs = await gb.fetchAllBankPDAs(manager);
+    vaultPDAs = await gb.fetchAllVaultPDAs(bank.publicKey);
+
+    //verify correct # of accounts found
+    assert.equal(bankPDAs.length, 1);
+    assert.equal(vaultPDAs.length, nVaults);
+
+    for (const v of vaults) {
+      const gdrPDAsByVault = await gb.fetchAllGdrPDAs(v.vault);
+      assert.equal(gdrPDAsByVault.length, nGemsPerVault);
+    }
+  });
+
+  it('reduces PDA count after closure', async () => {
+    await withdrawalLooper();
+
+    const gdrPDAs = await gb.fetchAllGdrPDAs();
+
+    //verify correct # of accounts found
+    assert.equal(gdrPDAs.length, 0); //reduced after closure
+
+    //verify correct # of accounts stored
+    for (const v of vaults) {
+      const vaultAcc = await gb.fetchVaultAcc(v.vault);
+      assert(vaultAcc.gemBoxCount.eq(new BN(0))); //reduced after closure
     }
   });
 });
