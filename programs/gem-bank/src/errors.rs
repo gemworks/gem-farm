@@ -22,4 +22,7 @@ pub enum ErrorCode {
 
     #[msg("this gem is not present on any of the whitelists")]
     NotWhitelisted,
+
+    #[msg("whitelist proof exists but for the wrong type")]
+    WrongWhitelistType,
 }

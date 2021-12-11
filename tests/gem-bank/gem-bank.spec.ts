@@ -381,111 +381,111 @@ describe('gem bank', () => {
         await assertWhitelistClean();
       });
 
-      // it('adds/removes mint from whitelist', async () => {
-      //   const { whitelistedMint, whitelistProof } = await whitelistMint(
-      //     gem.tokenMint
-      //   );
-      //
-      //   const proofAcc = await gb.fetchWhitelistProofAcc(whitelistProof);
-      //   assert.equal(proofAcc.whitelistType, WhitelistType.Mint);
-      //
-      //   await prepRemoveFromWhitelist(whitelistedMint);
-      //
-      //   await expect(
-      //     gb.fetchWhitelistProofAcc(whitelistProof)
-      //   ).to.be.rejectedWith('Account does not exist');
-      // });
-      //
-      // it('adds/removes creator from whitelist', async () => {
-      //   const { whitelistedCreator, whitelistProof } = await whitelistCreator(
-      //     randomWallet.publicKey
-      //   );
-      //
-      //   const proofAcc = await gb.fetchWhitelistProofAcc(whitelistProof);
-      //   assert.equal(proofAcc.whitelistType, WhitelistType.Creator);
-      //
-      //   await prepRemoveFromWhitelist(whitelistedCreator);
-      //
-      //   await expect(
-      //     gb.fetchWhitelistProofAcc(whitelistProof)
-      //   ).to.be.rejectedWith('Account does not exist');
-      // });
-      //
-      // //no need to deserialize anything, if ix goes through w/o error, the deposit succeeds
-      // it('allows a deposit if mint whitelisted, and creators WL empty', async () => {
-      //   const { whitelistedMint, whitelistProof } = await whitelistMint(
-      //     gem.tokenMint
-      //   );
-      //   await prepDeposit(vaultOwner, whitelistProof);
-      //
-      //   //clean up after
-      //   await prepRemoveFromWhitelist(whitelistedMint);
-      // });
-      //
-      // //this is expected behavior since we're doing an OR check
-      // it('allows a deposit if mint whitelisted, and creators WL NOT empty', async () => {
-      //   const { whitelistedMint, whitelistProof } = await whitelistMint(
-      //     gem.tokenMint
-      //   );
-      //   const { whitelistedCreator } = await whitelistCreator(
-      //     randomWallet.publicKey //intentionally a random creator
-      //   );
-      //   await prepDeposit(vaultOwner, whitelistProof);
-      //
-      //   //clean up after
-      //   await prepRemoveFromWhitelist(whitelistedMint);
-      //   await prepRemoveFromWhitelist(whitelistedCreator);
-      // });
-      //
-      // it('allows a deposit if creator verified + whitelisted, and mint WL empty', async () => {
-      //   const gemMetadata = await createMetadata(
-      //     gb.conn,
-      //     gb.wallet,
-      //     gem.tokenMint
-      //   );
-      //
-      //   const { whitelistedCreator, whitelistProof } = await whitelistCreator(
-      //     gb.wallet.publicKey //this is the address used to create the metadata
-      //   );
-      //
-      //   //since we're not relying on mint whitelist for tx to pass, we simply pass in a dummy PK
-      //   await prepDeposit(
-      //     vaultOwner,
-      //     PublicKey.default,
-      //     gemMetadata,
-      //     whitelistProof
-      //   );
-      //
-      //   //clean up after
-      //   await prepRemoveFromWhitelist(whitelistedCreator);
-      // });
-      //
-      // //again we're simply checking OR behavior
-      // it('allows a deposit if creator verified + whitelisted, and mint WL NOT empty', async () => {
-      //   const gemMetadata = await createMetadata(
-      //     gb.conn,
-      //     gb.wallet,
-      //     gem.tokenMint
-      //   );
-      //   const { gem: randomGem } = await prepGem();
-      //
-      //   const { whitelistedMint } = await whitelistMint(randomGem.tokenMint); //random mint intentionally
-      //   const { whitelistedCreator, whitelistProof } = await whitelistCreator(
-      //     gb.wallet.publicKey //this is the address used to create the metadata
-      //   );
-      //
-      //   //since we're not relying on mint whitelist for tx to pass, we simply pass in a dummy PK
-      //   await prepDeposit(
-      //     vaultOwner,
-      //     PublicKey.default,
-      //     gemMetadata,
-      //     whitelistProof
-      //   );
-      //
-      //   //clean up after
-      //   await prepRemoveFromWhitelist(whitelistedMint);
-      //   await prepRemoveFromWhitelist(whitelistedCreator);
-      // });
+      // --------------- successes
+
+      it('adds/removes mint from whitelist', async () => {
+        const { whitelistedMint, whitelistProof } = await whitelistMint(
+          gem.tokenMint
+        );
+
+        const proofAcc = await gb.fetchWhitelistProofAcc(whitelistProof);
+        assert.equal(proofAcc.whitelistType, WhitelistType.Mint);
+
+        await prepRemoveFromWhitelist(whitelistedMint);
+
+        await expect(
+          gb.fetchWhitelistProofAcc(whitelistProof)
+        ).to.be.rejectedWith('Account does not exist');
+      });
+
+      it('adds/removes creator from whitelist', async () => {
+        const { whitelistedCreator, whitelistProof } = await whitelistCreator(
+          randomWallet.publicKey
+        );
+
+        const proofAcc = await gb.fetchWhitelistProofAcc(whitelistProof);
+        assert.equal(proofAcc.whitelistType, WhitelistType.Creator);
+
+        await prepRemoveFromWhitelist(whitelistedCreator);
+
+        await expect(
+          gb.fetchWhitelistProofAcc(whitelistProof)
+        ).to.be.rejectedWith('Account does not exist');
+      });
+
+      //no need to deserialize anything, if ix goes through w/o error, the deposit succeeds
+      it('allows a deposit if mint whitelisted, and creators WL empty', async () => {
+        const { whitelistedMint, whitelistProof } = await whitelistMint(
+          gem.tokenMint
+        );
+        await prepDeposit(vaultOwner, whitelistProof);
+
+        //clean up after
+        await prepRemoveFromWhitelist(whitelistedMint);
+      });
+
+      //this is expected behavior since we're doing an OR check
+      it('allows a deposit if mint whitelisted, and creators WL NOT empty', async () => {
+        const { whitelistedMint, whitelistProof } = await whitelistMint(
+          gem.tokenMint
+        );
+        const { whitelistedCreator } = await whitelistCreator(
+          randomWallet.publicKey //intentionally a random creator
+        );
+        await prepDeposit(vaultOwner, whitelistProof);
+
+        //clean up after
+        await prepRemoveFromWhitelist(whitelistedMint);
+        await prepRemoveFromWhitelist(whitelistedCreator);
+      });
+
+      it('allows a deposit if creator verified + whitelisted, and mint WL empty', async () => {
+        const gemMetadata = await createMetadata(
+          gb.conn,
+          gb.wallet,
+          gem.tokenMint
+        );
+
+        const { whitelistedCreator, whitelistProof } = await whitelistCreator(
+          gb.wallet.publicKey //this is the address used to create the metadata
+        );
+
+        await prepDeposit(
+          vaultOwner,
+          PublicKey.default, // since we're not relying on mint whitelist for tx to pass, we simply pass in a dummy PK
+          gemMetadata,
+          whitelistProof
+        );
+
+        //clean up after
+        await prepRemoveFromWhitelist(whitelistedCreator);
+      });
+
+      //again we're simply checking OR behavior
+      it('allows a deposit if creator verified + whitelisted, and mint WL NOT empty', async () => {
+        const gemMetadata = await createMetadata(
+          gb.conn,
+          gb.wallet,
+          gem.tokenMint
+        );
+        const { gem: randomGem } = await prepGem();
+
+        const { whitelistedMint } = await whitelistMint(randomGem.tokenMint); //random mint intentionally
+        const { whitelistedCreator, whitelistProof } = await whitelistCreator(
+          gb.wallet.publicKey //this is the address used to create the metadata
+        );
+
+        await prepDeposit(
+          vaultOwner,
+          PublicKey.default,
+          gemMetadata,
+          whitelistProof
+        );
+
+        //clean up after
+        await prepRemoveFromWhitelist(whitelistedMint);
+        await prepRemoveFromWhitelist(whitelistedCreator);
+      });
 
       it('allows a deposit if creator verified + whitelisted, but listed LAST', async () => {
         const gemMetadata = await createMetadata(
@@ -500,7 +500,6 @@ describe('gem bank', () => {
           gb.wallet.publicKey //this is the address used to create the metadata
         );
 
-        //since we're not relying on mint whitelist for tx to pass, we simply pass in a dummy PK
         await prepDeposit(
           vaultOwner,
           PublicKey.default,
@@ -512,13 +511,149 @@ describe('gem bank', () => {
         await prepRemoveFromWhitelist(whitelistedCreator);
       });
 
-      //be sure to check failure for unverified creators
-      // it('FAILS a deposit if mint NOT whitelisted, and creators WL empty', async () => {});
-      // it('FAILS to verify by 6th creator', async () => {});
-      // it('FAILS to verify by a creator who hasnt signed off', async () => {});
-      // it('FAILS to verify when creator WL exists, but target creator not on it', async () => {});
-      // it('FAILS to verify when proof is done for mint, but creator passed', async () => {});
-      // it('FAILS to verify when proof is done for creator, but mint passed', async () => {});
+      // --------------- failures
+
+      it('FAILS a deposit if creator whitelisted but not verified (signed off)', async () => {
+        const gemMetadata = await createMetadata(
+          gb.conn,
+          gb.wallet,
+          gem.tokenMint,
+          5,
+          1,
+          true
+        );
+
+        const { whitelistedCreator, whitelistProof } = await whitelistCreator(
+          gb.wallet.publicKey //this is the address used to create the metadata
+        );
+
+        await expect(
+          prepDeposit(
+            vaultOwner,
+            PublicKey.default,
+            gemMetadata,
+            whitelistProof
+          )
+        ).to.be.rejectedWith(
+          'this gem is not present on any of the whitelists'
+        );
+
+        //clean up after
+        await prepRemoveFromWhitelist(whitelistedCreator);
+      });
+
+      it('FAILS a deposit if mint whitelist exists, but mint not whitelisted', async () => {
+        //setup the whitelist for the WRONG gem
+        const { gem: randomGem } = await prepGem();
+        const { whitelistedMint, whitelistProof } = await whitelistMint(
+          randomGem.tokenMint
+        );
+
+        await expect(
+          prepDeposit(vaultOwner, whitelistProof)
+        ).to.be.rejectedWith(
+          'this gem is not present on any of the whitelists'
+        );
+
+        //clean up after
+        await prepRemoveFromWhitelist(whitelistedMint);
+      });
+
+      it('FAILS a deposit if creator whitelist exists, but creator not whitelisted', async () => {
+        const gemMetadata = await createMetadata(
+          gb.conn,
+          gb.wallet,
+          gem.tokenMint
+        );
+
+        //setup the whitelist for the WRONG creator
+        const { whitelistedCreator, whitelistProof } = await whitelistCreator(
+          randomWallet.publicKey
+        );
+
+        await expect(
+          prepDeposit(
+            vaultOwner,
+            PublicKey.default,
+            gemMetadata,
+            whitelistProof
+          )
+        ).to.be.rejectedWith(
+          'this gem is not present on any of the whitelists'
+        );
+
+        //clean up after
+        await prepRemoveFromWhitelist(whitelistedCreator);
+      });
+
+      it('FAILS to verify when proof is marked as "mint", but is actually for creator', async () => {
+        const gemMetadata = await createMetadata(
+          gb.conn,
+          gb.wallet,
+          gem.tokenMint
+        );
+
+        //intentionally passing in the wallet's address not the mint's
+        //now the creator has a proof, but it's marked as "mint"
+        const { whitelistedMint, whitelistProof } = await whitelistMint(
+          gb.wallet.publicKey
+        );
+
+        //let's also whitelist a random creator, so that both branches of checks are triggered
+        const { whitelistedCreator } = await whitelistCreator(
+          randomWallet.publicKey
+        );
+
+        await expect(
+          prepDeposit(
+            vaultOwner,
+            PublicKey.default,
+            gemMetadata,
+            whitelistProof
+          )
+        ).to.be.rejectedWith('whitelist proof exists but for the wrong type');
+
+        //clean up after
+        await prepRemoveFromWhitelist(whitelistedMint);
+        await prepRemoveFromWhitelist(whitelistedCreator);
+      });
+
+      it('FAILS to verify when proof is marked as "creator", but is actually for mint', async () => {
+        const gemMetadata = await createMetadata(
+          gb.conn,
+          gb.wallet,
+          gem.tokenMint
+        );
+
+        //intentionally passing in the mint's address not the creator's
+        //now the mint has a proof, but it's marked as "creator"
+        const { whitelistedCreator, whitelistProof } = await whitelistCreator(
+          gem.tokenMint
+        );
+
+        //let's also whitelist a random mint, so that both branches of checks are triggered
+        const { whitelistedMint } = await whitelistMint(
+          Keypair.generate().publicKey
+        );
+
+        //unfortunately it's rejected not with the error we'd like
+        //the issue is that when mint branch fails (as it should, with the correct error),
+        //it falls back to checking creator branch, which fails with the wrong error
+        await expect(
+          prepDeposit(
+            vaultOwner,
+            whitelistProof,
+            gemMetadata,
+            PublicKey.default
+          )
+        ).to.be.rejectedWith(
+          'this gem is not present on any of the whitelists'
+        );
+
+        //clean up after
+        await prepRemoveFromWhitelist(whitelistedMint);
+        await prepRemoveFromWhitelist(whitelistedCreator);
+      });
     });
   });
 });

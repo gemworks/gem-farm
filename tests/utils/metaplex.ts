@@ -7,11 +7,15 @@ export async function createMetadata(
   connection: Connection,
   wallet: Wallet,
   editionMint: PublicKey,
-  //NOTE 1: must cleanly divide 100
-  //NOTE 2: max 5 (metaplex's constraint)
+  //must cleanly divide 100
+  //max 5 (metaplex's constraint)
   totalCreatorsN: number = 5,
-  //NOTE 1: starts from 1, not 0
-  ourCreatorN: number = 1
+  //starts from 1, not 0
+  ourCreatorN: number = 1,
+  //leave our creator unverified for negatives testing
+  leaveUnverified: boolean = false,
+  //skips our creator entirely for negatives testing
+  skipEntirely: boolean = false
 ) {
   const metadataData = parseMetadata(
     readJSON('./tests/artifacts/testMetadata.json')
@@ -22,16 +26,14 @@ export async function createMetadata(
     metadataData.creators!.push(
       new programs.metadata.Creator({
         address:
-          i === ourCreatorN - 1
+          !skipEntirely && i === ourCreatorN - 1
             ? wallet.publicKey.toBase58()
             : Keypair.generate().publicKey.toBase58(),
-        verified: i === ourCreatorN - 1, //all of them NOT verified, except for target creator
+        verified: !leaveUnverified && i === ourCreatorN - 1, //all of them NOT verified, except for target creator
         share: 100 / totalCreatorsN,
       })
     );
   }
-
-  console.log(metadataData);
 
   await actions.createMetadata({
     connection,

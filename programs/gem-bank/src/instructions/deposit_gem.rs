@@ -109,7 +109,6 @@ fn assert_valid_whitelist_proof<'info>(
     // https://github.com/project-serum/anchor/blob/fcb07eb8c3c9355f3cabc00afa4faa6247ccc960/lang/src/account.rs#L36
     let proof = Account::<'info, WhitelistProof>::try_from(&whitelist_proof)?;
 
-    // todo double check the logic here
     // 3 verify whitelist type matches
     proof.contains_type(expected_whitelist_type)
 }
@@ -154,16 +153,13 @@ fn assert_whitelisted(ctx: &Context<DepositGem>) -> ProgramResult {
                 continue;
             }
 
-            if let Ok(()) = assert_valid_whitelist_proof(
+            return assert_valid_whitelist_proof(
                 creator_whitelist_proof_info,
                 &bank.key(),
                 &creator.address,
                 ctx.program_id,
                 WhitelistType::CREATOR,
-            ) {
-                msg!("creator whitelisted: {}, going ahead", &creator.address);
-                return Ok(());
-            }
+            );
         }
     }
 
