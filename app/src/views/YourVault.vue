@@ -1,12 +1,12 @@
 <template>
   <ConfigPane />
 
-  <div v-if="!wallet" class="m-5 mb-10 text-center">
-    Pls connect (burner) wallet
-  </div>
+  <div v-if="!wallet" class="text-center">Pls connect (burner) wallet</div>
   <div v-else>
+    <TheWhitelist :bank="bank ? bank.toBase58() : undefined" />
+
     <!--control buttons-->
-    <div class="m-5 mb-10 flex justify-center">
+    <div class="m-5 flex justify-center">
       <button
         v-if="vault"
         class="nes-btn is-primary my-x"
@@ -92,9 +92,10 @@ import { initGemBank } from '@/common/gem-bank';
 import { PublicKey } from '@solana/web3.js';
 import { getListDiffBasedOnMints, removeManyFromList } from '@/common/util';
 import { BN } from '@project-serum/anchor';
+import TheWhitelist from '@/components/TheWhitelist.vue';
 
 export default defineComponent({
-  components: { ArrowButton, NFTGrid, ConfigPane },
+  components: { TheWhitelist, ArrowButton, NFTGrid, ConfigPane },
   setup() {
     const { wallet, getWallet } = useWallet();
     const { cluster, getConnection } = useCluster();
@@ -209,7 +210,12 @@ export default defineComponent({
     //todo jam into single tx
     const moveNFTsOnChain = async () => {
       for (const nft of toVaultNFTs.value) {
-        await depositGem(nft.mint, nft.pubkey!);
+        console.log(nft);
+        const creator = new PublicKey(
+          (nft.onchainMetadata as any).data.creators[0].address
+        );
+        console.log('creator is', creator);
+        await depositGem(nft.mint, creator, nft.pubkey!);
       }
       for (const nft of toWalletNFTs.value) {
         await withdrawGem(nft.mint);
@@ -270,13 +276,18 @@ export default defineComponent({
       console.log('vault lock value changed to ', vaultLocked.value);
     };
 
-    const depositGem = async (mint: PublicKey, source: PublicKey) => {
+    const depositGem = async (
+      mint: PublicKey,
+      creator: PublicKey,
+      source: PublicKey
+    ) => {
       const { txSig } = await gb.depositGemWallet(
         bank.value,
         vault.value,
         new BN(1),
         mint,
-        source
+        source,
+        creator
       );
       console.log('deposit done', txSig);
     };

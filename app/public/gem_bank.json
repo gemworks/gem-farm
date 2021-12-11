@@ -40,7 +40,7 @@
       "args": [
         {
           "name": "flags",
-          "type": "u64"
+          "type": "u8"
         }
       ]
     },
@@ -293,6 +293,77 @@
           "type": "u64"
         }
       ]
+    },
+    {
+      "name": "addToWhitelist",
+      "accounts": [
+        {
+          "name": "bank",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "manager",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "addressToWhitelist",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "whitelistProof",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "bump",
+          "type": "u8"
+        },
+        {
+          "name": "whitelistType",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "removeFromWhitelist",
+      "accounts": [
+        {
+          "name": "bank",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "addressToRemove",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "manager",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "whitelistProof",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "bump",
+          "type": "u8"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -302,16 +373,24 @@
         "kind": "struct",
         "fields": [
           {
+            "name": "manager",
+            "type": "publicKey"
+          },
+          {
             "name": "version",
-            "type": "u64"
+            "type": "u16"
           },
           {
             "name": "flags",
-            "type": "u64"
+            "type": "u8"
           },
           {
-            "name": "manager",
-            "type": "publicKey"
+            "name": "whitelistedCreators",
+            "type": "u32"
+          },
+          {
+            "name": "whitelistedMints",
+            "type": "u32"
           },
           {
             "name": "vaultCount",
@@ -383,15 +462,6 @@
             "type": "bool"
           },
           {
-            "name": "reserved",
-            "type": {
-              "array": [
-                "u8",
-                6
-              ]
-            }
-          },
-          {
             "name": "name",
             "type": {
               "array": [
@@ -403,6 +473,18 @@
           {
             "name": "gemBoxCount",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "WhitelistProof",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "whitelistType",
+            "type": "u8"
           }
         ]
       }
@@ -438,9 +520,19 @@
       "code": 305,
       "name": "AccountDidNotSerialize",
       "msg": "anchor serialization issue"
+    },
+    {
+      "code": 306,
+      "name": "NotWhitelisted",
+      "msg": "this gem is not present on any of the whitelists"
+    },
+    {
+      "code": 307,
+      "name": "WrongWhitelistType",
+      "msg": "whitelist proof exists but for the wrong type"
     }
   ],
   "metadata": {
-    "address": "EcUEgj2r1UZR34ueYQCyyVtrGip5eJryU96R8XfL4yXZ"
+    "address": "7HqdB3svYBzC1jVNHi8oZokTKFsQb4kTKD5JG3gudLmB"
   }
 }

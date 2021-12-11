@@ -1,10 +1,13 @@
 import * as anchor from '@project-serum/anchor';
 import { BN, Idl } from '@project-serum/anchor';
-import { GemBankClient } from '../../../../tests/gem-bank/gem-bank.client';
+import {
+  GemBankClient,
+  WhitelistType,
+} from '../../../../tests/gem-bank/gem-bank.client';
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import { SignerWalletAdapter } from '@solana/wallet-adapter-base';
 import { DEFAULTS } from '@/globals';
-import { NodeWallet } from '@metaplex/js';
+import { NodeWallet, programs } from '@metaplex/js';
 
 //when we only want to view vaults, no need to connect a real wallet.
 function createFakeWallet() {
@@ -63,8 +66,16 @@ export class GemBank extends GemBankClient {
     vault: PublicKey,
     gemAmount: BN,
     gemMint: PublicKey,
-    gemSource: PublicKey
+    gemSource: PublicKey,
+    creator: PublicKey
   ) {
+    const [mintProof, bump] = await this.findWhitelistProofPDA(bank, gemMint);
+    const [creatorProof, bump2] = await this.findWhitelistProofPDA(
+      bank,
+      creator
+    );
+    const metadata = await programs.metadata.Metadata.getPDA(gemMint);
+
     return this.depositGem(
       bank,
       vault,
@@ -72,7 +83,10 @@ export class GemBank extends GemBankClient {
       gemAmount,
       gemMint,
       gemSource,
-      this.wallet.publicKey
+      this.wallet.publicKey,
+      mintProof,
+      metadata,
+      creatorProof
     );
   }
 
@@ -91,6 +105,27 @@ export class GemBank extends GemBankClient {
       gemMint,
       gemDestination,
       this.wallet.publicKey
+    );
+  }
+
+  async addToWhitelistWallet(
+    bank: PublicKey,
+    addressToWhitelist: PublicKey,
+    whitelistType: WhitelistType
+  ) {
+    return this.addToWhitelist(
+      bank,
+      this.wallet.publicKey,
+      addressToWhitelist,
+      whitelistType
+    );
+  }
+
+  async removeFromWhitelistWallet(bank: PublicKey, addressToRemove: PublicKey) {
+    return this.removeFromWhitelist(
+      bank,
+      this.wallet.publicKey,
+      addressToRemove
     );
   }
 }
