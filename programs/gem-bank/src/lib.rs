@@ -57,4 +57,8 @@ pub mod gem_bank {
     ) -> ProgramResult {
         instructions::add_to_whitelist::handler(ctx, whitelist_type)
     }
+
+    pub fn remove_from_whitelist(ctx: Context<RemoveFromWhitelist>, _bump: u8) -> ProgramResult {
+        instructions::remove_from_whitelist::handler(ctx)
+    }
 }

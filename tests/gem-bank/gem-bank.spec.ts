@@ -341,5 +341,23 @@ describe('gem bank', () => {
         prepFlags(randomWallet, BankFlags.FreezeVaults)
       ).to.be.rejectedWith('has_one');
     });
+
+    // --------------------------------------- whitelists
+
+    it('adds to whitelist', async () => {});
+
+    it('removes from whitelist', async () => {});
+
+    it('verifies by mint', async () => {});
+
+    it('verifies by 0th creator', async () => {});
+
+    it('verifies by 5th creator', async () => {});
+    it('FAILS to verify by 6th creator', async () => {});
+    it('FAILS to verify by a creator who hasnt signed off', async () => {});
+    it('FAILS to verify when mint WL exists, but target mint not on it', async () => {});
+    it('FAILS to verify when creator WL exists, but target creator not on it', async () => {});
+    it('FAILS to verify when proof is done for mint, but creator passed', async () => {});
+    it('FAILS to verify when proof is done for creator, but mint passed', async () => {});
   });
 });

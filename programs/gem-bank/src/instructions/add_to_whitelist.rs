@@ -31,7 +31,7 @@ pub fn handler(ctx: Context<AddToWhitelist>, whitelist_type: u8) -> ProgramResul
 
     proof.reset_type(whitelist_type);
 
-    // update total whitelist count
+    // increment whitelist count on bank
     let bank = &mut ctx.accounts.bank;
 
     if whitelist_type.contains(WhitelistType::CREATOR) {
