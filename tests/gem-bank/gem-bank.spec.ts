@@ -5,8 +5,7 @@ import { ITokenData } from '../utils/account';
 import chai, { assert, expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { stringToBytes, toBase58 } from '../utils/types';
-import { BankFlags, GemBankClient } from './gem-bank.client';
-import { createMetadata } from '../utils/metaplex';
+import { GemBankClient, WhitelistType } from './gem-bank.client';
 
 chai.use(chaiAsPromised);
 
@@ -53,7 +52,7 @@ describe('gem bank', () => {
     console.log('gem', toBase58(gem as any));
     // console.log('gemBox', gemBox.toBase58());
     // console.log('GDR', GDR.toBase58());
-    console.log('gemMetadata', gemMetadata);
+    // console.log('gemMetadata', gemMetadata);
   }
 
   before('configures accounts', async () => {
@@ -155,209 +154,237 @@ describe('gem bank', () => {
       gemAmount = new BN(Math.ceil(Math.random() * 100));
       gemOwner = await gb.createWallet(100 * LAMPORTS_PER_SOL);
       gem = await gb.createMintAndATA(gemOwner.publicKey, gemAmount);
-      gemMetadata = await createMetadata(gb.conn, gb.wallet, gem.tokenMint);
+      // gemMetadata = await createMetadata(gb.conn, gb.wallet, gem.tokenMint);
     });
 
-    it('deposits gem', async () => {
-      printState();
-
-      let vaultAuth;
-      ({ vaultAuth, gemBox, GDR } = await prepDeposit(vaultOwner));
-
-      const vaultAcc = await gb.fetchVaultAcc(vault);
-      assert(vaultAcc.gemBoxCount.eq(new BN(1)));
-
-      const gemBoxAcc = await gb.fetchGemAcc(gem.tokenMint, gemBox);
-      assert(gemBoxAcc.amount.eq(gemAmount));
-      assert.equal(gemBoxAcc.mint.toBase58(), gem.tokenMint.toBase58());
-      assert.equal(gemBoxAcc.owner.toBase58(), vaultAuth.toBase58());
-
-      const GDRAcc = await gb.fetchGDRAcc(GDR);
-      assert.equal(GDRAcc.vault.toBase58(), vault.toBase58());
-      assert.equal(GDRAcc.gemBoxAddress.toBase58(), gemBox.toBase58());
-      assert.equal(GDRAcc.gemMint.toBase58(), gem.tokenMint.toBase58());
-      assert(GDRAcc.gemAmount.eq(gemAmount));
-    });
-
-    it('FAILS to deposit gem w/ wrong owner', async () => {
-      await expect(prepDeposit(randomWallet)).to.be.rejectedWith('has_one');
-    });
-
-    it('withdraws gem to existing ATA', async () => {
-      ({ gemBox, GDR } = await prepDeposit(vaultOwner)); //make a fresh deposit
-
-      const vaultAcc = await gb.fetchVaultAcc(vault);
-      const oldCount = vaultAcc.gemBoxCount.toNumber();
-
-      await prepWithdrawal(vaultOwner, gem.tokenAcc, gem.owner, gemAmount);
-
-      const vaultAcc2 = await gb.fetchVaultAcc(vault);
-      assert.equal(vaultAcc2.gemBoxCount.toNumber(), oldCount - 1);
-
-      const gemAcc = await gb.fetchGemAcc(gem.tokenMint, gem.tokenAcc);
-      assert(gemAcc.amount.eq(gemAmount));
-
-      //these accounts are expected to close on emptying the gem box
-      await expect(gb.fetchGemAcc(gem.tokenMint, gemBox)).to.be.rejectedWith(
-        'Failed to find account'
-      );
-      await expect(gb.fetchGDRAcc(GDR)).to.be.rejectedWith(
-        'Account does not exist'
-      );
-    });
-
-    it('withdraws gem to existing ATA (but does not empty)', async () => {
-      const smallerAmount = gemAmount.sub(new BN(1));
-
-      ({ gemBox, GDR } = await prepDeposit(vaultOwner)); //make a fresh deposit
-
-      await prepWithdrawal(vaultOwner, gem.tokenAcc, gem.owner, smallerAmount);
-
-      const gemAcc = await gb.fetchGemAcc(gem.tokenMint, gem.tokenAcc);
-      assert(gemAcc.amount.eq(smallerAmount));
-
-      const gemBoxAcc = await gb.fetchGemAcc(gem.tokenMint, gemBox);
-      assert(gemBoxAcc.amount.eq(new BN(1)));
-
-      const GDRAcc = await gb.fetchGDRAcc(GDR);
-      assert(GDRAcc.gemAmount.eq(new BN(1)));
-    });
-
-    it('withdraws gem to missing ATA', async () => {
-      ({ gemBox, GDR } = await prepDeposit(vaultOwner)); //make a fresh deposit
-
-      const missingATA = await gb.getATA(gem.tokenMint, randomWallet.publicKey);
-      await prepWithdrawal(
-        vaultOwner,
-        missingATA,
-        randomWallet.publicKey,
-        gemAmount
-      );
-
-      const gemAcc = await gb.fetchGemAcc(gem.tokenMint, missingATA);
-      assert(gemAcc.amount.eq(gemAmount));
-
-      //these accounts are expected to close on emptying the gem box
-      await expect(gb.fetchGemAcc(gem.tokenMint, gemBox)).to.be.rejectedWith(
-        'Failed to find account'
-      );
-      await expect(gb.fetchGDRAcc(GDR)).to.be.rejectedWith(
-        'Account does not exist'
-      );
-    });
-
-    it('FAILS to withdraw gem w/ wrong owner', async () => {
-      await prepDeposit(vaultOwner); //make a fresh deposit
-
-      await expect(
-        prepWithdrawal(randomWallet, gem.tokenAcc, gem.owner, gemAmount)
-      ).to.be.rejectedWith('has_one');
-    });
-
-    // --------------------------------------- vault lock
-
-    async function prepLock(vaultLocked: boolean) {
-      return gb.setVaultLock(bank.publicKey, vault, vaultOwner, vaultLocked);
-    }
-
-    it('un/locks vault successfully', async () => {
-      //lock the vault
-      await prepLock(true);
-      let vaultAcc = await gb.fetchVaultAcc(vault);
-      assert.equal(vaultAcc.locked, true);
-      //deposit should fail
-      await expect(prepDeposit(vaultOwner)).to.be.rejectedWith(
-        'vault is currently locked or frozen and cannot be accessed'
-      );
-
-      //unlock the vault
-      await prepLock(false);
-      vaultAcc = await gb.fetchVaultAcc(vault);
-      assert.equal(vaultAcc.locked, false);
-      //make a real deposit, we need this to try to withdraw later
-      await prepDeposit(vaultOwner);
-
-      //lock the vault
-      await prepLock(true);
-      //withdraw should fail
-      await expect(
-        prepWithdrawal(vaultOwner, gem.tokenAcc, gem.owner, gemAmount)
-      ).to.be.rejectedWith(
-        'vault is currently locked or frozen and cannot be accessed'
-      );
-
-      //finally unlock the vault
-      await prepLock(false);
-      //should be able to withdraw
-      await prepWithdrawal(vaultOwner, gem.tokenAcc, gem.owner, gemAmount);
-    });
-
-    // --------------------------------------- bank flags
-
-    async function prepFlags(manager: Keypair, flags: number) {
-      return gb.setBankFlags(bank.publicKey, manager, flags);
-    }
-
-    it('sets bank flags', async () => {
-      //freeze vaults
-      await prepFlags(manager, BankFlags.FreezeVaults);
-      const bankAcc = await gb.fetchBankAcc(bank.publicKey);
-      assert.equal(bankAcc.flags, BankFlags.FreezeVaults);
-      await expect(
-        gb.updateVaultOwner(
-          bank.publicKey,
-          vault,
-          vaultOwner,
-          vaultCreator.publicKey
-        )
-      ).to.be.rejectedWith(
-        'vault is currently locked or frozen and cannot be accessed'
-      );
-      await expect(prepLock(true)).to.be.rejectedWith(
-        'vault is currently locked or frozen and cannot be accessed'
-      );
-      await expect(prepDeposit(vaultOwner)).to.be.rejectedWith(
-        'vault is currently locked or frozen and cannot be accessed'
-      );
-
-      //remove flags to be able to do a real deposit - else can't withdraw
-      await prepFlags(manager, 0);
-      await prepDeposit(vaultOwner);
-
-      //freeze vaults again
-      await prepFlags(manager, BankFlags.FreezeVaults);
-      await expect(
-        prepWithdrawal(vaultOwner, gem.tokenAcc, gem.owner, gemAmount)
-      ).to.be.rejectedWith(
-        'vault is currently locked or frozen and cannot be accessed'
-      );
-
-      //unfreeze vault in the end
-      await prepFlags(manager, 0);
-    });
-
-    it('FAILS to set bank flags w/ wrong manager', async () => {
-      await expect(
-        prepFlags(randomWallet, BankFlags.FreezeVaults)
-      ).to.be.rejectedWith('has_one');
-    });
+    // it('deposits gem', async () => {
+    //   printState();
+    //
+    //   let vaultAuth;
+    //   ({ vaultAuth, gemBox, GDR } = await prepDeposit(vaultOwner));
+    //
+    //   const vaultAcc = await gb.fetchVaultAcc(vault);
+    //   assert(vaultAcc.gemBoxCount.eq(new BN(1)));
+    //
+    //   const gemBoxAcc = await gb.fetchGemAcc(gem.tokenMint, gemBox);
+    //   assert(gemBoxAcc.amount.eq(gemAmount));
+    //   assert.equal(gemBoxAcc.mint.toBase58(), gem.tokenMint.toBase58());
+    //   assert.equal(gemBoxAcc.owner.toBase58(), vaultAuth.toBase58());
+    //
+    //   const GDRAcc = await gb.fetchGDRAcc(GDR);
+    //   assert.equal(GDRAcc.vault.toBase58(), vault.toBase58());
+    //   assert.equal(GDRAcc.gemBoxAddress.toBase58(), gemBox.toBase58());
+    //   assert.equal(GDRAcc.gemMint.toBase58(), gem.tokenMint.toBase58());
+    //   assert(GDRAcc.gemAmount.eq(gemAmount));
+    // });
+    //
+    // it('FAILS to deposit gem w/ wrong owner', async () => {
+    //   await expect(prepDeposit(randomWallet)).to.be.rejectedWith('has_one');
+    // });
+    //
+    // it('withdraws gem to existing ATA', async () => {
+    //   ({ gemBox, GDR } = await prepDeposit(vaultOwner)); //make a fresh deposit
+    //
+    //   const vaultAcc = await gb.fetchVaultAcc(vault);
+    //   const oldCount = vaultAcc.gemBoxCount.toNumber();
+    //
+    //   await prepWithdrawal(vaultOwner, gem.tokenAcc, gem.owner, gemAmount);
+    //
+    //   const vaultAcc2 = await gb.fetchVaultAcc(vault);
+    //   assert.equal(vaultAcc2.gemBoxCount.toNumber(), oldCount - 1);
+    //
+    //   const gemAcc = await gb.fetchGemAcc(gem.tokenMint, gem.tokenAcc);
+    //   assert(gemAcc.amount.eq(gemAmount));
+    //
+    //   //these accounts are expected to close on emptying the gem box
+    //   await expect(gb.fetchGemAcc(gem.tokenMint, gemBox)).to.be.rejectedWith(
+    //     'Failed to find account'
+    //   );
+    //   await expect(gb.fetchGDRAcc(GDR)).to.be.rejectedWith(
+    //     'Account does not exist'
+    //   );
+    // });
+    //
+    // it('withdraws gem to existing ATA (but does not empty)', async () => {
+    //   const smallerAmount = gemAmount.sub(new BN(1));
+    //
+    //   ({ gemBox, GDR } = await prepDeposit(vaultOwner)); //make a fresh deposit
+    //
+    //   await prepWithdrawal(vaultOwner, gem.tokenAcc, gem.owner, smallerAmount);
+    //
+    //   const gemAcc = await gb.fetchGemAcc(gem.tokenMint, gem.tokenAcc);
+    //   assert(gemAcc.amount.eq(smallerAmount));
+    //
+    //   const gemBoxAcc = await gb.fetchGemAcc(gem.tokenMint, gemBox);
+    //   assert(gemBoxAcc.amount.eq(new BN(1)));
+    //
+    //   const GDRAcc = await gb.fetchGDRAcc(GDR);
+    //   assert(GDRAcc.gemAmount.eq(new BN(1)));
+    // });
+    //
+    // it('withdraws gem to missing ATA', async () => {
+    //   ({ gemBox, GDR } = await prepDeposit(vaultOwner)); //make a fresh deposit
+    //
+    //   const missingATA = await gb.getATA(gem.tokenMint, randomWallet.publicKey);
+    //   await prepWithdrawal(
+    //     vaultOwner,
+    //     missingATA,
+    //     randomWallet.publicKey,
+    //     gemAmount
+    //   );
+    //
+    //   const gemAcc = await gb.fetchGemAcc(gem.tokenMint, missingATA);
+    //   assert(gemAcc.amount.eq(gemAmount));
+    //
+    //   //these accounts are expected to close on emptying the gem box
+    //   await expect(gb.fetchGemAcc(gem.tokenMint, gemBox)).to.be.rejectedWith(
+    //     'Failed to find account'
+    //   );
+    //   await expect(gb.fetchGDRAcc(GDR)).to.be.rejectedWith(
+    //     'Account does not exist'
+    //   );
+    // });
+    //
+    // it('FAILS to withdraw gem w/ wrong owner', async () => {
+    //   await prepDeposit(vaultOwner); //make a fresh deposit
+    //
+    //   await expect(
+    //     prepWithdrawal(randomWallet, gem.tokenAcc, gem.owner, gemAmount)
+    //   ).to.be.rejectedWith('has_one');
+    // });
+    //
+    // // --------------------------------------- vault lock
+    //
+    // async function prepLock(vaultLocked: boolean) {
+    //   return gb.setVaultLock(bank.publicKey, vault, vaultOwner, vaultLocked);
+    // }
+    //
+    // it('un/locks vault successfully', async () => {
+    //   //lock the vault
+    //   await prepLock(true);
+    //   let vaultAcc = await gb.fetchVaultAcc(vault);
+    //   assert.equal(vaultAcc.locked, true);
+    //   //deposit should fail
+    //   await expect(prepDeposit(vaultOwner)).to.be.rejectedWith(
+    //     'vault is currently locked or frozen and cannot be accessed'
+    //   );
+    //
+    //   //unlock the vault
+    //   await prepLock(false);
+    //   vaultAcc = await gb.fetchVaultAcc(vault);
+    //   assert.equal(vaultAcc.locked, false);
+    //   //make a real deposit, we need this to try to withdraw later
+    //   await prepDeposit(vaultOwner);
+    //
+    //   //lock the vault
+    //   await prepLock(true);
+    //   //withdraw should fail
+    //   await expect(
+    //     prepWithdrawal(vaultOwner, gem.tokenAcc, gem.owner, gemAmount)
+    //   ).to.be.rejectedWith(
+    //     'vault is currently locked or frozen and cannot be accessed'
+    //   );
+    //
+    //   //finally unlock the vault
+    //   await prepLock(false);
+    //   //should be able to withdraw
+    //   await prepWithdrawal(vaultOwner, gem.tokenAcc, gem.owner, gemAmount);
+    // });
+    //
+    // // --------------------------------------- bank flags
+    //
+    // async function prepFlags(manager: Keypair, flags: number) {
+    //   return gb.setBankFlags(bank.publicKey, manager, flags);
+    // }
+    //
+    // it('sets bank flags', async () => {
+    //   //freeze vaults
+    //   await prepFlags(manager, BankFlags.FreezeVaults);
+    //   const bankAcc = await gb.fetchBankAcc(bank.publicKey);
+    //   assert.equal(bankAcc.flags, BankFlags.FreezeVaults);
+    //   await expect(
+    //     gb.updateVaultOwner(
+    //       bank.publicKey,
+    //       vault,
+    //       vaultOwner,
+    //       vaultCreator.publicKey
+    //     )
+    //   ).to.be.rejectedWith(
+    //     'vault is currently locked or frozen and cannot be accessed'
+    //   );
+    //   await expect(prepLock(true)).to.be.rejectedWith(
+    //     'vault is currently locked or frozen and cannot be accessed'
+    //   );
+    //   await expect(prepDeposit(vaultOwner)).to.be.rejectedWith(
+    //     'vault is currently locked or frozen and cannot be accessed'
+    //   );
+    //
+    //   //remove flags to be able to do a real deposit - else can't withdraw
+    //   await prepFlags(manager, 0);
+    //   await prepDeposit(vaultOwner);
+    //
+    //   //freeze vaults again
+    //   await prepFlags(manager, BankFlags.FreezeVaults);
+    //   await expect(
+    //     prepWithdrawal(vaultOwner, gem.tokenAcc, gem.owner, gemAmount)
+    //   ).to.be.rejectedWith(
+    //     'vault is currently locked or frozen and cannot be accessed'
+    //   );
+    //
+    //   //unfreeze vault in the end
+    //   await prepFlags(manager, 0);
+    // });
+    //
+    // it('FAILS to set bank flags w/ wrong manager', async () => {
+    //   await expect(
+    //     prepFlags(randomWallet, BankFlags.FreezeVaults)
+    //   ).to.be.rejectedWith('has_one');
+    // });
 
     // --------------------------------------- whitelists
 
-    it('adds to whitelist', async () => {});
+    async function prepAddToWhitelist(addr: PublicKey, type: WhitelistType) {
+      return gb.addToWhitelist(bank.publicKey, manager, addr, type);
+    }
 
-    it('removes from whitelist', async () => {});
+    async function prepRemoveFromWhitelist(addr: PublicKey) {
+      return gb.removeFromWhitelist(bank.publicKey, manager, addr);
+    }
 
-    it('verifies by mint', async () => {});
+    let whitelistedMint: PublicKey;
+    let whitelistProof: PublicKey;
 
-    it('verifies by 0th creator', async () => {});
+    it('adds to whitelist', async () => {
+      whitelistedMint = gem.tokenMint;
+      // const whitelistedCreator = gb.wallet.publicKey; //todo
 
-    it('verifies by 5th creator', async () => {});
-    it('FAILS to verify by 6th creator', async () => {});
-    it('FAILS to verify by a creator who hasnt signed off', async () => {});
-    it('FAILS to verify when mint WL exists, but target mint not on it', async () => {});
-    it('FAILS to verify when creator WL exists, but target creator not on it', async () => {});
-    it('FAILS to verify when proof is done for mint, but creator passed', async () => {});
-    it('FAILS to verify when proof is done for creator, but mint passed', async () => {});
+      ({ whitelistProof } = await prepAddToWhitelist(
+        whitelistedMint,
+        WhitelistType.Mint
+      ));
+
+      const proofAcc = await gb.fetchWhitelistProofAcc(whitelistProof);
+      assert.equal(proofAcc.whitelistType, WhitelistType.Mint);
+    });
+
+    it('removes from whitelist', async () => {
+      await prepRemoveFromWhitelist(whitelistedMint);
+
+      await expect(
+        gb.fetchWhitelistProofAcc(whitelistProof)
+      ).to.be.rejectedWith('Account does not exist');
+    });
+
+    // it('verifies by mint', async () => {});
+    //
+    // it('verifies by 0th creator', async () => {});
+    //
+    // it('verifies by 5th creator', async () => {});
+    // it('FAILS to verify by 6th creator', async () => {});
+    // it('FAILS to verify by a creator who hasnt signed off', async () => {});
+    // it('FAILS to verify when mint WL exists, but target mint not on it', async () => {});
+    // it('FAILS to verify when creator WL exists, but target creator not on it', async () => {});
+    // it('FAILS to verify when proof is done for mint, but creator passed', async () => {});
+    // it('FAILS to verify when proof is done for creator, but mint passed', async () => {});
   });
 });

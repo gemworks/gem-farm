@@ -70,6 +70,10 @@ export class GemBankClient extends AccountUtils {
     return this.deserializeTokenAccount(mint, gemAcc);
   }
 
+  async fetchWhitelistProofAcc(proof: PublicKey) {
+    return this.program.account.whitelistProof.fetch(proof);
+  }
+
   // --------------------------------------- find PDA addresses
 
   async findVaultPDA(bank: PublicKey, creator: PublicKey) {

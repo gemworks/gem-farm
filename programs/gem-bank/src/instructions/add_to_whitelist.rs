@@ -8,6 +8,7 @@ use crate::utils::math::*;
 pub struct AddToWhitelist<'info> {
     #[account(mut, has_one = manager)]
     bank: Account<'info, Bank>,
+    #[account(mut)]
     manager: Signer<'info>,
     address_to_whitelist: AccountInfo<'info>,
     // todo - is there any way someone could create this pda outside of this ix to fake-whitelist themselves?
