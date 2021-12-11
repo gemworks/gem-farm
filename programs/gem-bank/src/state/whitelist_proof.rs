@@ -5,7 +5,7 @@ use anchor_lang::prelude::*;
 #[repr(C)]
 #[account]
 pub struct WhitelistProof {
-    whitelist_type: u8,
+    pub whitelist_type: u8,
 }
 
 impl WhitelistProof {
@@ -16,12 +16,20 @@ impl WhitelistProof {
     pub fn reset_type(&mut self, whitelist_type: WhitelistType) {
         self.whitelist_type = whitelist_type.bits();
     }
+
+    pub fn contains_type(&self, expected_whitelist_type: WhitelistType) -> ProgramResult {
+        let whitelist_type = WhitelistProof::read_type(self.whitelist_type)?;
+        if whitelist_type.contains(expected_whitelist_type) {
+            return Ok(());
+        }
+
+        Err(ErrorCode::NotWhitelisted.into())
+    }
 }
 
 bitflags::bitflags! {
     pub struct WhitelistType: u8 {
         const CREATOR = 1 << 0;
-        const UPDATE_AUTHORITY = 1 << 1;
-        const MINT = 1 << 2;
+        const MINT = 1 << 1;
     }
 }

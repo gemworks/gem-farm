@@ -37,9 +37,6 @@ pub fn handler(ctx: Context<AddToWhitelist>, whitelist_type: u8) -> ProgramResul
     if whitelist_type.contains(WhitelistType::CREATOR) {
         bank.whitelisted_creators.try_self_add(1)?;
     }
-    if whitelist_type.contains(WhitelistType::UPDATE_AUTHORITY) {
-        bank.whitelisted_update_authorities.try_self_add(1)?;
-    }
     if whitelist_type.contains(WhitelistType::MINT) {
         bank.whitelisted_mints.try_self_add(1)?;
     }

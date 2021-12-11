@@ -19,4 +19,7 @@ pub enum ErrorCode {
 
     #[msg("anchor serialization issue")]
     AccountDidNotSerialize,
+
+    #[msg("this gem is not present on any of the whitelists")]
+    NotWhitelisted,
 }

@@ -267,7 +267,6 @@ export class GemBankClient extends AccountUtils {
     gemAmount: BN,
     gemMint: PublicKey,
     gemSource: PublicKey,
-    gemMetadata: PublicKey,
     depositor: PublicKey | Keypair
   ) {
     const [gemBox, gemBump] = await this.findGemBoxPDA(vault, gemMint);
@@ -297,13 +296,11 @@ export class GemBankClient extends AccountUtils {
           gemDepositReceipt: GDR,
           gemSource,
           gemMint,
-          gemMetadata,
           depositor: isKp(depositor)
             ? (<Keypair>depositor).publicKey
             : depositor,
           tokenProgram: TOKEN_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
-          metadataProgram: MetadataProgram.PUBKEY,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         },
         signers,

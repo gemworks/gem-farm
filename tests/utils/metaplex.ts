@@ -12,6 +12,17 @@ export async function createMetadata(
   const metadataData = parseMetadata(
     readJSON('./tests/artifacts/testMetadata.json')
   );
+  //we need to make sure the signer is passed in as creator
+  metadataData.creators!.push(
+    new programs.metadata.Creator({
+      address: wallet.publicKey.toBase58(),
+      verified: true,
+      share: 50,
+    })
+  );
+
+  console.log('prepared data', metadataData);
+
   const txId = await actions.createMetadata({
     connection,
     wallet,
@@ -28,6 +39,7 @@ export async function createMetadata(
 
   const m = await programs.metadata.Metadata.load(connection, metadata);
   console.log(m);
+  console.log('creators:', m.data.data.creators);
 
   return metadata;
 }
