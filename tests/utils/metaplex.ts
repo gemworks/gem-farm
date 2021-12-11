@@ -12,7 +12,8 @@ export async function createMetadata(
   const metadataData = parseMetadata(
     readJSON('./tests/artifacts/testMetadata.json')
   );
-  //we need to make sure the signer is passed in as creator
+
+  //add a verified creator, which MUST be the signer (ie the wallet), or the prog will error
   metadataData.creators!.push(
     new programs.metadata.Creator({
       address: wallet.publicKey.toBase58(),
@@ -21,9 +22,7 @@ export async function createMetadata(
     })
   );
 
-  console.log('prepared data', metadataData);
-
-  const txId = await actions.createMetadata({
+  await actions.createMetadata({
     connection,
     wallet,
     editionMint,
@@ -31,15 +30,17 @@ export async function createMetadata(
     updateAuthority,
   });
 
-  console.log('pausing');
-  await pause(2000); //necessary for metadata to propagate, even on localnet
+  //necessary for metadata to propagate, even on localnet
+  await pause(2000);
 
+  //verify metadata propagated successfully and is available
   const metadata = await programs.metadata.Metadata.getPDA(editionMint);
-  console.log('Created Metadata:', txId, metadata.toBase58());
+  const metadataAcc = await programs.metadata.Metadata.load(
+    connection,
+    metadata
+  );
 
-  const m = await programs.metadata.Metadata.load(connection, metadata);
-  console.log(m);
-  console.log('creators:', m.data.data.creators);
+  console.log(`metadata at ${metadata.toBase58()} ok`);
 
   return metadata;
 }

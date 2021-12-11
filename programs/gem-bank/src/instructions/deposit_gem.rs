@@ -99,7 +99,11 @@ fn assert_valid_whitelist_proof<'info>(
         address_to_whitelist.as_ref(),
     ];
     let (whitelist_addr, _bump) = Pubkey::find_program_address(seed, program_id);
-    assert_eq!(whitelist_addr, whitelist_proof.key());
+
+    // we can't use an assert_eq statement, we want to catch this error and continue along to creator testing
+    if whitelist_addr != whitelist_proof.key() {
+        return Err(ErrorCode::NotWhitelisted.into());
+    }
 
     // 2 no need to verify ownership, deserialization does that for us
     // https://github.com/project-serum/anchor/blob/fcb07eb8c3c9355f3cabc00afa4faa6247ccc960/lang/src/account.rs#L36
@@ -143,7 +147,9 @@ fn assert_whitelisted(ctx: &Context<DepositGem>) -> ProgramResult {
 
         // todo currently limiting at 5 creators to prevent running out of compute
         //  DO TESTING AROUND THIS
-        for creator in &metadata.data.creators.unwrap()[..5] {
+        let creators = &metadata.data.creators.unwrap();
+        let iter_cap = std::cmp::min(5, creators.len());
+        for creator in &creators[..iter_cap] {
             // verify creator actually signed off on this nft
             if !creator.verified {
                 continue;
