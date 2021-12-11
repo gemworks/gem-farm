@@ -389,6 +389,11 @@ describe('gem bank', () => {
         );
         const proofAcc = await gb.fetchWhitelistProofAcc(whitelistProof);
         assert.equal(proofAcc.whitelistType, WhitelistType.Mint);
+        assert.equal(proofAcc.bank.toBase58(), bank.publicKey.toBase58());
+        assert.equal(
+          proofAcc.whitelistedAddress.toBase58(),
+          whitelistedMint.toBase58()
+        );
 
         await prepRemoveFromWhitelist(whitelistedMint);
         await expect(
@@ -402,6 +407,11 @@ describe('gem bank', () => {
         );
         const proofAcc = await gb.fetchWhitelistProofAcc(whitelistProof);
         assert.equal(proofAcc.whitelistType, WhitelistType.Creator);
+        assert.equal(proofAcc.bank.toBase58(), bank.publicKey.toBase58());
+        assert.equal(
+          proofAcc.whitelistedAddress.toBase58(),
+          whitelistedCreator.toBase58()
+        );
 
         await prepRemoveFromWhitelist(whitelistedCreator);
         await expect(
@@ -662,18 +672,11 @@ describe('gem bank', () => {
         );
 
         // verify counts
-        const pdas = await gb.fetchAllWhitelistProofPDAs();
+        let pdas = await gb.fetchAllWhitelistProofPDAs();
         assert.equal(pdas.length, 4);
 
-        // const mintPDAs = await gb.fetchAllWhitelistProofPDAs(
-        //   WhitelistType.Mint
-        // );
-        // assert.equal(mintPDAs.length, 3);
-        //
-        // const creatorPDAs = await gb.fetchAllWhitelistProofPDAs(
-        //   WhitelistType.Creator
-        // );
-        // assert.equal(creatorPDAs.length, 1);
+        pdas = await gb.fetchAllWhitelistProofPDAs(bank.publicKey);
+        assert.equal(pdas.length, 4);
 
         //clean up after
         await prepRemoveFromWhitelist(m1);

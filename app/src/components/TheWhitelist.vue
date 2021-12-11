@@ -41,11 +41,17 @@
         <button class="nes-btn is-primary">Update</button>
       </div>
     </form>
+
+    <div class="mt-5">
+      <div v-for="proof in proofs" :key="proof.address">
+        {{ proof.account.whitelistedAddress.toBase58() }}
+      </div>
+    </div>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, ref } from 'vue';
+import { defineComponent, onMounted, ref, watch } from 'vue';
 import { WhitelistType } from '../../../tests/gem-bank/gem-bank.client';
 import useCluster from '@/composables/cluster';
 import useWallet from '@/composables/wallet';
@@ -65,9 +71,24 @@ export default defineComponent({
     const { getWallet } = useWallet();
 
     let gb: any;
+
+    const proofs = ref([]);
+
     onMounted(async () => {
       gb = await initGemBank(getConnection(), getWallet()!);
     });
+
+    //todo doesn't work
+    watch(
+      () => props.bank,
+      async () => {
+        const r = await gb.fetchAllWhitelistProofPDAs(
+          new PublicKey(props.bank)
+        );
+        console.log(`found a total of ${r.length} whitelist proofs`);
+        proofs.value = r;
+      }
+    );
 
     const updateWhitelist = async () => {
       console.log(props.bank);
@@ -79,12 +100,18 @@ export default defineComponent({
           type.value
         );
         console.log('added', txSig);
+        proofs.value = await gb.fetchAllWhitelistProofPDAs(
+          new PublicKey(props.bank)
+        );
       } else {
         const { txSig } = await gb.removeFromWhitelistWallet(
           new PublicKey(props.bank),
           new PublicKey(address.value)
         );
         console.log('removed', txSig);
+        proofs.value = await gb.fetchAllWhitelistProofPDAs(
+          new PublicKey(props.bank)
+        );
       }
     };
 
@@ -93,6 +120,7 @@ export default defineComponent({
       action,
       address,
       type,
+      proofs,
       updateWhitelist,
     };
   },

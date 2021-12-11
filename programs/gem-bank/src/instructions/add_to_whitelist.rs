@@ -34,6 +34,7 @@ pub fn handler(ctx: Context<AddToWhitelist>, whitelist_type: u8) -> ProgramResul
 
     // increment whitelist count on bank
     let bank = &mut ctx.accounts.bank;
+    let address_to_whitelist = &ctx.accounts.address_to_whitelist;
 
     if whitelist_type.contains(WhitelistType::CREATOR) {
         bank.whitelisted_creators.try_self_add(1)?;
@@ -41,6 +42,9 @@ pub fn handler(ctx: Context<AddToWhitelist>, whitelist_type: u8) -> ProgramResul
     if whitelist_type.contains(WhitelistType::MINT) {
         bank.whitelisted_mints.try_self_add(1)?;
     }
+
+    proof.whitelisted_address = address_to_whitelist.key();
+    proof.bank = bank.key();
 
     msg!(
         "{} added to whitelist",

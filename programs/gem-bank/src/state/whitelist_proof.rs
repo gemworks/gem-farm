@@ -1,11 +1,14 @@
 use crate::errors::ErrorCode;
 use anchor_lang::prelude::*;
 
-//goal is to keep this one as small as possible, in case someone wants to whitelist 5000 mints
 #[repr(C)]
 #[account]
 pub struct WhitelistProof {
     pub whitelist_type: u8,
+
+    pub whitelisted_address: Pubkey,
+
+    pub bank: Pubkey,
 }
 
 impl WhitelistProof {

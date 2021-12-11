@@ -161,19 +161,18 @@ export class GemBankClient extends AccountUtils {
     return pdas;
   }
 
-  async fetchAllWhitelistProofPDAs() {
-    // todo this wont work, need to put some more brain behind it - disabling for now
-    // const filter = whitelistType
-    //   ? [
-    //       {
-    //         memcmp: {
-    //           offset: 8, //need to prepend 8 bytes for anchor's disc
-    //           bytes: `${whitelistType}`,
-    //         },
-    //       },
-    //     ]
-    //   : [];
-    const pdas = await this.program.account.whitelistProof.all(); //filter);
+  async fetchAllWhitelistProofPDAs(bank?: PublicKey) {
+    const filter = bank
+      ? [
+          {
+            memcmp: {
+              offset: 41, //need to prepend 8 bytes for anchor's disc
+              bytes: bank.toBase58(),
+            },
+          },
+        ]
+      : [];
+    const pdas = await this.program.account.whitelistProof.all(filter);
     console.log(`found a total of ${pdas.length} whitelist proofs`);
     return pdas;
   }
