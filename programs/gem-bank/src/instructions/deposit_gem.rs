@@ -132,6 +132,7 @@ fn assert_whitelisted(ctx: &Context<DepositGem>) -> ProgramResult {
             ctx.program_id,
             WhitelistType::MINT,
         ) {
+            msg!("mint whitelisted: {}, going ahead", &mint.key());
             return Ok(());
         }
     }
@@ -145,11 +146,9 @@ fn assert_whitelisted(ctx: &Context<DepositGem>) -> ProgramResult {
         // verify metadata is legit
         let metadata = assert_valid_metadata(metadata_info, &mint.key())?;
 
-        // todo currently limiting at 5 creators to prevent running out of compute
-        //  DO TESTING AROUND THIS
-        let creators = &metadata.data.creators.unwrap();
-        let iter_cap = std::cmp::min(5, creators.len());
-        for creator in &creators[..iter_cap] {
+        // metaplex constraints this to max 5, so won't go crazy on compute
+        // (empirical testing showed there's practically 0 diff between stopping at 0th and 5th creator)
+        for creator in &metadata.data.creators.unwrap() {
             // verify creator actually signed off on this nft
             if !creator.verified {
                 continue;
@@ -162,6 +161,7 @@ fn assert_whitelisted(ctx: &Context<DepositGem>) -> ProgramResult {
                 ctx.program_id,
                 WhitelistType::CREATOR,
             ) {
+                msg!("creator whitelisted: {}, going ahead", &creator.address);
                 return Ok(());
             }
         }

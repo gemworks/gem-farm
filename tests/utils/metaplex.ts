@@ -1,5 +1,5 @@
 import { actions, programs, Wallet } from '@metaplex/js';
-import { Connection, PublicKey } from '@solana/web3.js';
+import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import fs from 'fs';
 import { pause } from './types';
 
@@ -7,27 +7,37 @@ export async function createMetadata(
   connection: Connection,
   wallet: Wallet,
   editionMint: PublicKey,
-  updateAuthority?: PublicKey
+  //NOTE 1: must cleanly divide 100
+  //NOTE 2: max 5 (metaplex's constraint)
+  totalCreatorsN: number = 5,
+  //NOTE 1: starts from 1, not 0
+  ourCreatorN: number = 1
 ) {
   const metadataData = parseMetadata(
     readJSON('./tests/artifacts/testMetadata.json')
   );
 
-  //add a verified creator, which MUST be the signer (ie the wallet), or the prog will error
-  metadataData.creators!.push(
-    new programs.metadata.Creator({
-      address: wallet.publicKey.toBase58(),
-      verified: true,
-      share: 50,
-    })
-  );
+  //we insert as many creators as we'd like for testing, including our target creator
+  for (let i = 0; i < totalCreatorsN; i++) {
+    metadataData.creators!.push(
+      new programs.metadata.Creator({
+        address:
+          i === ourCreatorN - 1
+            ? wallet.publicKey.toBase58()
+            : Keypair.generate().publicKey.toBase58(),
+        verified: i === ourCreatorN - 1, //all of them NOT verified, except for target creator
+        share: 100 / totalCreatorsN,
+      })
+    );
+  }
+
+  console.log(metadataData);
 
   await actions.createMetadata({
     connection,
     wallet,
     editionMint,
     metadataData,
-    updateAuthority,
   });
 
   //necessary for metadata to propagate, even on localnet

@@ -3,11 +3,5 @@
   "symbol": "new_symbol",
   "uri": "https://gateway.pinata.cloud/ipfs/QmNQh8noRHn7e7zt9oYNfGWuxHgKWkNPducMZs1SiZaYw4",
   "sellerFeeBasisPoints": 10,
-  "creators": [
-    {
-      "address": "FSQ5Z4DCn4xWRx77HgVU8NJTUfh79sTpXwHvzHhb1pCe",
-      "verified": false,
-      "share": 50
-    }
-  ]
+  "creators": []
 }
