@@ -20,7 +20,6 @@ pub struct RemoveFromWhitelist<'info> {
         ],
         bump = bump)]
     whitelist_proof: Account<'info, WhitelistProof>,
-    system_program: Program<'info, System>, //todo needed?
 }
 
 pub fn handler(ctx: Context<RemoveFromWhitelist>) -> ProgramResult {

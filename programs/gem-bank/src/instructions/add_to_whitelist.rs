@@ -22,7 +22,7 @@ pub struct AddToWhitelist<'info> {
         payer = manager,
         space = 8 + std::mem::size_of::<WhitelistProof>())]
     whitelist_proof: Account<'info, WhitelistProof>,
-    system_program: Program<'info, System>, //todo needed?
+    system_program: Program<'info, System>,
 }
 
 pub fn handler(ctx: Context<AddToWhitelist>, whitelist_type: u8) -> ProgramResult {

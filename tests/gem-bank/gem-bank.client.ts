@@ -1,6 +1,6 @@
 import * as anchor from '@project-serum/anchor';
 import { BN, Idl, Program, Provider, Wallet } from '@project-serum/anchor';
-import { Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
+import { Connection, Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
 import {
   AccountInfo,
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -8,9 +8,7 @@ import {
 } from '@solana/spl-token';
 import { AccountUtils } from '../utils/account';
 import { GemBank } from '../../target/types/gem_bank';
-import { Connection } from '@solana/web3.js';
 import { isKp } from '../utils/types';
-import { MetadataProgram } from '@metaplex-foundation/mpl-token-metadata';
 
 export enum BankFlags {
   FreezeVaults = 1 << 0,
@@ -163,18 +161,19 @@ export class GemBankClient extends AccountUtils {
     return pdas;
   }
 
-  async fetchAllWhitelistProofPDAs(whitelistType?: WhitelistType) {
-    const filter = whitelistType
-      ? [
-          {
-            memcmp: {
-              offset: 8, //need to prepend 8 bytes for anchor's disc
-              bytes: `${whitelistType}`, //todo no idea if this will work
-            },
-          },
-        ]
-      : [];
-    const pdas = await this.program.account.whitelistProof.all(filter);
+  async fetchAllWhitelistProofPDAs() {
+    // todo this wont work, need to put some more brain behind it - disabling for now
+    // const filter = whitelistType
+    //   ? [
+    //       {
+    //         memcmp: {
+    //           offset: 8, //need to prepend 8 bytes for anchor's disc
+    //           bytes: `${whitelistType}`,
+    //         },
+    //       },
+    //     ]
+    //   : [];
+    const pdas = await this.program.account.whitelistProof.all(); //filter);
     console.log(`found a total of ${pdas.length} whitelist proofs`);
     return pdas;
   }
@@ -459,7 +458,6 @@ export class GemBankClient extends AccountUtils {
         manager: isKp(manager) ? (<Keypair>manager).publicKey : manager,
         addressToRemove,
         whitelistProof,
-        systemProgram: SystemProgram.programId,
       },
       signers,
     });
