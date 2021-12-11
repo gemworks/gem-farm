@@ -16,6 +16,11 @@ export enum BankFlags {
   FreezeVaults = 1 << 0,
 }
 
+export enum WhitelistType {
+  Creator = 1 << 0,
+  Mint = 1 << 1,
+}
+
 export class GemBankClient extends AccountUtils {
   provider: anchor.Provider;
   program!: anchor.Program<GemBank>;
@@ -95,6 +100,14 @@ export class GemBankClient extends AccountUtils {
     return this.findProgramAddress(this.program.programId, [vault]);
   }
 
+  async findWhitelistProofPDA(bank: PublicKey, whitelistedAddress: PublicKey) {
+    return this.findProgramAddress(this.program.programId, [
+      'whitelist',
+      bank,
+      whitelistedAddress,
+    ]);
+  }
+
   // --------------------------------------- get all PDAs by type
   //https://project-serum.github.io/anchor/ts/classes/accountclient.html#all
 
@@ -143,6 +156,22 @@ export class GemBankClient extends AccountUtils {
       : [];
     const pdas = await this.program.account.gemDepositReceipt.all(filter);
     console.log(`found a total of ${pdas.length} GDR PDAs`);
+    return pdas;
+  }
+
+  async fetchAllWhitelistProofPDAs(whitelistType?: WhitelistType) {
+    const filter = whitelistType
+      ? [
+          {
+            memcmp: {
+              offset: 8, //need to prepend 8 bytes for anchor's disc
+              bytes: `${whitelistType}`, //todo no idea if this will work
+            },
+          },
+        ]
+      : [];
+    const pdas = await this.program.account.whitelistProof.all(filter);
+    console.log(`found a total of ${pdas.length} whitelist proofs`);
     return pdas;
   }
 
@@ -243,7 +272,7 @@ export class GemBankClient extends AccountUtils {
   async setBankFlags(
     bank: PublicKey,
     manager: PublicKey | Keypair,
-    flags: number
+    flags: BankFlags
   ) {
     const signers = [];
     if (isKp(manager)) signers.push(<Keypair>manager);
@@ -267,11 +296,34 @@ export class GemBankClient extends AccountUtils {
     gemAmount: BN,
     gemMint: PublicKey,
     gemSource: PublicKey,
-    depositor: PublicKey | Keypair
+    depositor: PublicKey | Keypair,
+    mintProof?: PublicKey,
+    metadata?: PublicKey,
+    creatorProof?: PublicKey
   ) {
     const [gemBox, gemBump] = await this.findGemBoxPDA(vault, gemMint);
     const [GDR, GDRBump] = await this.findGdrPDA(vault, gemMint);
     const [vaultAuth] = await this.findVaultAuthorityPDA(vault);
+
+    const remainingAccounts = [];
+    if (mintProof)
+      remainingAccounts.push({
+        pubkey: mintProof,
+        isWritable: false,
+        isSigner: false,
+      });
+    if (metadata)
+      remainingAccounts.push({
+        pubkey: metadata,
+        isWritable: false,
+        isSigner: false,
+      });
+    if (creatorProof)
+      remainingAccounts.push({
+        pubkey: creatorProof,
+        isWritable: false,
+        isSigner: false,
+      });
 
     const signers = [];
     if (isKp(vaultOwner)) signers.push(<Keypair>vaultOwner);
@@ -303,6 +355,7 @@ export class GemBankClient extends AccountUtils {
           systemProgram: SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         },
+        remainingAccounts,
         signers,
       }
     );
@@ -349,5 +402,64 @@ export class GemBankClient extends AccountUtils {
     });
 
     return { vaultAuth, gemBox, gemBump, GDR, GDRBump, txSig };
+  }
+
+  async addToWhitelist(
+    bank: PublicKey,
+    manager: PublicKey | Keypair,
+    addressToWhitelist: PublicKey,
+    whitelistType: WhitelistType
+  ) {
+    const [whitelistProof, whitelistBump] = await this.findWhitelistProofPDA(
+      bank,
+      addressToWhitelist
+    );
+
+    const signers = [];
+    if (isKp(manager)) signers.push(<Keypair>manager);
+
+    const txSig = await this.program.rpc.addToWhitelist(
+      whitelistBump,
+      whitelistType,
+      {
+        accounts: {
+          bank,
+          manager: isKp(manager) ? (<Keypair>manager).publicKey : manager,
+          addressToWhitelist,
+          whitelistProof,
+          systemProgram: SystemProgram.programId,
+        },
+        signers,
+      }
+    );
+
+    return { whitelistProof, whitelistBump, txSig };
+  }
+
+  async removeFromWhitelist(
+    bank: PublicKey,
+    manager: PublicKey | Keypair,
+    addressToRemove: PublicKey
+  ) {
+    const [whitelistProof, whitelistBump] = await this.findWhitelistProofPDA(
+      bank,
+      addressToRemove
+    );
+
+    const signers = [];
+    if (isKp(manager)) signers.push(<Keypair>manager);
+
+    const txSig = await this.program.rpc.removeFromWhitelist(whitelistBump, {
+      accounts: {
+        bank,
+        manager: isKp(manager) ? (<Keypair>manager).publicKey : manager,
+        addressToRemove,
+        whitelistProof,
+        systemProgram: SystemProgram.programId,
+      },
+      signers,
+    });
+
+    return { whitelistProof, whitelistBump, txSig };
   }
 }
