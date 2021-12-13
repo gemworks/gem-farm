@@ -14,7 +14,7 @@ echo BUILT, NEW PK: $new_pk
 
 #insert into relevant files
 sed -i'.original' -e "s/$old_pk/$new_pk/g" ./Anchor.toml
-sed -i'.original' -e "s/$old_pk/$new_pk/g" ./programs/gem-bank/src/lib.rs
+sed -i'.original' -e "s/$old_pk/$new_pk/g" ./programs/gem_bank/src/lib.rs
 sed -i'.original' -e "s/$old_pk/$new_pk/g" ./app/src/globals.ts
 echo REPLACED!
 
