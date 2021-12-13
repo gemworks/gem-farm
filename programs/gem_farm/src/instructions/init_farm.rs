@@ -30,7 +30,7 @@ impl<'info> InitFarm<'info> {
             InitBank {
                 bank: self.bank.to_account_info(),
                 // using farm_authority not farm_manager, coz latter can be re-assigned
-                manager: self.farm_authority.clone(),
+                bank_manager: self.farm_authority.clone(),
                 payer: self.payer.to_account_info(),
                 system_program: self.system_program.to_account_info(),
             },

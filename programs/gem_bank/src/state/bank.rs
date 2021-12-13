@@ -8,7 +8,7 @@ pub const LATEST_BANK_VERSION: u16 = 0;
 pub struct Bank {
     pub version: u16,
 
-    pub manager: Pubkey,
+    pub bank_manager: Pubkey,
 
     pub flags: u8,
 

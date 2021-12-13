@@ -6,11 +6,11 @@ use crate::state::*;
 #[derive(Accounts)]
 #[instruction(bump: u8)]
 pub struct RemoveFromWhitelist<'info> {
-    #[account(mut, has_one = manager)]
+    #[account(mut, has_one = bank_manager)]
     bank: Account<'info, Bank>,
     address_to_remove: AccountInfo<'info>,
     #[account(mut)]
-    manager: Signer<'info>,
+    bank_manager: Signer<'info>,
     #[account(mut,
         seeds = [
             b"whitelist".as_ref(),
@@ -34,7 +34,7 @@ pub fn handler(ctx: Context<RemoveFromWhitelist>) -> ProgramResult {
     }
 
     // delete whitelist proof
-    let manager = &mut ctx.accounts.manager.to_account_info();
+    let manager = &mut ctx.accounts.bank_manager.to_account_info();
 
     close_account(&mut proof.to_account_info(), manager)?;
 

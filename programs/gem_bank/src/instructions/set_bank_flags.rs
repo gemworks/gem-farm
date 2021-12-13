@@ -4,9 +4,9 @@ use crate::state::*;
 
 #[derive(Accounts)]
 pub struct SetBankFlags<'info> {
-    #[account(mut, has_one = manager)]
+    #[account(mut, has_one = bank_manager)]
     pub bank: Account<'info, Bank>,
-    pub manager: Signer<'info>,
+    pub bank_manager: Signer<'info>,
 }
 
 pub fn handler(ctx: Context<SetBankFlags>, flags: u8) -> ProgramResult {

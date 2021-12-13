@@ -181,17 +181,19 @@ export class GemBankClient extends AccountUtils {
 
   async startBank(
     bank: Keypair,
-    manager: PublicKey | Keypair,
+    bankManager: PublicKey | Keypair,
     payer: PublicKey | Keypair
   ) {
     const signers = [bank];
-    if (isKp(manager)) signers.push(<Keypair>manager);
+    if (isKp(bankManager)) signers.push(<Keypair>bankManager);
 
     console.log('starting bank at', bank.publicKey.toBase58());
     const txSig = await this.program.rpc.initBank({
       accounts: {
         bank: bank.publicKey,
-        manager: isKp(manager) ? (<Keypair>manager).publicKey : manager,
+        bankManager: isKp(bankManager)
+          ? (<Keypair>bankManager).publicKey
+          : bankManager,
         payer: isKp(payer) ? (<Keypair>payer).publicKey : payer,
         systemProgram: SystemProgram.programId,
       },
@@ -203,17 +205,19 @@ export class GemBankClient extends AccountUtils {
 
   async updateBankManager(
     bank: PublicKey,
-    manager: PublicKey | Keypair,
+    bankManager: PublicKey | Keypair,
     newManager: PublicKey
   ) {
     const signers = [];
-    if (isKp(manager)) signers.push(<Keypair>manager);
+    if (isKp(bankManager)) signers.push(<Keypair>bankManager);
 
     console.log('updating bank manager to', newManager.toBase58());
     const txSig = await this.program.rpc.updateBankManager(newManager, {
       accounts: {
         bank,
-        manager: isKp(manager) ? (<Keypair>manager).publicKey : manager,
+        bankManager: isKp(bankManager)
+          ? (<Keypair>bankManager).publicKey
+          : bankManager,
       },
       signers,
     });
@@ -298,17 +302,19 @@ export class GemBankClient extends AccountUtils {
 
   async setBankFlags(
     bank: PublicKey,
-    manager: PublicKey | Keypair,
+    bankManager: PublicKey | Keypair,
     flags: BankFlags
   ) {
     const signers = [];
-    if (isKp(manager)) signers.push(<Keypair>manager);
+    if (isKp(bankManager)) signers.push(<Keypair>bankManager);
 
     console.log('setting bank flags to', flags);
     const txSig = await this.program.rpc.setBankFlags(flags, {
       accounts: {
         bank,
-        manager: manager ? (<Keypair>manager).publicKey : manager,
+        bankManager: bankManager
+          ? (<Keypair>bankManager).publicKey
+          : bankManager,
       },
       signers,
     });
@@ -433,7 +439,7 @@ export class GemBankClient extends AccountUtils {
 
   async addToWhitelist(
     bank: PublicKey,
-    manager: PublicKey | Keypair,
+    bankManager: PublicKey | Keypair,
     addressToWhitelist: PublicKey,
     whitelistType: WhitelistType
   ) {
@@ -443,7 +449,7 @@ export class GemBankClient extends AccountUtils {
     );
 
     const signers = [];
-    if (isKp(manager)) signers.push(<Keypair>manager);
+    if (isKp(bankManager)) signers.push(<Keypair>bankManager);
 
     const txSig = await this.program.rpc.addToWhitelist(
       whitelistBump,
@@ -451,7 +457,9 @@ export class GemBankClient extends AccountUtils {
       {
         accounts: {
           bank,
-          manager: isKp(manager) ? (<Keypair>manager).publicKey : manager,
+          bankManager: isKp(bankManager)
+            ? (<Keypair>bankManager).publicKey
+            : bankManager,
           addressToWhitelist,
           whitelistProof,
           systemProgram: SystemProgram.programId,
@@ -465,7 +473,7 @@ export class GemBankClient extends AccountUtils {
 
   async removeFromWhitelist(
     bank: PublicKey,
-    manager: PublicKey | Keypair,
+    bankManager: PublicKey | Keypair,
     addressToRemove: PublicKey
   ) {
     const [whitelistProof, whitelistBump] = await this.findWhitelistProofPDA(
@@ -474,12 +482,14 @@ export class GemBankClient extends AccountUtils {
     );
 
     const signers = [];
-    if (isKp(manager)) signers.push(<Keypair>manager);
+    if (isKp(bankManager)) signers.push(<Keypair>bankManager);
 
     const txSig = await this.program.rpc.removeFromWhitelist(whitelistBump, {
       accounts: {
         bank,
-        manager: isKp(manager) ? (<Keypair>manager).publicKey : manager,
+        bankManager: isKp(bankManager)
+          ? (<Keypair>bankManager).publicKey
+          : bankManager,
         addressToRemove,
         whitelistProof,
       },
