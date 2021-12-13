@@ -196,6 +196,26 @@ export class GemBankClient extends AccountUtils {
     return { txSig };
   }
 
+  async updateBankManager(
+    bank: PublicKey,
+    manager: PublicKey | Keypair,
+    newManager: PublicKey
+  ) {
+    const signers = [];
+    if (isKp(manager)) signers.push(<Keypair>manager);
+
+    console.log('updating bank manager to', newManager.toBase58());
+    const txSig = await this.program.rpc.updateBankManager(newManager, {
+      accounts: {
+        bank,
+        manager: isKp(manager) ? (<Keypair>manager).publicKey : manager,
+      },
+      signers,
+    });
+
+    return { txSig };
+  }
+
   async createVault(
     bank: PublicKey,
     creator: PublicKey | Keypair,

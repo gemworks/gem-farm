@@ -70,6 +70,17 @@ describe('gem bank', () => {
     assert.equal(vaultAcc.creator.toBase58, vaultCreator.publicKey.toBase58);
   });
 
+  it('updates bank manager', async () => {
+    const newManager = Keypair.generate();
+    await gb.updateBankManager(bank.publicKey, manager, newManager.publicKey);
+
+    const bankAcc = await gb.fetchBankAcc(bank.publicKey);
+    assert.equal(bankAcc.manager.toBase58, newManager.publicKey.toBase58);
+
+    //reset back
+    await gb.updateBankManager(bank.publicKey, newManager, manager.publicKey);
+  });
+
   it('updates vault owner', async () => {
     await gb.updateVaultOwner(
       bank.publicKey,

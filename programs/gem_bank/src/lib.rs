@@ -61,4 +61,11 @@ pub mod gem_bank {
     pub fn remove_from_whitelist(ctx: Context<RemoveFromWhitelist>, _bump: u8) -> ProgramResult {
         instructions::remove_from_whitelist::handler(ctx)
     }
+
+    pub fn update_bank_manager(
+        ctx: Context<UpdateBankManager>,
+        new_manager: Pubkey,
+    ) -> ProgramResult {
+        instructions::update_bank_manager::handler(ctx, new_manager)
+    }
 }
