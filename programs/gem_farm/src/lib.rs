@@ -13,8 +13,8 @@ pub mod yield_math;
 pub mod gem_farm {
     use super::*;
 
-    pub fn init_farm(ctx: Context<InitFarm>) -> ProgramResult {
-        instructions::init_farm::handler(ctx)
+    pub fn init_farm(ctx: Context<InitFarm>, bump: u8) -> ProgramResult {
+        instructions::init_farm::handler(ctx, bump)
     }
 
     pub fn init_farmer(ctx: Context<InitFarmer>) -> ProgramResult {

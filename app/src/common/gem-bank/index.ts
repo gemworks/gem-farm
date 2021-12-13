@@ -40,7 +40,11 @@ export class GemBank extends GemBankClient {
 
   async startBankWallet() {
     const bank = Keypair.generate();
-    const txSig = await this.startBank(bank, this.wallet.publicKey);
+    const txSig = await this.startBank(
+      bank,
+      this.wallet.publicKey,
+      this.wallet.publicKey
+    );
     return { bank, txSig };
   }
 

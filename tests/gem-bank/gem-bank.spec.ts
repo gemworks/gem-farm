@@ -44,7 +44,7 @@
 //   });
 //
 //   it('inits bank', async () => {
-//     await gb.startBank(bank, manager);
+//     await gb.startBank(bank, manager, manager);
 //
 //     const bankAcc = await gb.fetchBankAcc(bank.publicKey);
 //     assert.equal(bankAcc.manager.toBase58(), manager.publicKey.toBase58());

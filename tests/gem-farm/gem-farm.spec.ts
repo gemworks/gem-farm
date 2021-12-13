@@ -24,12 +24,12 @@ describe('gem-farm', () => {
 
   // --------------------------------------- farm
 
-  beforeEach('generates accounts', async () => {
+  before('configures accounts', async () => {
     farmManager = await gf.createWallet(100 * LAMPORTS_PER_SOL);
   });
 
   it('inits farm', async () => {
-    await gf.startFarm(farm, farmManager, bank);
+    await gf.startFarm(farm, farmManager, farmManager, bank);
   });
 
   // --------------------------------------- farmer

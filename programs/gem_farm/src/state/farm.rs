@@ -5,17 +5,20 @@ pub const LATEST_FARM_VERSION: u16 = 0;
 #[repr(C)]
 #[account]
 pub struct Farm {
-    pub farm_manager: Pubkey,
-
     pub version: u16,
 
-    // bank storing farmers' gems, single vault per farmer
-    pub bank: Pubkey,
+    pub farm_manager: Pubkey,
 
     // signs off on any bank operations related to the farm
-    // pub authority: Pubkey,
-    // pub authority_seed: Pubkey,
-    // pub authority_bump_seed: [u8; 1],
+    pub farm_authority: Pubkey,
+
+    pub farm_authority_seed: Pubkey,
+
+    pub farm_authority_bump_seed: [u8; 1],
+
+    // each farm controls a single bank
+    pub bank: Pubkey,
+
     /// Mint of the reward A token.
     pub reward_mint: Pubkey,
     /// Vault to store reward A tokens.
@@ -34,4 +37,13 @@ pub struct Farm {
     pub farmer_count: u64,
 
     pub funder_count: u64,
+}
+
+impl Farm {
+    pub fn farm_seeds(&self) -> [&[u8]; 2] {
+        [
+            self.farm_authority_seed.as_ref(),
+            &self.farm_authority_bump_seed,
+        ]
+    }
 }

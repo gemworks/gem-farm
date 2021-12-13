@@ -7,9 +7,9 @@ pub const LATEST_BANK_VERSION: u16 = 0;
 #[repr(C)]
 #[account]
 pub struct Bank {
-    pub manager: Pubkey,
-
     pub version: u16,
+
+    pub manager: Pubkey,
 
     pub flags: u8,
 

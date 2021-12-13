@@ -118,7 +118,7 @@ export class GemBankClient extends AccountUtils {
       ? [
           {
             memcmp: {
-              offset: 8, //need to prepend 8 bytes for anchor's disc
+              offset: 10, //need to prepend 8 bytes for anchor's disc
               bytes: manager.toBase58(),
             },
           },
@@ -179,7 +179,11 @@ export class GemBankClient extends AccountUtils {
 
   // --------------------------------------- execute ixs
 
-  async startBank(bank: Keypair, manager: PublicKey | Keypair) {
+  async startBank(
+    bank: Keypair,
+    manager: PublicKey | Keypair,
+    payer: PublicKey | Keypair
+  ) {
     const signers = [bank];
     if (isKp(manager)) signers.push(<Keypair>manager);
 
@@ -188,6 +192,7 @@ export class GemBankClient extends AccountUtils {
       accounts: {
         bank: bank.publicKey,
         manager: isKp(manager) ? (<Keypair>manager).publicKey : manager,
+        payer: isKp(payer) ? (<Keypair>payer).publicKey : payer,
         systemProgram: SystemProgram.programId,
       },
       signers,

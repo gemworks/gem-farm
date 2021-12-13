@@ -46,6 +46,10 @@ export class GemFarmClient extends AccountUtils {
 
   // --------------------------------------- find PDA addresses
 
+  async findFarmAuthorityPDA(farm: PublicKey) {
+    return this.findProgramAddress(this.program.programId, [farm]);
+  }
+
   // --------------------------------------- get all PDAs by type
   //https://project-serum.github.io/anchor/ts/classes/accountclient.html#all
 
@@ -54,18 +58,25 @@ export class GemFarmClient extends AccountUtils {
   async startFarm(
     farm: Keypair,
     farmManager: PublicKey | Keypair,
+    payer: PublicKey | Keypair,
     bank: Keypair
   ) {
+    const [farmAuthority, bump] = await this.findFarmAuthorityPDA(
+      farm.publicKey
+    );
+
     const signers = [farm, bank];
     if (isKp(farmManager)) signers.push(<Keypair>farmManager);
 
     console.log('starting farm at', bank.publicKey.toBase58());
-    const txSig = await this.program.rpc.initFarm({
+    const txSig = await this.program.rpc.initFarm(bump, {
       accounts: {
         farm: farm.publicKey,
         farmManager: isKp(farmManager)
           ? (<Keypair>farmManager).publicKey
           : farmManager,
+        farmAuthority,
+        payer: isKp(payer) ? (<Keypair>payer).publicKey : farmManager,
         bank: bank.publicKey,
         gemBank: this.gemBank,
         systemProgram: SystemProgram.programId,
