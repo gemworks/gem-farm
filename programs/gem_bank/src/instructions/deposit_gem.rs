@@ -209,6 +209,6 @@ pub fn handler(ctx: Context<DepositGem>, amount: u64) -> ProgramResult {
         return Err(ErrorCode::AmountMismatch.into());
     }
 
-    msg!("{} gems deposited into ${} gem box", amount, gem_box.key());
+    msg!("{} gems deposited into {} gem box", amount, gem_box.key());
     Ok(())
 }
