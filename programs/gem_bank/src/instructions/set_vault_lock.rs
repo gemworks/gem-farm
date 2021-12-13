@@ -5,11 +5,12 @@ use crate::state::*;
 
 #[derive(Accounts)]
 pub struct UnlockVault<'info> {
-    // needed for checking flags
+    #[account(has_one = bank_manager)]
     pub bank: Account<'info, Bank>,
-    #[account(mut, has_one = bank, has_one = owner)]
+    #[account(mut, has_one = bank)]
     pub vault: Account<'info, Vault>,
-    pub owner: Signer<'info>,
+    // only the bank manager can un/lock vaults
+    pub bank_manager: Signer<'info>,
 }
 
 pub fn handler(ctx: Context<UnlockVault>, vault_locked: bool) -> ProgramResult {

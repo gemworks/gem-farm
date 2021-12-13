@@ -22,7 +22,7 @@ describe('gem bank', () => {
   //global state
   let randomWallet: Keypair; //used to test bad transactions with wrong account passed in
   const bank = Keypair.generate();
-  let manager: Keypair;
+  let bankManager: Keypair;
   let vaultCreator: Keypair;
   let vaultOwner: Keypair;
   let vault: PublicKey;
@@ -30,7 +30,7 @@ describe('gem bank', () => {
   function printBankVaultState() {
     console.log('randomWallet', randomWallet.publicKey.toBase58());
     console.log('bank', bank.publicKey.toBase58());
-    console.log('manager', manager.publicKey.toBase58());
+    console.log('manager', bankManager.publicKey.toBase58());
     console.log('vaultCreator', vaultCreator.publicKey.toBase58());
     console.log('vaultOwner', vaultOwner.publicKey.toBase58());
     console.log('vault', vault.toBase58());
@@ -38,16 +38,19 @@ describe('gem bank', () => {
 
   before('configures accounts', async () => {
     randomWallet = await gb.createWallet(100 * LAMPORTS_PER_SOL);
-    manager = await gb.createWallet(100 * LAMPORTS_PER_SOL);
+    bankManager = await gb.createWallet(100 * LAMPORTS_PER_SOL);
     vaultCreator = await gb.createWallet(100 * LAMPORTS_PER_SOL);
     vaultOwner = await gb.createWallet(100 * LAMPORTS_PER_SOL);
   });
 
   it('inits bank', async () => {
-    await gb.startBank(bank, manager, manager);
+    await gb.startBank(bank, bankManager, bankManager);
 
     const bankAcc = await gb.fetchBankAcc(bank.publicKey);
-    assert.equal(bankAcc.bankManager.toBase58(), manager.publicKey.toBase58());
+    assert.equal(
+      bankAcc.bankManager.toBase58(),
+      bankManager.publicKey.toBase58()
+    );
     assert(bankAcc.vaultCount.eq(new BN(0)));
   });
 
@@ -72,13 +75,21 @@ describe('gem bank', () => {
 
   it('updates bank manager', async () => {
     const newManager = Keypair.generate();
-    await gb.updateBankManager(bank.publicKey, manager, newManager.publicKey);
+    await gb.updateBankManager(
+      bank.publicKey,
+      bankManager,
+      newManager.publicKey
+    );
 
     const bankAcc = await gb.fetchBankAcc(bank.publicKey);
     assert.equal(bankAcc.bankManager.toBase58, newManager.publicKey.toBase58);
 
     //reset back
-    await gb.updateBankManager(bank.publicKey, newManager, manager.publicKey);
+    await gb.updateBankManager(
+      bank.publicKey,
+      newManager,
+      bankManager.publicKey
+    );
   });
 
   it('FAILS to update bank manager w/ wrong existing manager', async () => {
@@ -274,7 +285,7 @@ describe('gem bank', () => {
     // --------------------------------------- vault lock
 
     async function prepLock(vaultLocked: boolean) {
-      return gb.setVaultLock(bank.publicKey, vault, vaultOwner, vaultLocked);
+      return gb.setVaultLock(bank.publicKey, vault, bankManager, vaultLocked);
     }
 
     it('un/locks vault successfully', async () => {
@@ -313,7 +324,7 @@ describe('gem bank', () => {
 
     it('sets bank flags', async () => {
       //freeze vaults
-      await prepFlags(manager, BankFlags.FreezeVaults);
+      await prepFlags(bankManager, BankFlags.FreezeVaults);
       const bankAcc = await gb.fetchBankAcc(bank.publicKey);
       assert.equal(bankAcc.flags, BankFlags.FreezeVaults);
       await expect(
@@ -328,17 +339,17 @@ describe('gem bank', () => {
       await expect(prepDeposit(vaultOwner)).to.be.rejectedWith('0x12f');
 
       //remove flags to be able to do a real deposit - else can't withdraw
-      await prepFlags(manager, 0);
+      await prepFlags(bankManager, 0);
       await prepDeposit(vaultOwner);
 
       //freeze vaults again
-      await prepFlags(manager, BankFlags.FreezeVaults);
+      await prepFlags(bankManager, BankFlags.FreezeVaults);
       await expect(
         prepWithdrawal(vaultOwner, gem.tokenAcc, gem.owner, gemAmount)
       ).to.be.rejectedWith('0x12f');
 
       //unfreeze vault in the end
-      await prepFlags(manager, 0);
+      await prepFlags(bankManager, 0);
     });
 
     it('FAILS to set bank flags w/ wrong manager', async () => {
@@ -351,11 +362,11 @@ describe('gem bank', () => {
 
     describe('whitelists', () => {
       async function prepAddToWhitelist(addr: PublicKey, type: WhitelistType) {
-        return gb.addToWhitelist(bank.publicKey, manager, addr, type);
+        return gb.addToWhitelist(bank.publicKey, bankManager, addr, type);
       }
 
       async function prepRemoveFromWhitelist(addr: PublicKey) {
-        return gb.removeFromWhitelist(bank.publicKey, manager, addr);
+        return gb.removeFromWhitelist(bank.publicKey, bankManager, addr);
       }
 
       async function whitelistMint(whitelistedMint: PublicKey) {

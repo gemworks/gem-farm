@@ -281,18 +281,20 @@ export class GemBankClient extends AccountUtils {
   async setVaultLock(
     bank: PublicKey,
     vault: PublicKey,
-    vaultOwner: PublicKey | Keypair,
+    bankManager: PublicKey | Keypair,
     vaultLocked: boolean
   ) {
     const signers = [];
-    if (isKp(vaultOwner)) signers.push(<Keypair>vaultOwner);
+    if (isKp(bankManager)) signers.push(<Keypair>bankManager);
 
     console.log('setting vault lock to', vaultLocked);
     const txSig = await this.program.rpc.setVaultLock(vaultLocked, {
       accounts: {
         bank,
         vault,
-        owner: isKp(vaultOwner) ? (<Keypair>vaultOwner).publicKey : vaultOwner,
+        bankManager: isKp(bankManager)
+          ? (<Keypair>bankManager).publicKey
+          : bankManager,
       },
       signers,
     });
