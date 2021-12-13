@@ -81,6 +81,13 @@ describe('gem bank', () => {
     await gb.updateBankManager(bank.publicKey, newManager, manager.publicKey);
   });
 
+  it('FAILS to update bank manager w/ wrong existing manager', async () => {
+    const newManager = Keypair.generate();
+    await expect(
+      gb.updateBankManager(bank.publicKey, randomWallet, newManager.publicKey)
+    ).to.be.rejectedWith('has_one');
+  });
+
   it('updates vault owner', async () => {
     await gb.updateVaultOwner(
       bank.publicKey,
