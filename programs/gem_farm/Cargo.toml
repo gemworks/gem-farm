@@ -1,12 +1,13 @@
 [package]
-name = "gem-farm"
+name = "gem_farm"
 version = "0.1.0"
-description = "earned yield on your NFTs"
+description = "offer a yield-bearing facility to gem stakers"
 edition = "2018"
 
 [lib]
 crate-type = ["cdylib", "lib"]
 name = "gem_farm"
+doctest = false
 
 [features]
 no-entrypoint = []
