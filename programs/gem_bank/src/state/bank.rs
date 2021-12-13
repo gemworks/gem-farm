@@ -1,6 +1,5 @@
 use anchor_lang::prelude::*;
-
-use crate::errors::ErrorCode;
+use gem_common::errors::ErrorCode;
 
 pub const LATEST_BANK_VERSION: u16 = 0;
 

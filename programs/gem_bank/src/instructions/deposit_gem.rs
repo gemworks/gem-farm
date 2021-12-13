@@ -1,11 +1,14 @@
-use anchor_lang::prelude::*;
-use anchor_spl::token::accessor::mint;
-use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
-use metaplex_token_metadata::state::Metadata;
 use std::convert::TryFrom;
 use std::str::FromStr;
 
-use crate::{errors::ErrorCode, state::*, utils::math::*};
+use anchor_lang::prelude::*;
+use anchor_spl::token::accessor::mint;
+use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
+use gem_common::errors::ErrorCode;
+use gem_common::*;
+use metaplex_token_metadata::state::Metadata;
+
+use crate::state::*;
 
 #[derive(Accounts)]
 #[instruction(bump_gem_box: u8, bump_gdr: u8, bump_metadata: u8)]

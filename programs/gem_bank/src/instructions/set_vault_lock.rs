@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
+use gem_common::errors::ErrorCode;
 
-use crate::{errors::ErrorCode, state::*};
+use crate::state::*;
 
 #[derive(Accounts)]
 pub struct UnlockVault<'info> {

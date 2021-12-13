@@ -2,7 +2,8 @@ use std::io::Write;
 
 use anchor_lang::prelude::*;
 
-use crate::{state::*, utils::math::*};
+use crate::state::*;
+use gem_common::*;
 
 #[derive(Accounts)]
 #[instruction(bump: u8)]

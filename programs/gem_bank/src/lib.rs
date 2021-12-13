@@ -3,10 +3,8 @@ use instructions::*;
 
 declare_id!("3zgGJ7xjcEjr294KcDnxLgbDQTQoArd9ReY7DzXqPbUk");
 
-pub mod errors;
 pub mod instructions;
 pub mod state;
-pub mod utils;
 
 #[program]
 pub mod gem_bank {

@@ -1,7 +1,8 @@
 use anchor_lang::prelude::*;
 
+use gem_common::*;
+
 use crate::state::*;
-use crate::utils::math::*;
 
 #[derive(Accounts)]
 #[instruction(bump: u8)]

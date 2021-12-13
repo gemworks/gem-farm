@@ -3,10 +3,8 @@ use instructions::*;
 
 declare_id!("5f8w4vbj1CkUBtiZa5k18AjP4R6Qi63pkruDD5xRZwVT");
 
-pub mod errors;
 pub mod instructions;
 pub mod state;
-pub mod utils;
 pub mod yield_math;
 
 #[program]
