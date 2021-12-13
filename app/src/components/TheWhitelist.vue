@@ -44,7 +44,8 @@
 
     <div class="mt-5">
       <div v-for="proof in proofs" :key="proof.address">
-        {{ proof.account.whitelistedAddress.toBase58() }}
+        {{ proof.account.whitelistedAddress.toBase58() }} -
+        {{ parseWhitelistType(proof.account.whitelistType) }}
       </div>
     </div>
   </div>
@@ -115,6 +116,19 @@ export default defineComponent({
       }
     };
 
+    const parseWhitelistType = (numType: number) => {
+      switch (numType) {
+        case 1:
+          return 'Creator';
+        case 2:
+          return 'Mint';
+        case 3:
+          return 'Mint + Whitelist';
+        default:
+          return 'unknown';
+      }
+    };
+
     return {
       WhitelistType,
       action,
@@ -122,6 +136,7 @@ export default defineComponent({
       type,
       proofs,
       updateWhitelist,
+      parseWhitelistType,
     };
   },
 });
