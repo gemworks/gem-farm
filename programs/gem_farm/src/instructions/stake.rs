@@ -1,3 +1,4 @@
+use crate::rewards::update_accrued_rewards;
 use anchor_lang::prelude::*;
 use gem_bank::program::GemBank;
 use gem_bank::{self, cpi::accounts::SetVaultLock, state::Bank, state::Vault};
@@ -43,7 +44,7 @@ impl<'info> Stake<'info> {
 }
 
 pub fn handler(ctx: Context<Stake>) -> ProgramResult {
-    //todo any checks I might want to do here?
+    //todo any checks I might want to do here? eg whether staking paused
 
     // lock the vault so the user can't withdraw their gems
     gem_bank::cpi::set_vault_lock(
@@ -53,15 +54,21 @@ pub fn handler(ctx: Context<Stake>) -> ProgramResult {
         true, //setting vault lock to true
     )?;
 
-    // record the beginning of staking on farmer
-    let vault = &ctx.accounts.vault;
+    // update accrued rewards BEFORE we increment the stake
+    // todo does it actually make sense to update before?
+    let farm = &mut ctx.accounts.farm;
     let farmer = &mut ctx.accounts.farmer;
+
+    update_accrued_rewards(farm, Some(farmer))?;
+
+    // update farmer
+    let vault = &ctx.accounts.vault;
     farmer.gems_staked = vault.gem_count;
     // todo probably record something around the time they staked?
 
-    // increment active farmer count on farm
-    let farm = &mut ctx.accounts.farm;
+    // update farm
     farm.active_farmer_count.try_self_add(1)?;
+    farm.gems_staked.try_self_add(vault.gem_count)?;
 
     msg!("{} gems staked", farmer.gems_staked);
     Ok(())

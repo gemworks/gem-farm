@@ -1,9 +1,11 @@
 use anchor_lang::prelude::*;
+use gem_common::*;
 
 pub const LATEST_FARM_VERSION: u16 = 0;
 
 #[repr(C)]
 #[account]
+#[derive(Debug)]
 pub struct Farm {
     pub version: u16,
 
@@ -26,6 +28,8 @@ pub struct Farm {
     // active only
     pub active_farmer_count: u64,
 
+    pub gems_staked: u64,
+
     // --------------------------------------- funders
     pub authorized_funder_count: u64,
 
@@ -34,23 +38,17 @@ pub struct Farm {
     pub active_rewards_pots: u64,
 
     // --------------------------------------- rewards calc
-    pub last_update_time: u64,
+    pub rewards_duration_sec: u64,
 
-    /// Mint of the reward A token.
-    pub reward_mint: Pubkey,
+    pub rewards_end_ts: u64,
 
-    /// Vault to store reward A tokens.
-    pub reward_vault: Pubkey,
+    pub rewards_last_updated_ts: u64,
 
-    /// Rate of reward A distribution.
+    // in tokens/s, = total reward pot at initialization / reward duration
     pub reward_rate: u64,
 
-    /// Last calculated reward A per pool token.
-    pub reward_per_token_stored: u128,
-
-    pub reward_duration: u64,
-
-    pub reward_duration_end: u64,
+    // this is cumulative, since the beginning of time
+    pub accrued_rewards_per_gem: u64,
 }
 
 impl Farm {
@@ -59,5 +57,9 @@ impl Farm {
             self.farm_authority_seed.as_ref(),
             &self.farm_authority_bump_seed,
         ]
+    }
+
+    pub fn reward_start_ts(&self) -> Result<u64, ProgramError> {
+        self.rewards_end_ts.try_sub(self.rewards_duration_sec)
     }
 }

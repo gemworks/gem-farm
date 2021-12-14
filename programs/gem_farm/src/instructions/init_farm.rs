@@ -50,9 +50,8 @@ pub fn handler(ctx: Context<InitFarm>, bump: u8) -> ProgramResult {
     farm.farm_authority_seed = farm_key;
     farm.farm_authority_bump_seed = [bump];
     farm.bank = ctx.accounts.bank.key();
-    //todo currently missing rewards initialization
-    farm.authorized_funder_count = 0;
-    farm.farmer_count = 0;
+
+    // todo worth manually init'ing all the variables at 0s?
 
     //do a cpi call to start a new bank
     gem_bank::cpi::init_bank(

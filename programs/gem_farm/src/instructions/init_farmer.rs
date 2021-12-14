@@ -56,7 +56,9 @@ pub fn handler(ctx: Context<InitFarmer>, bump_vault: u8) -> ProgramResult {
 
     farmer.farm = ctx.accounts.farm.key();
     farmer.identity = ctx.accounts.identity.key();
-    farmer.gems_staked = 0;
+    farmer.vault = ctx.accounts.vault.key();
+
+    // todo worth manually init'ing all the variables at 0s?
 
     //update farmer count
     let farm = &mut ctx.accounts.farm;

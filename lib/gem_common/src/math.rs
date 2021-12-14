@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use std::convert::TryFrom;
 
 use crate::errors::ErrorCode;
 
@@ -31,12 +32,12 @@ pub trait TryPow<RHS>: Sized {
 //     fn try_sqrt(self) -> Result<Self, ProgramError>;
 // }
 
-// pub trait TryCast<Into>: Sized {
-//     fn try_cast(self) -> Result<Into, ProgramError>;
-// }
-
 pub trait TryRem: Sized {
     fn try_rem(self, rhs: Self) -> Result<Self, ProgramError>;
+}
+
+pub trait TryCast<Into>: Sized {
+    fn try_cast(self) -> Result<Into, ProgramError>;
 }
 
 //todo can the below be DRYed up using a macro?
@@ -142,6 +143,64 @@ impl TryRem for u64 {
     fn try_rem(self, rhs: Self) -> Result<Self, ProgramError> {
         self.checked_rem(rhs)
             .ok_or(ErrorCode::ArithmeticError.into())
+    }
+}
+
+// --------------------------------------- u128
+
+impl TrySub for u128 {
+    fn try_sub(self, rhs: Self) -> Result<Self, ProgramError> {
+        self.checked_sub(rhs)
+            .ok_or(ErrorCode::ArithmeticError.into())
+    }
+    fn try_self_sub(&mut self, rhs: Self) -> ProgramResult {
+        *self = self.try_sub(rhs)?;
+        Ok(())
+    }
+}
+
+impl TryAdd for u128 {
+    fn try_add(self, rhs: Self) -> Result<Self, ProgramError> {
+        self.checked_add(rhs)
+            .ok_or(ErrorCode::ArithmeticError.into())
+    }
+    fn try_self_add(&mut self, rhs: Self) -> ProgramResult {
+        *self = self.try_add(rhs)?;
+        Ok(())
+    }
+}
+
+impl TryDiv<u128> for u128 {
+    fn try_floor_div(self, rhs: u128) -> Result<Self, ProgramError> {
+        self.checked_div(rhs)
+            .ok_or(ErrorCode::ArithmeticError.into())
+    }
+}
+
+impl TryMul<u128> for u128 {
+    fn try_mul(self, rhs: u128) -> Result<Self, ProgramError> {
+        self.checked_mul(rhs)
+            .ok_or(ErrorCode::ArithmeticError.into())
+    }
+}
+
+impl TryPow<u32> for u128 {
+    fn try_pow(self, rhs: u32) -> Result<Self, ProgramError> {
+        self.checked_pow(rhs)
+            .ok_or(ErrorCode::ArithmeticError.into())
+    }
+}
+
+impl TryRem for u128 {
+    fn try_rem(self, rhs: Self) -> Result<Self, ProgramError> {
+        self.checked_rem(rhs)
+            .ok_or(ErrorCode::ArithmeticError.into())
+    }
+}
+
+impl TryCast<u64> for u128 {
+    fn try_cast(self) -> Result<u64, ProgramError> {
+        u64::try_from(self).map_err(|_| ErrorCode::ArithmeticError.into())
     }
 }
 
