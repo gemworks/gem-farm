@@ -11,11 +11,13 @@ pub struct Farmer {
     // vault storing all of the farmer's gems
     pub vault: Pubkey,
 
-    /// The amount of token A claimed.
-    pub reward_per_token_complete: u128,
-    /// The amount of token A pending claim.
-    pub reward_per_token_pending: u64,
-
     // total number of gems at the time when the vault is locked
     pub gems_staked: u64,
+
+    // --------------------------------------- rewards
+    /// The amount of token A claimed.
+    pub reward_per_token_complete: u128,
+
+    /// The amount of token A pending claim.
+    pub reward_per_token_pending: u64,
 }

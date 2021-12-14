@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
 
 /// GDR is necessary to locate all gem boxes for a given bank/vault
+#[repr(C)]
 #[account]
 pub struct GemDepositReceipt {
     // each gem gox sits inside a single vault

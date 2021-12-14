@@ -1,17 +1,17 @@
-pub mod add_funder;
+pub mod authorize_funder;
 pub mod claim;
+pub mod deauthorize_funder;
 pub mod fund;
 pub mod init_farm;
 pub mod init_farmer;
-pub mod remove_funder;
 pub mod stake;
 pub mod unstake;
 
-pub use add_funder::*;
+pub use authorize_funder::*;
 pub use claim::*;
+pub use deauthorize_funder::*;
 pub use fund::*;
 pub use init_farm::*;
 pub use init_farmer::*;
-pub use remove_funder::*;
 pub use stake::*;
 pub use unstake::*;

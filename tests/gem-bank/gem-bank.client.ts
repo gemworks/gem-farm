@@ -237,7 +237,7 @@ export class GemBankClient extends AccountUtils {
       : <PublicKey>creator;
 
     const [vault, vaultBump] = await this.findVaultPDA(bank, creatorPk);
-    const [vaultAuth] = await this.findVaultAuthorityPDA(vault); //nice-to-have
+    const [vaultAuth, vaultAuthBump] = await this.findVaultAuthorityPDA(vault); //nice-to-have
 
     const signers = [];
     if (isKp(creator)) signers.push(<Keypair>creator);
@@ -255,7 +255,7 @@ export class GemBankClient extends AccountUtils {
       signers,
     });
 
-    return { vault, vaultBump, vaultAuth, txSig };
+    return { vault, vaultBump, vaultAuth, vaultAuthBump, txSig };
   }
 
   async updateVaultOwner(
@@ -340,9 +340,9 @@ export class GemBankClient extends AccountUtils {
     metadata?: PublicKey,
     creatorProof?: PublicKey
   ) {
-    const [gemBox, gemBump] = await this.findGemBoxPDA(vault, gemMint);
+    const [gemBox, gemBoxBump] = await this.findGemBoxPDA(vault, gemMint);
     const [GDR, GDRBump] = await this.findGdrPDA(vault, gemMint);
-    const [vaultAuth] = await this.findVaultAuthorityPDA(vault);
+    const [vaultAuth, vaultAuthBump] = await this.findVaultAuthorityPDA(vault);
 
     const remainingAccounts = [];
     if (mintProof)
@@ -372,7 +372,7 @@ export class GemBankClient extends AccountUtils {
       `depositing ${gemAmount} gems into ${gemBox.toBase58()}, GDR ${GDR.toBase58()}`
     );
     const txSig = await this.bankProgram.rpc.depositGem(
-      gemBump,
+      gemBoxBump,
       GDRBump,
       gemAmount,
       {
@@ -399,7 +399,15 @@ export class GemBankClient extends AccountUtils {
       }
     );
 
-    return { vaultAuth, gemBox, gemBump, GDR, GDRBump, txSig };
+    return {
+      vaultAuth,
+      vaultAuthBump,
+      gemBox,
+      gemBoxBump,
+      GDR,
+      GDRBump,
+      txSig,
+    };
   }
 
   async withdrawGem(
@@ -411,9 +419,9 @@ export class GemBankClient extends AccountUtils {
     gemDestination: PublicKey,
     receiver: PublicKey
   ) {
-    const [gemBox, gemBump] = await this.findGemBoxPDA(vault, gemMint);
+    const [gemBox, gemBoxBump] = await this.findGemBoxPDA(vault, gemMint);
     const [GDR, GDRBump] = await this.findGdrPDA(vault, gemMint);
-    const [vaultAuth] = await this.findVaultAuthorityPDA(vault);
+    const [vaultAuth, vaultAuthBump] = await this.findVaultAuthorityPDA(vault);
 
     const signers = [];
     if (isKp(vaultOwner)) signers.push(<Keypair>vaultOwner);
@@ -421,26 +429,40 @@ export class GemBankClient extends AccountUtils {
     console.log(
       `withdrawing ${gemAmount} gems from ${gemBox.toBase58()}, GDR ${GDR.toBase58()}`
     );
-    const txSig = await this.bankProgram.rpc.withdrawGem(gemBump, gemAmount, {
-      accounts: {
-        bank,
-        vault,
-        owner: isKp(vaultOwner) ? (<Keypair>vaultOwner).publicKey : vaultOwner,
-        authority: vaultAuth,
-        gemBox,
-        gemDepositReceipt: GDR,
-        gemDestination,
-        gemMint,
-        receiver,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-        systemProgram: SystemProgram.programId,
-        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-      },
-      signers,
-    });
+    const txSig = await this.bankProgram.rpc.withdrawGem(
+      gemBoxBump,
+      gemAmount,
+      {
+        accounts: {
+          bank,
+          vault,
+          owner: isKp(vaultOwner)
+            ? (<Keypair>vaultOwner).publicKey
+            : vaultOwner,
+          authority: vaultAuth,
+          gemBox,
+          gemDepositReceipt: GDR,
+          gemDestination,
+          gemMint,
+          receiver,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        },
+        signers,
+      }
+    );
 
-    return { vaultAuth, gemBox, gemBump, GDR, GDRBump, txSig };
+    return {
+      vaultAuth,
+      vaultAuthBump,
+      gemBox,
+      gemBoxBump,
+      GDR,
+      GDRBump,
+      txSig,
+    };
   }
 
   async addToWhitelist(

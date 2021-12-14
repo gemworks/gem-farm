@@ -31,12 +31,12 @@ pub mod gem_farm {
         instructions::unstake::handler(ctx)
     }
 
-    pub fn add_funder(ctx: Context<AddFunder>) -> ProgramResult {
-        instructions::add_funder::handler(ctx)
+    pub fn authorize_funder(ctx: Context<AuthorizeFunder>, _bump: u8) -> ProgramResult {
+        instructions::authorize_funder::handler(ctx)
     }
 
-    pub fn remove_funder(ctx: Context<RemoveFunder>) -> ProgramResult {
-        instructions::remove_funder::handler(ctx)
+    pub fn deauthorize_funder(ctx: Context<DeauthorizeFunder>) -> ProgramResult {
+        instructions::deauthorize_funder::handler(ctx)
     }
 
     pub fn fund(ctx: Context<Fund>) -> ProgramResult {

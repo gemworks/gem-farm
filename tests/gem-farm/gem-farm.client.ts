@@ -46,6 +46,16 @@ export class GemFarmClient extends GemBankClient {
     return this.farmProgram.account.farmer.fetch(farmer);
   }
 
+  async fetchAuthorizationProofAcc(authorizationProof: PublicKey) {
+    return this.farmProgram.account.authorizationProof.fetch(
+      authorizationProof
+    );
+  }
+
+  async fetchRDR(rdr: PublicKey) {
+    return this.farmProgram.account.rewardsDepositReceipt.fetch(rdr);
+  }
+
   // --------------------------------------- find PDA addresses
 
   async findFarmerPDA(farm: PublicKey, identity: PublicKey) {
@@ -58,6 +68,22 @@ export class GemFarmClient extends GemBankClient {
 
   async findFarmAuthorityPDA(farm: PublicKey) {
     return this.findProgramAddress(this.farmProgram.programId, [farm]);
+  }
+
+  async findAuthorizationProofPDA(farm: PublicKey, funder: PublicKey) {
+    return this.findProgramAddress(this.farmProgram.programId, [
+      'authorization',
+      farm,
+      funder,
+    ]);
+  }
+
+  async findRdrPDA(funder: PublicKey, mint: PublicKey) {
+    return this.findProgramAddress(this.farmProgram.programId, [
+      'rewards_deposit_receipt',
+      funder,
+      mint,
+    ]);
   }
 
   // --------------------------------------- get all PDAs by type
@@ -113,12 +139,13 @@ export class GemFarmClient extends GemBankClient {
       farmAcc.bank,
       identityPk
     );
-    const [vaultAuth] = await this.findVaultAuthorityPDA(vault); //nice-to-have
+    const [vaultAuth, vaultAuthBump] = await this.findVaultAuthorityPDA(vault); //nice-to-have
 
     const signers = [];
     if (isKp(identity)) signers.push(<Keypair>identity);
     if (isKp(payer)) signers.push(<Keypair>payer);
 
+    console.log('adding farmer', identityPk.toBase58());
     const txSig = await this.farmProgram.rpc.initFarmer(farmerBump, vaultBump, {
       accounts: {
         farm,
@@ -133,7 +160,15 @@ export class GemFarmClient extends GemBankClient {
       signers,
     });
 
-    return { farmer, farmerBump, vault, vaultBump, vaultAuth, txSig };
+    return {
+      farmer,
+      farmerBump,
+      vault,
+      vaultBump,
+      vaultAuth,
+      vaultAuthBump,
+      txSig,
+    };
   }
 
   async stake(farm: PublicKey, identity: PublicKey | Keypair) {
@@ -148,11 +183,12 @@ export class GemFarmClient extends GemBankClient {
       farmAcc.bank,
       identityPk
     );
-    const [farmAuth] = await this.findFarmAuthorityPDA(farm);
+    const [farmAuth, farmAuthBump] = await this.findFarmAuthorityPDA(farm);
 
     const signers = [];
     if (isKp(identity)) signers.push(<Keypair>identity);
 
+    console.log('staking gems for', identityPk.toBase58());
     const txSig = await this.farmProgram.rpc.stake(farmerBump, {
       accounts: {
         farm,
@@ -166,6 +202,45 @@ export class GemFarmClient extends GemBankClient {
       signers,
     });
 
-    return { farmer, farmerBump, vault, vaultBump, farmAuth, txSig };
+    return {
+      farmer,
+      farmerBump,
+      vault,
+      vaultBump,
+      farmAuth,
+      farmAuthBump,
+      txSig,
+    };
+  }
+
+  async authorizeFunder(
+    farm: PublicKey,
+    farmManager: PublicKey | Keypair,
+    funderToAuthorize: PublicKey
+  ) {
+    const [authorizationProof, authorizationProofBump] =
+      await this.findAuthorizationProofPDA(farm, funderToAuthorize);
+
+    const signers = [];
+    if (isKp(farmManager)) signers.push(<Keypair>farmManager);
+
+    console.log('authorizing funder', funderToAuthorize.toBase58());
+    const txSig = await this.farmProgram.rpc.authorizeFunder(
+      authorizationProofBump,
+      {
+        accounts: {
+          farm,
+          farmManager: isKp(farmManager)
+            ? (<Keypair>farmManager).publicKey
+            : farmManager,
+          funderToAuthorize,
+          authorizationProof,
+          systemProgram: SystemProgram.programId,
+        },
+        signers,
+      }
+    );
+
+    return { authorizationProof, authorizationProofBump, txSig };
   }
 }

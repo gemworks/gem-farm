@@ -7,10 +7,10 @@ use crate::state::*;
 #[instruction(bump: u8)]
 pub struct RemoveFromWhitelist<'info> {
     #[account(mut, has_one = bank_manager)]
-    bank: Account<'info, Bank>,
-    address_to_remove: AccountInfo<'info>,
+    pub bank: Account<'info, Bank>,
+    pub address_to_remove: AccountInfo<'info>,
     #[account(mut)]
-    bank_manager: Signer<'info>,
+    pub bank_manager: Signer<'info>,
     #[account(mut,
         seeds = [
             b"whitelist".as_ref(),
@@ -18,7 +18,7 @@ pub struct RemoveFromWhitelist<'info> {
             address_to_remove.key().as_ref(),
         ],
         bump = bump)]
-    whitelist_proof: Account<'info, WhitelistProof>,
+    pub whitelist_proof: Account<'info, WhitelistProof>,
 }
 
 pub fn handler(ctx: Context<RemoveFromWhitelist>) -> ProgramResult {

@@ -51,7 +51,7 @@ pub fn handler(ctx: Context<InitFarm>, bump: u8) -> ProgramResult {
     farm.farm_authority_bump_seed = [bump];
     farm.bank = ctx.accounts.bank.key();
     //todo currently missing rewards initialization
-    farm.funder_count = 0;
+    farm.authorized_funder_count = 0;
     farm.farmer_count = 0;
 
     //do a cpi call to start a new bank

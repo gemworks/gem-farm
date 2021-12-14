@@ -23,6 +23,7 @@ describe('gem farm', () => {
   let farmManager: Keypair;
   let farmerIdentity: Keypair;
   let farmerVault: PublicKey;
+  let funder: Keypair;
 
   function printState() {}
 
@@ -31,6 +32,7 @@ describe('gem farm', () => {
   before('configures accounts', async () => {
     farmManager = await gf.createWallet(100 * LAMPORTS_PER_SOL);
     farmerIdentity = await gf.createWallet(100 * LAMPORTS_PER_SOL);
+    funder = await gf.createWallet(100 * LAMPORTS_PER_SOL);
   });
 
   it('inits farm', async () => {
@@ -54,7 +56,34 @@ describe('gem farm', () => {
     assert.equal(farmerAcc.farm.toBase58(), farm.publicKey.toBase58());
   });
 
-  // --------------------------------------- stake
+  // --------------------------------------- fund
+
+  it('authorizes funder', async () => {
+    const { authorizationProof } = await gf.authorizeFunder(
+      farm.publicKey,
+      farmManager,
+      funder.publicKey
+    );
+
+    const authorizationProofAcc = await gf.fetchAuthorizationProofAcc(
+      authorizationProof
+    );
+    assert.equal(
+      authorizationProofAcc.authorizedFunder.toBase58,
+      funder.publicKey.toBase58
+    );
+  });
+
+  // it('deauthorizes funder', async () => {
+  //   await gf.program.rpc.removeFunder({});
+  // });
+  //
+  // it('funds', async () => {
+  //   await gf.program.rpc.fund({});
+  // });
+  //
+
+  // --------------------------------------- stake & claim
 
   describe('gem operations', () => {
     let gemAmount: anchor.BN;
@@ -92,25 +121,9 @@ describe('gem farm', () => {
     // it('unstakes gems', async () => {
     //   await gf.farmProgram.rpc.unstake({});
     // });
-  });
 
-  // // --------------------------------------- fund
-  //
-  // it('adds funder', async () => {
-  //   await gf.program.rpc.addFunder({});
-  // });
-  //
-  // it('removes funder', async () => {
-  //   await gf.program.rpc.removeFunder({});
-  // });
-  //
-  // it('funds', async () => {
-  //   await gf.program.rpc.fund({});
-  // });
-  //
-  // // --------------------------------------- claim
-  //
-  // it('claims', async () => {
-  //   await gf.program.rpc.claim({});
-  // });
+    // it('claims rewards', async () => {
+    //   await gf.program.rpc.claim({});
+    // });
+  });
 });

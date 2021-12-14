@@ -19,20 +19,7 @@ pub struct Farm {
     // each farm controls a single bank
     pub bank: Pubkey,
 
-    /// Mint of the reward A token.
-    pub reward_mint: Pubkey,
-    /// Vault to store reward A tokens.
-    pub reward_vault: Pubkey,
-    /// Rate of reward A distribution.
-    pub reward_rate: u64,
-    /// Last calculated reward A per pool token.
-    pub reward_per_token_stored: u128,
-
-    pub reward_duration: u64,
-
-    pub reward_duration_end: u64,
-
-    pub last_update_time: u64,
+    // --------------------------------------- farmers
 
     // total count, including initialized but inactive farmers
     pub farmer_count: u64,
@@ -40,7 +27,31 @@ pub struct Farm {
     // active only
     pub active_farmer_count: u64,
 
-    pub funder_count: u64,
+    // --------------------------------------- funders
+    pub authorized_funder_count: u64,
+
+    pub funded_rewards_pots: u64,
+
+    pub active_rewards_pots: u64,
+
+    // --------------------------------------- rewards calc
+    pub last_update_time: u64,
+
+    /// Mint of the reward A token.
+    pub reward_mint: Pubkey,
+
+    /// Vault to store reward A tokens.
+    pub reward_vault: Pubkey,
+
+    /// Rate of reward A distribution.
+    pub reward_rate: u64,
+
+    /// Last calculated reward A per pool token.
+    pub reward_per_token_stored: u128,
+
+    pub reward_duration: u64,
+
+    pub reward_duration_end: u64,
 }
 
 impl Farm {
