@@ -16,6 +16,6 @@ pub struct Farmer {
     /// The amount of token A pending claim.
     pub reward_per_token_pending: u64,
 
-    /// todo The amount staked.
-    pub balance_staked: u64,
+    // total number of gems at the time when the vault is locked
+    pub gems_staked: u64,
 }

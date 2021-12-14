@@ -23,7 +23,7 @@ pub mod gem_farm {
         instructions::init_farmer::handler(ctx, bump_vault)
     }
 
-    pub fn stake(ctx: Context<Stake>) -> ProgramResult {
+    pub fn stake(ctx: Context<Stake>, _bump: u8) -> ProgramResult {
         instructions::stake::handler(ctx)
     }
 

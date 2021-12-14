@@ -8,6 +8,7 @@
 // import { BankFlags, GemBankClient, WhitelistType } from './gem-bank.client';
 // import { describe } from 'mocha';
 // import { createMetadata } from '../utils/metaplex';
+// import { prepGem } from '../utils/gem-common';
 //
 // chai.use(chaiAsPromised);
 //
@@ -125,7 +126,7 @@
 //
 //   // --------------------------------------- gem boxes
 //
-//   describe('gem boxes', () => {
+//   describe('gem operations', () => {
 //     //global state
 //     let gemAmount: anchor.BN;
 //     let gemOwner: Keypair;
@@ -178,15 +179,8 @@
 //       );
 //     }
 //
-//     async function prepGem() {
-//       const gemAmount = new BN(Math.ceil(Math.random() * 100));
-//       const gemOwner = await gb.createWallet(100 * LAMPORTS_PER_SOL);
-//       const gem = await gb.createMintAndATA(gemOwner.publicKey, gemAmount);
-//       return { gemAmount, gemOwner, gem };
-//     }
-//
 //     beforeEach('creates a fresh gem', async () => {
-//       ({ gemAmount, gemOwner, gem } = await prepGem());
+//       ({ gemAmount, gemOwner, gem } = await prepGem(gb));
 //     });
 //
 //     it('deposits gem', async () => {
@@ -195,6 +189,7 @@
 //
 //       const vaultAcc = await gb.fetchVaultAcc(vault);
 //       assert(vaultAcc.gemBoxCount.eq(new BN(1)));
+//       assert(vaultAcc.gemCount.eq(gemAmount));
 //
 //       const gemBoxAcc = await gb.fetchGemAcc(gem.tokenMint, gemBox);
 //       assert(gemBoxAcc.amount.eq(gemAmount));
@@ -205,7 +200,7 @@
 //       assert.equal(GDRAcc.vault.toBase58(), vault.toBase58());
 //       assert.equal(GDRAcc.gemBoxAddress.toBase58(), gemBox.toBase58());
 //       assert.equal(GDRAcc.gemMint.toBase58(), gem.tokenMint.toBase58());
-//       assert(GDRAcc.gemAmount.eq(gemAmount));
+//       assert(GDRAcc.gemCount.eq(gemAmount));
 //     });
 //
 //     it('FAILS to deposit gem w/ wrong owner', async () => {
@@ -216,12 +211,14 @@
 //       ({ gemBox, GDR } = await prepDeposit(vaultOwner)); //make a fresh deposit
 //
 //       const vaultAcc = await gb.fetchVaultAcc(vault);
-//       const oldCount = vaultAcc.gemBoxCount.toNumber();
+//       const oldBoxCount = vaultAcc.gemBoxCount;
+//       const oldGemCount = vaultAcc.gemCount;
 //
 //       await prepWithdrawal(vaultOwner, gem.tokenAcc, gem.owner, gemAmount);
 //
 //       const vaultAcc2 = await gb.fetchVaultAcc(vault);
-//       assert.equal(vaultAcc2.gemBoxCount.toNumber(), oldCount - 1);
+//       assert(vaultAcc2.gemBoxCount.eq(oldBoxCount.sub(new BN(1))));
+//       assert(vaultAcc2.gemCount.eq(oldGemCount.sub(gemAmount)));
 //
 //       const gemAcc = await gb.fetchGemAcc(gem.tokenMint, gem.tokenAcc);
 //       assert(gemAcc.amount.eq(gemAmount));
@@ -249,7 +246,7 @@
 //       assert(gemBoxAcc.amount.eq(new BN(1)));
 //
 //       const GDRAcc = await gb.fetchGDRAcc(GDR);
-//       assert(GDRAcc.gemAmount.eq(new BN(1)));
+//       assert(GDRAcc.gemCount.eq(new BN(1)));
 //     });
 //
 //     it('withdraws gem to missing ATA', async () => {
@@ -493,7 +490,7 @@
 //           gb.wallet,
 //           gem.tokenMint
 //         );
-//         const { gem: randomGem } = await prepGem();
+//         const { gem: randomGem } = await prepGem(gb);
 //         const { whitelistedMint } = await whitelistMint(randomGem.tokenMint); //random mint intentionally
 //         const { whitelistedCreator, whitelistProof } = await whitelistCreator(
 //           gb.wallet.publicKey //this is the address used to create the metadata
@@ -564,7 +561,7 @@
 //
 //       it('FAILS a deposit if mint whitelist exists, but mint not whitelisted', async () => {
 //         //setup the whitelist for the WRONG gem
-//         const { gem: randomGem } = await prepGem();
+//         const { gem: randomGem } = await prepGem(gb);
 //         const { whitelistedMint, whitelistProof } = await whitelistMint(
 //           randomGem.tokenMint
 //         );

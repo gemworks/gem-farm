@@ -91,15 +91,15 @@ pub fn handler(ctx: Context<WithdrawGem>, amount: u64) -> ProgramResult {
     let gdr = &mut *ctx.accounts.gem_deposit_receipt;
     let gem_box = &ctx.accounts.gem_box;
 
-    gdr.gem_amount.try_self_sub(amount)?;
+    gdr.gem_count.try_self_sub(amount)?;
 
     // this check is semi-useless but won't hurt
-    if gdr.gem_amount != gem_box.amount - amount {
+    if gdr.gem_count != gem_box.amount - amount {
         return Err(ErrorCode::AmountMismatch.into());
     }
 
     // if gembox empty, close both the box and the GDR, and return funds to user
-    if gdr.gem_amount == 0 {
+    if gdr.gem_count == 0 {
         // close gem box
         token::close_account(
             ctx.accounts
@@ -117,6 +117,10 @@ pub fn handler(ctx: Context<WithdrawGem>, amount: u64) -> ProgramResult {
         let vault = &mut ctx.accounts.vault;
         vault.gem_box_count.try_self_sub(1)?;
     }
+
+    // decrement gem count as well
+    let vault = &mut ctx.accounts.vault;
+    vault.gem_count.try_self_sub(amount)?;
 
     msg!("{} gems withdrawn from ${} gem box", amount, gem_box.key());
     Ok(())

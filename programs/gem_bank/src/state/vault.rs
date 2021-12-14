@@ -25,8 +25,11 @@ pub struct Vault {
 
     pub name: [u8; 32],
 
-    // total number of NFTs stored in the vault
+    // total number of NFT mints stored in the vault
     pub gem_box_count: u64,
+
+    // gem_boxes can store >1 token, this counts actual token count
+    pub gem_count: u64,
 }
 
 impl Vault {

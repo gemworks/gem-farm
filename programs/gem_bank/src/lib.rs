@@ -27,7 +27,7 @@ pub mod gem_bank {
         instructions::init_vault::handler(ctx, owner, name)
     }
 
-    pub fn set_vault_lock(ctx: Context<UnlockVault>, vault_lock: bool) -> ProgramResult {
+    pub fn set_vault_lock(ctx: Context<SetVaultLock>, vault_lock: bool) -> ProgramResult {
         instructions::set_vault_lock::handler(ctx, vault_lock)
     }
 

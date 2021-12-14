@@ -30,7 +30,6 @@ pub struct InitFarmer<'info> {
     pub bank: Account<'info, Bank>,
     #[account(mut)]
     pub vault: AccountInfo<'info>,
-    // todo is this doing enough validation?
     pub gem_bank: Program<'info, GemBank>,
     pub system_program: Program<'info, System>,
 }
@@ -57,7 +56,7 @@ pub fn handler(ctx: Context<InitFarmer>, bump_vault: u8) -> ProgramResult {
 
     farmer.farm = ctx.accounts.farm.key();
     farmer.identity = ctx.accounts.identity.key();
-    farmer.balance_staked = 0;
+    farmer.gems_staked = 0;
 
     //update farmer count
     let farm = &mut ctx.accounts.farm;

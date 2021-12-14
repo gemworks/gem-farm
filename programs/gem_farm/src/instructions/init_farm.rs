@@ -20,7 +20,6 @@ pub struct InitFarm<'info> {
     //  current thinking no: coz we NEED the bank to be managed by the farm authority
     #[account(mut)]
     pub bank: Signer<'info>,
-    // todo is this doing enough validation?
     pub gem_bank: Program<'info, GemBank>,
     pub system_program: Program<'info, System>,
 }

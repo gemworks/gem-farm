@@ -12,5 +12,6 @@ pub struct GemDepositReceipt {
     // the following is really stored for convenience, so we don't have to fetch gem account separately
     pub gem_mint: Pubkey,
 
-    pub gem_amount: u64,
+    // number of gems deposited into this GDR
+    pub gem_count: u64,
 }

@@ -34,7 +34,11 @@ pub struct Farm {
 
     pub last_update_time: u64,
 
+    // total count, including initialized but inactive farmers
     pub farmer_count: u64,
+
+    // active only
+    pub active_farmer_count: u64,
 
     pub funder_count: u64,
 }
