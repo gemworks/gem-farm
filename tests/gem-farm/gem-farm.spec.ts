@@ -78,10 +78,30 @@ describe('gem farm', () => {
   //   await gf.program.rpc.removeFunder({});
   // });
   //
-  // it('funds', async () => {
-  //   await gf.program.rpc.fund({});
-  // });
-  //
+
+  it('funds the farm', async () => {
+    //create token to fund with
+    const amount = new BN(10000);
+    const reward = await gf.createMintAndATA(funder.publicKey, amount);
+
+    const { rdr, pot } = await gf.fund(
+      farm.publicKey,
+      reward.tokenAcc,
+      reward.tokenMint,
+      funder,
+      amount
+    );
+
+    const farmAcc = await gf.fetchFarmAcc(farm.publicKey);
+    assert(farmAcc.fundedRewardsPots.eq(new BN(1)));
+
+    const rdrAcc = await gf.fetchRDRAcc(rdr);
+    assert.equal(rdrAcc.farm.toBase58(), farm.publicKey.toBase58());
+    assert.equal(rdrAcc.rewardsPot.toBase58(), pot.toBase58());
+
+    const rewardsAcc = await gf.fetchRewardsPotAcc(reward.tokenMint, pot);
+    assert(rewardsAcc.amount.eq(amount));
+  });
 
   // --------------------------------------- stake & claim
 

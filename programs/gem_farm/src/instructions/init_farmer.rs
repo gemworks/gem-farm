@@ -72,7 +72,7 @@ pub fn handler(ctx: Context<InitFarmer>, bump_vault: u8) -> ProgramResult {
         bump_vault,
         vault_owner,
         vault_name,
-    );
+    )?;
 
     msg!("new farmer initialized");
     Ok(())

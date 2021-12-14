@@ -51,7 +51,7 @@ pub fn handler(ctx: Context<Stake>) -> ProgramResult {
             .lock_vault_ctx()
             .with_signer(&[&ctx.accounts.farm.farm_seeds()]),
         true, //setting vault lock to true
-    );
+    )?;
 
     // record the beginning of staking on farmer
     let vault = &ctx.accounts.vault;

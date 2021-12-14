@@ -2,7 +2,6 @@ use std::convert::TryFrom;
 use std::str::FromStr;
 
 use anchor_lang::prelude::*;
-use anchor_spl::token::accessor::mint;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 use gem_common::errors::ErrorCode;
 use gem_common::*;

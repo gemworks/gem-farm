@@ -59,7 +59,7 @@ pub fn handler(ctx: Context<InitFarm>, bump: u8) -> ProgramResult {
         ctx.accounts
             .init_bank_ctx()
             .with_signer(&[&ctx.accounts.farm.farm_seeds()]),
-    );
+    )?;
 
     msg!("new farm initialized");
     Ok(())

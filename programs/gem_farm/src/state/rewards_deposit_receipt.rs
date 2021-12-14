@@ -7,7 +7,7 @@ pub struct RewardsDepositReceipt {
     pub farm: Pubkey,
 
     // where rewards got deposited
-    pub rewards_account: Pubkey,
+    pub rewards_pot: Pubkey,
 
     // rewards token mint
     pub rewards_mint: Pubkey,

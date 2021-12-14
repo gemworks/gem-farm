@@ -39,8 +39,14 @@ pub mod gem_farm {
         instructions::deauthorize_funder::handler(ctx)
     }
 
-    pub fn fund(ctx: Context<Fund>) -> ProgramResult {
-        instructions::fund::handler(ctx)
+    pub fn fund(
+        ctx: Context<Fund>,
+        _bump_proof: u8,
+        _bump_rdr: u8,
+        _bump_pot: u8,
+        amount: u64,
+    ) -> ProgramResult {
+        instructions::fund::handler(ctx, amount)
     }
 
     pub fn claim(ctx: Context<Claim>) -> ProgramResult {

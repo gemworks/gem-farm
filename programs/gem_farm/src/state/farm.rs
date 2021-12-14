@@ -20,7 +20,6 @@ pub struct Farm {
     pub bank: Pubkey,
 
     // --------------------------------------- farmers
-
     // total count, including initialized but inactive farmers
     pub farmer_count: u64,
 

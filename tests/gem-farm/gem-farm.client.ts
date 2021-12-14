@@ -1,10 +1,11 @@
 import * as anchor from '@project-serum/anchor';
-import { Idl, Program, Wallet } from '@project-serum/anchor';
+import { BN, Idl, Program, Wallet } from '@project-serum/anchor';
 import { Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
 import { GemFarm } from '../../target/types/gem_farm';
 import { Connection } from '@metaplex/js';
 import { isKp } from '../utils/types';
 import { GemBankClient } from '../gem-bank/gem-bank.client';
+import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 
 export class GemFarmClient extends GemBankClient {
   farmProgram!: anchor.Program<GemFarm>;
@@ -52,8 +53,12 @@ export class GemFarmClient extends GemBankClient {
     );
   }
 
-  async fetchRDR(rdr: PublicKey) {
+  async fetchRDRAcc(rdr: PublicKey) {
     return this.farmProgram.account.rewardsDepositReceipt.fetch(rdr);
+  }
+
+  async fetchRewardsPotAcc(rewardsMint: PublicKey, rewardsPot: PublicKey) {
+    return this.deserializeTokenAccount(rewardsMint, rewardsPot);
   }
 
   // --------------------------------------- find PDA addresses
@@ -83,6 +88,14 @@ export class GemFarmClient extends GemBankClient {
       'rewards_deposit_receipt',
       funder,
       mint,
+    ]);
+  }
+
+  async findRewardsPotPDA(farm: PublicKey, rewardsMint: PublicKey) {
+    return this.findProgramAddress(this.farmProgram.programId, [
+      'rewards_pot',
+      farm,
+      rewardsMint,
     ]);
   }
 
@@ -242,5 +255,61 @@ export class GemFarmClient extends GemBankClient {
     );
 
     return { authorizationProof, authorizationProofBump, txSig };
+  }
+
+  async fund(
+    farm: PublicKey,
+    rewardsSource: PublicKey,
+    rewardsMint: PublicKey,
+    funder: PublicKey | Keypair,
+    amount: BN
+  ) {
+    const funderPk = isKp(funder)
+      ? (<Keypair>funder).publicKey
+      : <PublicKey>funder;
+
+    const [farmAuth, farmAuthBump] = await this.findFarmAuthorityPDA(farm);
+    const [authorizationProof, authorizationProofBump] =
+      await this.findAuthorizationProofPDA(farm, funderPk);
+    const [rdr, rdrBump] = await this.findRdrPDA(funderPk, rewardsMint);
+    const [pot, potBump] = await this.findRewardsPotPDA(farm, rewardsMint);
+
+    const signers = [];
+    if (isKp(funder)) signers.push(<Keypair>funder);
+
+    const txSig = await this.farmProgram.rpc.fund(
+      authorizationProofBump,
+      rdrBump,
+      potBump,
+      amount,
+      {
+        accounts: {
+          farm,
+          farmAuthority: farmAuth,
+          authorizationProof,
+          rewardsDepositReceipt: rdr,
+          rewardsPot: pot,
+          rewardsSource,
+          rewardsMint,
+          authorizedFunder: funderPk,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        },
+        signers,
+      }
+    );
+
+    return {
+      farmAuth,
+      farmAuthBump,
+      authorizationProof,
+      authorizationProofBump,
+      rdr,
+      rdrBump,
+      pot,
+      potBump,
+      txSig,
+    };
   }
 }
