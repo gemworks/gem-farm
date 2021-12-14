@@ -17,12 +17,13 @@ pub struct InitVault<'info> {
             creator.key().as_ref(),
         ],
         bump = bump,
-        payer = creator,
+        payer = payer,
         space = 8 + std::mem::size_of::<Vault>())]
     pub vault: Account<'info, Vault>,
-    #[account(mut)]
     // (!) used for PDA initial derivation - CANNOT BE CHANGED
     pub creator: Signer<'info>,
+    #[account(mut)]
+    pub payer: Signer<'info>,
     pub system_program: Program<'info, System>,
 }
 

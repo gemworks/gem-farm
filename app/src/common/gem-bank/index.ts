@@ -38,9 +38,9 @@ export class GemBank extends GemBankClient {
     super(conn, wallet, idl, programId);
   }
 
-  async startBankWallet() {
+  async initBankWallet() {
     const bank = Keypair.generate();
-    const txSig = await this.startBank(
+    const txSig = await this.initBank(
       bank,
       this.wallet.publicKey,
       this.wallet.publicKey
@@ -48,9 +48,10 @@ export class GemBank extends GemBankClient {
     return { bank, txSig };
   }
 
-  async createVaultWallet(bank: PublicKey) {
-    return this.createVault(
+  async initVaultWallet(bank: PublicKey) {
+    return this.initVault(
       bank,
+      this.wallet.publicKey,
       this.wallet.publicKey,
       this.wallet.publicKey,
       'test_vault'

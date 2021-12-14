@@ -14,6 +14,8 @@ pub struct InitFarm<'info> {
     pub farm_authority: AccountInfo<'info>,
     #[account(mut)]
     pub payer: Signer<'info>,
+
+    // --------------------------------------- cpi
     // todo should it be less opinionated and simply take in a pre-made bank?
     //  current thinking no: coz we NEED the bank to be managed by the farm authority
     #[account(mut)]
@@ -59,7 +61,6 @@ pub fn handler(ctx: Context<InitFarm>, bump: u8) -> ProgramResult {
             .init_bank_ctx()
             .with_signer(&[&ctx.accounts.farm.farm_seeds()]),
     );
-    msg!("done");
 
     msg!("new farm initialized");
     Ok(())

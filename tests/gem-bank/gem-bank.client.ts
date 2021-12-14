@@ -21,7 +21,7 @@ export enum WhitelistType {
 
 export class GemBankClient extends AccountUtils {
   provider: anchor.Provider;
-  program!: anchor.Program<GemBank>;
+  bankProgram!: anchor.Program<GemBank>;
 
   constructor(
     conn: Connection,
@@ -32,36 +32,36 @@ export class GemBankClient extends AccountUtils {
     super(conn, wallet);
     this.provider = new Provider(conn, wallet, Provider.defaultOptions());
     anchor.setProvider(this.provider);
-    this.setProgram(idl, programId);
+    this.setBankProgram(idl, programId);
   }
 
-  setProgram(idl?: Idl, programId?: PublicKey) {
+  setBankProgram(idl?: Idl, programId?: PublicKey) {
     //instantiating program depends on the environment
     if (idl && programId) {
       //means running in prod
-      this.program = new anchor.Program<GemBank>(
+      this.bankProgram = new anchor.Program<GemBank>(
         idl as any,
         programId,
         this.provider
       );
     } else {
       //means running inside test suite
-      this.program = anchor.workspace.GemBank as Program<GemBank>;
+      this.bankProgram = anchor.workspace.GemBank as Program<GemBank>;
     }
   }
 
   // --------------------------------------- fetch deserialized accounts
 
   async fetchBankAcc(bank: PublicKey) {
-    return this.program.account.bank.fetch(bank);
+    return this.bankProgram.account.bank.fetch(bank);
   }
 
   async fetchVaultAcc(vault: PublicKey) {
-    return this.program.account.vault.fetch(vault);
+    return this.bankProgram.account.vault.fetch(vault);
   }
 
   async fetchGDRAcc(GDR: PublicKey) {
-    return this.program.account.gemDepositReceipt.fetch(GDR);
+    return this.bankProgram.account.gemDepositReceipt.fetch(GDR);
   }
 
   async fetchGemAcc(mint: PublicKey, gemAcc: PublicKey): Promise<AccountInfo> {
@@ -69,13 +69,13 @@ export class GemBankClient extends AccountUtils {
   }
 
   async fetchWhitelistProofAcc(proof: PublicKey) {
-    return this.program.account.whitelistProof.fetch(proof);
+    return this.bankProgram.account.whitelistProof.fetch(proof);
   }
 
   // --------------------------------------- find PDA addresses
 
   async findVaultPDA(bank: PublicKey, creator: PublicKey) {
-    return this.findProgramAddress(this.program.programId, [
+    return this.findProgramAddress(this.bankProgram.programId, [
       'vault',
       bank,
       creator,
@@ -83,7 +83,7 @@ export class GemBankClient extends AccountUtils {
   }
 
   async findGemBoxPDA(vault: PublicKey, mint: PublicKey) {
-    return this.findProgramAddress(this.program.programId, [
+    return this.findProgramAddress(this.bankProgram.programId, [
       'gem_box',
       vault,
       mint,
@@ -91,7 +91,7 @@ export class GemBankClient extends AccountUtils {
   }
 
   async findGdrPDA(vault: PublicKey, mint: PublicKey) {
-    return this.findProgramAddress(this.program.programId, [
+    return this.findProgramAddress(this.bankProgram.programId, [
       'gem_deposit_receipt',
       vault,
       mint,
@@ -99,11 +99,11 @@ export class GemBankClient extends AccountUtils {
   }
 
   async findVaultAuthorityPDA(vault: PublicKey) {
-    return this.findProgramAddress(this.program.programId, [vault]);
+    return this.findProgramAddress(this.bankProgram.programId, [vault]);
   }
 
   async findWhitelistProofPDA(bank: PublicKey, whitelistedAddress: PublicKey) {
-    return this.findProgramAddress(this.program.programId, [
+    return this.findProgramAddress(this.bankProgram.programId, [
       'whitelist',
       bank,
       whitelistedAddress,
@@ -124,7 +124,7 @@ export class GemBankClient extends AccountUtils {
           },
         ]
       : [];
-    const pdas = await this.program.account.bank.all(filter);
+    const pdas = await this.bankProgram.account.bank.all(filter);
     console.log(`found a total of ${pdas.length} bank PDAs`);
     return pdas;
   }
@@ -140,7 +140,7 @@ export class GemBankClient extends AccountUtils {
           },
         ]
       : [];
-    const pdas = await this.program.account.vault.all(filter);
+    const pdas = await this.bankProgram.account.vault.all(filter);
     console.log(`found a total of ${pdas.length} vault PDAs`);
     return pdas;
   }
@@ -156,7 +156,7 @@ export class GemBankClient extends AccountUtils {
           },
         ]
       : [];
-    const pdas = await this.program.account.gemDepositReceipt.all(filter);
+    const pdas = await this.bankProgram.account.gemDepositReceipt.all(filter);
     console.log(`found a total of ${pdas.length} GDR PDAs`);
     return pdas;
   }
@@ -172,14 +172,14 @@ export class GemBankClient extends AccountUtils {
           },
         ]
       : [];
-    const pdas = await this.program.account.whitelistProof.all(filter);
+    const pdas = await this.bankProgram.account.whitelistProof.all(filter);
     console.log(`found a total of ${pdas.length} whitelist proofs`);
     return pdas;
   }
 
   // --------------------------------------- execute ixs
 
-  async startBank(
+  async initBank(
     bank: Keypair,
     bankManager: PublicKey | Keypair,
     payer: PublicKey | Keypair
@@ -188,7 +188,7 @@ export class GemBankClient extends AccountUtils {
     if (isKp(bankManager)) signers.push(<Keypair>bankManager);
 
     console.log('starting bank at', bank.publicKey.toBase58());
-    const txSig = await this.program.rpc.initBank({
+    const txSig = await this.bankProgram.rpc.initBank({
       accounts: {
         bank: bank.publicKey,
         bankManager: isKp(bankManager)
@@ -212,7 +212,7 @@ export class GemBankClient extends AccountUtils {
     if (isKp(bankManager)) signers.push(<Keypair>bankManager);
 
     console.log('updating bank manager to', newManager.toBase58());
-    const txSig = await this.program.rpc.updateBankManager(newManager, {
+    const txSig = await this.bankProgram.rpc.updateBankManager(newManager, {
       accounts: {
         bank,
         bankManager: isKp(bankManager)
@@ -225,27 +225,31 @@ export class GemBankClient extends AccountUtils {
     return { txSig };
   }
 
-  async createVault(
+  async initVault(
     bank: PublicKey,
     creator: PublicKey | Keypair,
+    payer: PublicKey | Keypair,
     owner: PublicKey,
     name: string
   ) {
     const creatorPk = isKp(creator)
       ? (<Keypair>creator).publicKey
       : <PublicKey>creator;
+
     const [vault, vaultBump] = await this.findVaultPDA(bank, creatorPk);
-    const [vaultAuth] = await this.findVaultAuthorityPDA(vault);
+    const [vaultAuth] = await this.findVaultAuthorityPDA(vault); //nice-to-have
 
     const signers = [];
     if (isKp(creator)) signers.push(<Keypair>creator);
+    if (isKp(payer)) signers.push(<Keypair>payer);
 
     console.log('creating vault at', vault.toBase58());
-    const txSig = await this.program.rpc.initVault(vaultBump, owner, name, {
+    const txSig = await this.bankProgram.rpc.initVault(vaultBump, owner, name, {
       accounts: {
         bank,
         vault,
         creator: creatorPk,
+        payer: isKp(payer) ? (<Keypair>payer).publicKey : <PublicKey>payer,
         systemProgram: SystemProgram.programId,
       },
       signers,
@@ -264,7 +268,7 @@ export class GemBankClient extends AccountUtils {
     if (isKp(existingOwner)) signers.push(<Keypair>existingOwner);
 
     console.log('updating vault owner to', newOwner.toBase58());
-    const txSig = await this.program.rpc.updateVaultOwner(newOwner, {
+    const txSig = await this.bankProgram.rpc.updateVaultOwner(newOwner, {
       accounts: {
         bank,
         vault,
@@ -288,7 +292,7 @@ export class GemBankClient extends AccountUtils {
     if (isKp(bankManager)) signers.push(<Keypair>bankManager);
 
     console.log('setting vault lock to', vaultLocked);
-    const txSig = await this.program.rpc.setVaultLock(vaultLocked, {
+    const txSig = await this.bankProgram.rpc.setVaultLock(vaultLocked, {
       accounts: {
         bank,
         vault,
@@ -311,7 +315,7 @@ export class GemBankClient extends AccountUtils {
     if (isKp(bankManager)) signers.push(<Keypair>bankManager);
 
     console.log('setting bank flags to', flags);
-    const txSig = await this.program.rpc.setBankFlags(flags, {
+    const txSig = await this.bankProgram.rpc.setBankFlags(flags, {
       accounts: {
         bank,
         bankManager: bankManager
@@ -367,7 +371,7 @@ export class GemBankClient extends AccountUtils {
     console.log(
       `depositing ${gemAmount} gems into ${gemBox.toBase58()}, GDR ${GDR.toBase58()}`
     );
-    const txSig = await this.program.rpc.depositGem(
+    const txSig = await this.bankProgram.rpc.depositGem(
       gemBump,
       GDRBump,
       gemAmount,
@@ -417,7 +421,7 @@ export class GemBankClient extends AccountUtils {
     console.log(
       `withdrawing ${gemAmount} gems from ${gemBox.toBase58()}, GDR ${GDR.toBase58()}`
     );
-    const txSig = await this.program.rpc.withdrawGem(gemBump, gemAmount, {
+    const txSig = await this.bankProgram.rpc.withdrawGem(gemBump, gemAmount, {
       accounts: {
         bank,
         vault,
@@ -453,7 +457,7 @@ export class GemBankClient extends AccountUtils {
     const signers = [];
     if (isKp(bankManager)) signers.push(<Keypair>bankManager);
 
-    const txSig = await this.program.rpc.addToWhitelist(
+    const txSig = await this.bankProgram.rpc.addToWhitelist(
       whitelistBump,
       whitelistType,
       {
@@ -486,17 +490,20 @@ export class GemBankClient extends AccountUtils {
     const signers = [];
     if (isKp(bankManager)) signers.push(<Keypair>bankManager);
 
-    const txSig = await this.program.rpc.removeFromWhitelist(whitelistBump, {
-      accounts: {
-        bank,
-        bankManager: isKp(bankManager)
-          ? (<Keypair>bankManager).publicKey
-          : bankManager,
-        addressToRemove,
-        whitelistProof,
-      },
-      signers,
-    });
+    const txSig = await this.bankProgram.rpc.removeFromWhitelist(
+      whitelistBump,
+      {
+        accounts: {
+          bank,
+          bankManager: isKp(bankManager)
+            ? (<Keypair>bankManager).publicKey
+            : bankManager,
+          addressToRemove,
+          whitelistProof,
+        },
+        signers,
+      }
+    );
 
     return { whitelistProof, whitelistBump, txSig };
   }

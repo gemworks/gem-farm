@@ -4,8 +4,8 @@ use instructions::*;
 declare_id!("5f8w4vbj1CkUBtiZa5k18AjP4R6Qi63pkruDD5xRZwVT");
 
 pub mod instructions;
+pub mod rewards;
 pub mod state;
-pub mod yield_math;
 
 #[program]
 pub mod gem_farm {
@@ -15,8 +15,12 @@ pub mod gem_farm {
         instructions::init_farm::handler(ctx, bump)
     }
 
-    pub fn init_farmer(ctx: Context<InitFarmer>) -> ProgramResult {
-        instructions::init_farmer::handler(ctx)
+    pub fn init_farmer(
+        ctx: Context<InitFarmer>,
+        _bump_farmer: u8,
+        bump_vault: u8,
+    ) -> ProgramResult {
+        instructions::init_farmer::handler(ctx, bump_vault)
     }
 
     pub fn stake(ctx: Context<Stake>) -> ProgramResult {

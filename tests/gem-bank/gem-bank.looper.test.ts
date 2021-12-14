@@ -35,14 +35,15 @@
 //   const nGemsPerVault = 5;
 //
 //   const bank = Keypair.generate();
-//   const manager = gb.wallet.publicKey;
+//   const bankManager = gb.wallet.publicKey;
 //   let vaults: IVault[] = [];
 //
 //   async function prepVault() {
 //     const vaultOwner = await gb.createWallet(100 * LAMPORTS_PER_SOL);
 //
-//     const { vault, vaultAuth } = await gb.createVault(
+//     const { vault, vaultAuth } = await gb.initVault(
 //       bank.publicKey,
+//       vaultOwner,
 //       vaultOwner,
 //       vaultOwner.publicKey,
 //       'test_vault'
@@ -95,7 +96,7 @@
 //
 //   async function depositLooper() {
 //     //bank
-//     await gb.startBank(bank, manager);
+//     await gb.initBank(bank, bankManager, bankManager);
 //     console.log('bank started');
 //
 //     //vaults
@@ -151,7 +152,7 @@
 //     }
 //
 //     // --------------------------------------- w/ constraints
-//     bankPDAs = await gb.fetchAllBankPDAs(manager);
+//     bankPDAs = await gb.fetchAllBankPDAs(bankManager);
 //     vaultPDAs = await gb.fetchAllVaultPDAs(bank.publicKey);
 //
 //     //verify correct # of accounts found
