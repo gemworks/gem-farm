@@ -1,8 +1,6 @@
-# Rare Gems Protocol 💎
+# Gemworks 💎
 
-Rare Gems is a protocol for managing, farming, and sharding NFTs (gems).
-
-It consists of 3 separate but inter-related programs described in detail below.
+Gemworks is a collection of Solana programs for storing, staking, and sharding NFTs (gems).
 
 # Gem Bank 🏦
 
