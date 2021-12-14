@@ -394,3 +394,5 @@ terraform.rc
 
 # ---------------------------------------- extra
 .anchor
+
+*.original

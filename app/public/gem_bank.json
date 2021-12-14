@@ -11,7 +11,12 @@
           "isSigner": true
         },
         {
-          "name": "manager",
+          "name": "bankManager",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "payer",
           "isMut": true,
           "isSigner": true
         },
@@ -32,7 +37,7 @@
           "isSigner": false
         },
         {
-          "name": "manager",
+          "name": "bankManager",
           "isMut": false,
           "isSigner": true
         }
@@ -59,6 +64,11 @@
         },
         {
           "name": "creator",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "payer",
           "isMut": true,
           "isSigner": true
         },
@@ -97,7 +107,7 @@
           "isSigner": false
         },
         {
-          "name": "owner",
+          "name": "bankManager",
           "isMut": false,
           "isSigner": true
         }
@@ -303,7 +313,7 @@
           "isSigner": false
         },
         {
-          "name": "manager",
+          "name": "bankManager",
           "isMut": true,
           "isSigner": true
         },
@@ -348,7 +358,7 @@
           "isSigner": false
         },
         {
-          "name": "manager",
+          "name": "bankManager",
           "isMut": true,
           "isSigner": true
         },
@@ -364,6 +374,27 @@
           "type": "u8"
         }
       ]
+    },
+    {
+      "name": "updateBankManager",
+      "accounts": [
+        {
+          "name": "bank",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "bankManager",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "newManager",
+          "type": "publicKey"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -373,12 +404,12 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "manager",
-            "type": "publicKey"
-          },
-          {
             "name": "version",
             "type": "u16"
+          },
+          {
+            "name": "bankManager",
+            "type": "publicKey"
           },
           {
             "name": "flags",
@@ -496,48 +527,6 @@
           }
         ]
       }
-    }
-  ],
-  "errors": [
-    {
-      "code": 300,
-      "name": "ArithmeticError",
-      "msg": "failed to perform some math operation safely"
-    },
-    {
-      "code": 301,
-      "name": "UnknownInstruction",
-      "msg": "unknown instruction"
-    },
-    {
-      "code": 302,
-      "name": "InvalidParameter",
-      "msg": "invalid parameter"
-    },
-    {
-      "code": 303,
-      "name": "VaultAccessSuspended",
-      "msg": "vault is currently locked or frozen and cannot be accessed"
-    },
-    {
-      "code": 304,
-      "name": "AmountMismatch",
-      "msg": "recorded token amount in GDR != actual amount in gem box"
-    },
-    {
-      "code": 305,
-      "name": "AccountDidNotSerialize",
-      "msg": "anchor serialization issue"
-    },
-    {
-      "code": 306,
-      "name": "NotWhitelisted",
-      "msg": "this gem is not present on any of the whitelists"
-    },
-    {
-      "code": 307,
-      "name": "WrongWhitelistType",
-      "msg": "whitelist proof exists but for the wrong type"
     }
   ]
 }
