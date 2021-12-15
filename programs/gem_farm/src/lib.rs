@@ -54,7 +54,13 @@ pub mod gem_farm {
         instructions::fund::handler(ctx, amount, duration_sec)
     }
 
-    pub fn claim(ctx: Context<Claim>) -> ProgramResult {
+    pub fn claim(
+        ctx: Context<Claim>,
+        _bump_auth: u8,
+        _bump_farmer: u8,
+        _bump_pot_a: u8,
+        _bump_pot_b: u8,
+    ) -> ProgramResult {
         instructions::claim::handler(ctx)
     }
 }

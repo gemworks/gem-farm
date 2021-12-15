@@ -8,17 +8,15 @@ use crate::state::*;
 #[derive(Accounts)]
 #[instruction(bump_auth: u8, bump_pot_a: u8, bump_pot_b: u8)]
 pub struct InitFarm<'info> {
-    // core
+    // farm
     #[account(init, payer = payer, space = 8 + std::mem::size_of::<Farm>())]
     pub farm: Account<'info, Farm>,
     pub farm_manager: Signer<'info>,
     #[account(mut, seeds = [farm.key().as_ref()], bump = bump_auth)]
     pub farm_authority: AccountInfo<'info>,
-    #[account(mut)]
-    pub payer: Signer<'info>,
 
     // todo need ixs to be able to update mints/pots
-    // rewards
+    // reward a
     #[account(init, seeds = [
             b"reward_pot".as_ref(),
             farm.key().as_ref(),
@@ -30,6 +28,8 @@ pub struct InitFarm<'info> {
         payer = payer)]
     pub reward_a_pot: Box<Account<'info, TokenAccount>>,
     pub reward_a_mint: Box<Account<'info, Mint>>,
+
+    // reward b
     #[account(init, seeds = [
             b"reward_pot".as_ref(),
             farm.key().as_ref(),
@@ -48,9 +48,13 @@ pub struct InitFarm<'info> {
     #[account(mut)]
     pub bank: Signer<'info>,
     pub gem_bank: Program<'info, GemBank>,
+
+    // misc
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    pub rent: Sysvar<'info, Rent>,
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
-    pub rent: Sysvar<'info, Rent>,
 }
 
 impl<'info> InitFarm<'info> {

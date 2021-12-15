@@ -6,7 +6,7 @@ use crate::state::*;
 #[derive(Accounts)]
 #[instruction(bump: u8)]
 pub struct AuthorizeFunder<'info> {
-    // core
+    // farm
     #[account(mut, has_one = farm_manager)]
     pub farm: Account<'info, Farm>,
     #[account(mut)]

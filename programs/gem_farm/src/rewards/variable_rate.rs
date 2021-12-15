@@ -121,7 +121,7 @@ fn update_single_reward_type(
             newly_accrued_reward_per_gem.try_mul(farmer_gems_staked.unwrap())?;
 
         farmer_reward
-            .accrued_reward_total
+            .accrued_reward
             .try_self_add(newly_accrued_reward_per_farmer)?;
 
         msg!("Reward updated, Farmer: {:?}", farmer_reward);

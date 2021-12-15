@@ -164,7 +164,6 @@
 //
 //     async function prepWithdrawal(
 //       owner: Keypair,
-//       destinationAcc: PublicKey,
 //       receiver: PublicKey,
 //       gemAmount: BN
 //     ) {
@@ -174,7 +173,6 @@
 //         owner,
 //         gemAmount,
 //         gem.tokenMint,
-//         destinationAcc,
 //         receiver
 //       );
 //     }
@@ -214,7 +212,7 @@
 //       const oldBoxCount = vaultAcc.gemBoxCount;
 //       const oldGemCount = vaultAcc.gemCount;
 //
-//       await prepWithdrawal(vaultOwner, gem.tokenAcc, gem.owner, gemAmount);
+//       await prepWithdrawal(vaultOwner, gem.owner, gemAmount);
 //
 //       const vaultAcc2 = await gb.fetchVaultAcc(vault);
 //       assert(vaultAcc2.gemBoxCount.eq(oldBoxCount.sub(new BN(1))));
@@ -237,7 +235,7 @@
 //
 //       ({ gemBox, GDR } = await prepDeposit(vaultOwner)); //make a fresh deposit
 //
-//       await prepWithdrawal(vaultOwner, gem.tokenAcc, gem.owner, smallerAmount);
+//       await prepWithdrawal(vaultOwner, gem.owner, smallerAmount);
 //
 //       const gemAcc = await gb.fetchGemAcc(gem.tokenMint, gem.tokenAcc);
 //       assert(gemAcc.amount.eq(smallerAmount));
@@ -252,13 +250,11 @@
 //     it('withdraws gem to missing ATA', async () => {
 //       ({ gemBox, GDR } = await prepDeposit(vaultOwner)); //make a fresh deposit
 //
-//       const missingATA = await gb.getATA(gem.tokenMint, randomWallet.publicKey);
-//       await prepWithdrawal(
-//         vaultOwner,
-//         missingATA,
-//         randomWallet.publicKey,
-//         gemAmount
+//       const missingATA = await gb.findATA(
+//         gem.tokenMint,
+//         randomWallet.publicKey
 //       );
+//       await prepWithdrawal(vaultOwner, randomWallet.publicKey, gemAmount);
 //
 //       const gemAcc = await gb.fetchGemAcc(gem.tokenMint, missingATA);
 //       assert(gemAcc.amount.eq(gemAmount));
@@ -276,7 +272,7 @@
 //       await prepDeposit(vaultOwner); //make a fresh deposit
 //
 //       await expect(
-//         prepWithdrawal(randomWallet, gem.tokenAcc, gem.owner, gemAmount)
+//         prepWithdrawal(randomWallet, gem.owner, gemAmount)
 //       ).to.be.rejectedWith('has_one');
 //     });
 //
@@ -305,13 +301,13 @@
 //       await prepLock(true);
 //       //withdraw should fail
 //       await expect(
-//         prepWithdrawal(vaultOwner, gem.tokenAcc, gem.owner, gemAmount)
+//         prepWithdrawal(vaultOwner, gem.owner, gemAmount)
 //       ).to.be.rejectedWith('0x12f');
 //
 //       //finally unlock the vault
 //       await prepLock(false);
 //       //should be able to withdraw
-//       await prepWithdrawal(vaultOwner, gem.tokenAcc, gem.owner, gemAmount);
+//       await prepWithdrawal(vaultOwner, gem.owner, gemAmount);
 //     });
 //
 //     // --------------------------------------- bank flags
@@ -343,7 +339,7 @@
 //       //freeze vaults again
 //       await prepFlags(bankManager, BankFlags.FreezeVaults);
 //       await expect(
-//         prepWithdrawal(vaultOwner, gem.tokenAcc, gem.owner, gemAmount)
+//         prepWithdrawal(vaultOwner, gem.owner, gemAmount)
 //       ).to.be.rejectedWith('0x12f');
 //
 //       //unfreeze vault in the end

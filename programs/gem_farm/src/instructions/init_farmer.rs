@@ -8,9 +8,11 @@ use crate::state::*;
 #[derive(Accounts)]
 #[instruction(bump_farmer: u8, bump_vault: u8)]
 pub struct InitFarmer<'info> {
-    // core
+    // farm
     #[account(mut)]
     pub farm: Account<'info, Farm>,
+
+    // farmer
     #[account(init,
         seeds = [
             b"farmer".as_ref(),
@@ -22,8 +24,6 @@ pub struct InitFarmer<'info> {
         space = 8 + std::mem::size_of::<Farmer>())]
     pub farmer: Account<'info, Farmer>,
     pub identity: Signer<'info>,
-    #[account(mut)]
-    pub payer: Signer<'info>,
 
     // cpi
     // todo should it be less opinionated and simply take in a pre-made vault?
@@ -32,6 +32,10 @@ pub struct InitFarmer<'info> {
     #[account(mut)]
     pub vault: AccountInfo<'info>,
     pub gem_bank: Program<'info, GemBank>,
+
+    // misc
+    #[account(mut)]
+    pub payer: Signer<'info>,
     pub system_program: Program<'info, System>,
 }
 

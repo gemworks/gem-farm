@@ -153,7 +153,7 @@ export class AccountUtils {
     return token.getAccountInfo(tokenAccount);
   }
 
-  async getATA(mint: PublicKey, owner: PublicKey): Promise<PublicKey> {
+  async findATA(mint: PublicKey, owner: PublicKey): Promise<PublicKey> {
     return Token.getAssociatedTokenAddress(
       ASSOCIATED_TOKEN_PROGRAM_ID,
       TOKEN_PROGRAM_ID,

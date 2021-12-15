@@ -293,13 +293,11 @@ export default defineComponent({
     };
 
     const withdrawGem = async (mint: PublicKey) => {
-      const destATA = await gb.getATA(mint, getWallet()!.publicKey);
       const { txSig } = await gb.withdrawGemWallet(
         bank.value,
         vault.value,
         new BN(1),
-        mint,
-        destATA
+        mint
       );
       console.log('withdrawal done', txSig);
     };

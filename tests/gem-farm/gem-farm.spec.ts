@@ -7,6 +7,7 @@ import { BN } from '@project-serum/anchor';
 import { ITokenData } from '../utils/account';
 import { prepGem } from '../utils/gem-common';
 import { Token } from '@solana/spl-token';
+import { pause } from '../utils/types';
 
 chai.use(chaiAsPromised);
 
@@ -26,7 +27,7 @@ describe('gem farm', () => {
   let farmerIdentity: Keypair;
 
   let rewardAmount = new BN(1000);
-  let rewardDurationSec = new BN(1000);
+  let rewardDurationSec = new BN(2);
 
   let rewardA: Token;
   let rewardASource: PublicKey;
@@ -64,10 +65,12 @@ describe('gem farm', () => {
     const farmAcc = await gf.fetchFarmAcc(farm.publicKey);
     assert.equal(farmAcc.bank.toBase58(), bank.publicKey.toBase58());
     assert.equal(
+      // @ts-ignore
       farmAcc.rewardA.rewardMint.toBase58(),
       rewardA.publicKey.toBase58()
     );
     assert.equal(
+      // @ts-ignore
       farmAcc.rewardB.rewardMint.toBase58(),
       rewardB.publicKey.toBase58()
     );
@@ -121,10 +124,12 @@ describe('gem farm', () => {
     );
 
     const farmAcc = await gf.fetchFarmAcc(farm.publicKey);
+    // @ts-ignore
     assert(farmAcc.rewardA.rewardDurationSec.eq(rewardDurationSec));
+    // @ts-ignore
     assert(farmAcc.rewardA.totalDepositedAmount.eq(rewardAmount));
 
-    const rewardsAcc = await gf.fetchRewardsPotAcc(rewardA.publicKey, pot);
+    const rewardsAcc = await gf.fetchRewardAcc(rewardA.publicKey, pot);
     assert(rewardsAcc.amount.eq(rewardAmount));
   });
 
@@ -168,6 +173,8 @@ describe('gem farm', () => {
       let farmerAcc = await gf.fetchFarmerAcc(farmer);
       assert(farmerAcc.gemsStaked.eq(gemAmount));
 
+      pause(2000);
+
       //unstake
       await gf.unstake(farm.publicKey, farmerIdentity);
 
@@ -182,8 +189,19 @@ describe('gem farm', () => {
       assert(farmerAcc.gemsStaked.eq(new BN(0)));
     });
 
-    // it('claims rewards', async () => {
-    //   await gf.program.rpc.claim({});
-    // });
+    it('claims rewards', async () => {
+      const { rewardADestination } = await gf.claim(
+        farm.publicKey,
+        farmerIdentity,
+        rewardA.publicKey,
+        rewardB.publicKey
+      );
+
+      const rewardADestAcc = await gf.fetchRewardAcc(
+        rewardA.publicKey,
+        rewardADestination
+      );
+      console.log(rewardADestAcc.amount);
+    });
   });
 });

@@ -26,21 +26,22 @@ pub struct Farmer {
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FarmerRewardTracker {
     // (!) record absolute instead of per gem - see docs for why todo
-    pub paid_out_reward_total: u64,
+    pub paid_out_reward: u64,
 
-    pub accrued_reward_total: u64,
+    pub accrued_reward: u64,
 }
 
-impl Farmer {
-    // pub fn available_to_claim(&self) -> Result<u64, ProgramError> {
-    //     self.accrued_rewards_total
-    //         .try_sub(self.paid_out_rewards_total)
-    // }
-    //
-    // pub fn claim_rewards(&mut self) -> Result<u64, ProgramError> {
-    //     let to_claim = self.available_to_claim()?;
-    //     self.paid_out_rewards_total = self.accrued_rewards_total;
-    //
-    //     Ok(to_claim)
-    // }
+impl FarmerRewardTracker {
+    pub fn outstanding_reward(&self) -> Result<u64, ProgramError> {
+        self.accrued_reward.try_sub(self.paid_out_reward)
+    }
+
+    pub fn claim_reward(&mut self, pot_balance: u64) -> Result<u64, ProgramError> {
+        let outstanding = self.outstanding_reward()?;
+        let to_claim = std::cmp::min(outstanding, pot_balance);
+
+        self.paid_out_reward.try_self_add(to_claim)?;
+
+        Ok(to_claim)
+    }
 }

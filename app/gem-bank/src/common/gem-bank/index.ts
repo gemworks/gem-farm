@@ -99,8 +99,7 @@ export class GemBank extends GemBankClient {
     bank: PublicKey,
     vault: PublicKey,
     gemAmount: BN,
-    gemMint: PublicKey,
-    gemDestination: PublicKey
+    gemMint: PublicKey
   ) {
     return this.withdrawGem(
       bank,
@@ -108,7 +107,6 @@ export class GemBank extends GemBankClient {
       this.wallet.publicKey,
       gemAmount,
       gemMint,
-      gemDestination,
       this.wallet.publicKey
     );
   }

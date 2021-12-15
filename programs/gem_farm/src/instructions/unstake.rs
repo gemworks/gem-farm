@@ -10,9 +10,11 @@ use crate::state::*;
 #[derive(Accounts)]
 #[instruction(bump: u8)]
 pub struct Unstake<'info> {
-    // core
+    // farm
     #[account(mut, has_one = farm_authority)]
     pub farm: Account<'info, Farm>,
+
+    // farmer
     #[account(mut, has_one = farm, has_one = identity,
         seeds = [
             b"farmer".as_ref(),

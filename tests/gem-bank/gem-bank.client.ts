@@ -416,12 +416,13 @@ export class GemBankClient extends AccountUtils {
     vaultOwner: PublicKey | Keypair,
     gemAmount: BN,
     gemMint: PublicKey,
-    gemDestination: PublicKey,
     receiver: PublicKey
   ) {
     const [gemBox, gemBoxBump] = await this.findGemBoxPDA(vault, gemMint);
     const [GDR, GDRBump] = await this.findGdrPDA(vault, gemMint);
     const [vaultAuth, vaultAuthBump] = await this.findVaultAuthorityPDA(vault);
+
+    const gemDestination = await this.findATA(gemMint, receiver);
 
     const signers = [];
     if (isKp(vaultOwner)) signers.push(<Keypair>vaultOwner);
@@ -455,12 +456,13 @@ export class GemBankClient extends AccountUtils {
     );
 
     return {
-      vaultAuth,
-      vaultAuthBump,
       gemBox,
       gemBoxBump,
       GDR,
       GDRBump,
+      vaultAuth,
+      vaultAuthBump,
+      gemDestination,
       txSig,
     };
   }

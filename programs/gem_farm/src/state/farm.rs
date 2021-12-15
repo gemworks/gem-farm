@@ -89,8 +89,10 @@ impl Farm {
             _ => Err(ErrorCode::UnknownRewardMint.into()),
         }
     }
+}
 
-    // pub fn reward_start_ts(&self) -> Result<u64, ProgramError> {
-    //     self.reward_end_ts.try_sub(self.reward_duration_sec)
-    // }
+impl FarmRewardTracker {
+    pub fn reward_start_ts(&self) -> Result<u64, ProgramError> {
+        self.reward_end_ts.try_sub(self.reward_duration_sec)
+    }
 }

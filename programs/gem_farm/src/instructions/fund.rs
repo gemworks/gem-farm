@@ -9,10 +9,12 @@ use crate::state::*;
 #[derive(Accounts)]
 #[instruction(bump_proof: u8, bump_pot: u8)]
 pub struct Fund<'info> {
-    // core
+    // farm
     #[account(mut)]
     pub farm: Account<'info, Farm>,
     pub farm_authority: AccountInfo<'info>,
+
+    // funder
     #[account(has_one = farm, has_one = authorized_funder ,seeds = [
             b"authorization".as_ref(),
             farm.key().as_ref(),
