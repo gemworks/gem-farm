@@ -51,7 +51,7 @@ impl<'info> InitFarmer<'info> {
 }
 
 pub fn handler(ctx: Context<InitFarmer>, bump_vault: u8) -> ProgramResult {
-    //record new farmer details
+    // record new farmer details
     let farmer = &mut ctx.accounts.farmer;
 
     farmer.farm = ctx.accounts.farm.key();
@@ -60,12 +60,12 @@ pub fn handler(ctx: Context<InitFarmer>, bump_vault: u8) -> ProgramResult {
 
     // todo worth manually init'ing all the variables at 0s?
 
-    //update farmer count
+    // update farm
     let farm = &mut ctx.accounts.farm;
 
     farm.farmer_count.try_self_add(1)?;
 
-    //do a cpi call to start a new vault
+    // do a cpi call to start a new vault
     let vault_owner = ctx.accounts.identity.key();
     let vault_name = String::from("farm_vault"); //todo let them input custom
 

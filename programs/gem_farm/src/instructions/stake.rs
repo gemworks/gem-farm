@@ -65,6 +65,7 @@ pub fn handler(ctx: Context<Stake>) -> ProgramResult {
 
     // update farmer
     let vault = &ctx.accounts.vault;
+
     farmer.gems_staked = vault.gem_count;
 
     // update farm

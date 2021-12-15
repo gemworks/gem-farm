@@ -72,23 +72,25 @@ pub fn handler(ctx: Context<Fund>, amount: u64) -> ProgramResult {
         amount,
     )?;
 
-    // record total number of funded pots
+    // update farm
     let rewards_pot = &ctx.accounts.rewards_pot;
     let farm = &mut ctx.accounts.farm;
 
     // if all funds in the pot are new funds, then we increment the counts
+    // todo make sure this is decremented appropriately where it should
     if rewards_pot.amount == 0 {
         farm.funded_rewards_pots.try_self_add(1);
         farm.active_rewards_pots.try_self_add(1);
     }
 
-    // record a rdr
+    // create/update a rdr
     let rdr = &mut ctx.accounts.rewards_deposit_receipt;
+
     rdr.farm = farm.key();
     rdr.rewards_pot = ctx.accounts.rewards_pot.key();
     rdr.rewards_mint = ctx.accounts.rewards_mint.key();
-    rdr.initial_amount = amount;
-    rdr.remaining_amount = amount;
+    rdr.initial_amount.try_self_add(amount)?;
+    rdr.remaining_amount.try_self_add(amount)?;
 
     msg!(
         "{} reward tokens deposited into {} pot",

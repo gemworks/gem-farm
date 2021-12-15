@@ -27,11 +27,13 @@ pub struct AuthorizeFunder<'info> {
 pub fn handler(ctx: Context<AuthorizeFunder>) -> ProgramResult {
     // create/update authorization proof
     let proof = &mut ctx.accounts.authorization_proof;
+
     proof.authorized_funder = ctx.accounts.funder_to_authorize.key();
     proof.farm = ctx.accounts.farm.key();
 
-    // increment authorized funder count on bank
+    // update farm
     let farm = &mut ctx.accounts.farm;
+
     farm.authorized_funder_count.try_self_add(1);
 
     msg!(
