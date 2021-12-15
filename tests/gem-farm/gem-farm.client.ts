@@ -184,7 +184,11 @@ export class GemFarmClient extends GemBankClient {
     };
   }
 
-  async stake(farm: PublicKey, identity: PublicKey | Keypair) {
+  async stakeCommon(
+    farm: PublicKey,
+    identity: PublicKey | Keypair,
+    unstake: boolean
+  ) {
     const identityPk = isKp(identity)
       ? (<Keypair>identity).publicKey
       : <PublicKey>identity;
@@ -201,19 +205,36 @@ export class GemFarmClient extends GemBankClient {
     const signers = [];
     if (isKp(identity)) signers.push(<Keypair>identity);
 
-    console.log('staking gems for', identityPk.toBase58());
-    const txSig = await this.farmProgram.rpc.stake(farmerBump, {
-      accounts: {
-        farm,
-        farmer,
-        identity: identityPk,
-        bank: farmAcc.bank,
-        vault,
-        farmAuthority: farmAuth,
-        gemBank: this.bankProgram.programId,
-      },
-      signers,
-    });
+    let txSig;
+    if (unstake) {
+      console.log('unstaking gems for', identityPk.toBase58());
+      txSig = await this.farmProgram.rpc.unstake(farmerBump, {
+        accounts: {
+          farm,
+          farmer,
+          identity: identityPk,
+          bank: farmAcc.bank,
+          vault,
+          farmAuthority: farmAuth,
+          gemBank: this.bankProgram.programId,
+        },
+        signers,
+      });
+    } else {
+      console.log('staking gems for', identityPk.toBase58());
+      txSig = await this.farmProgram.rpc.stake(farmerBump, {
+        accounts: {
+          farm,
+          farmer,
+          identity: identityPk,
+          bank: farmAcc.bank,
+          vault,
+          farmAuthority: farmAuth,
+          gemBank: this.bankProgram.programId,
+        },
+        signers,
+      });
+    }
 
     return {
       farmer,
@@ -224,6 +245,14 @@ export class GemFarmClient extends GemBankClient {
       farmAuthBump,
       txSig,
     };
+  }
+
+  async stake(farm: PublicKey, identity: PublicKey | Keypair) {
+    return this.stakeCommon(farm, identity, false);
+  }
+
+  async unstake(farm: PublicKey, identity: PublicKey | Keypair) {
+    return this.stakeCommon(farm, identity, true);
   }
 
   async authorizeFunder(

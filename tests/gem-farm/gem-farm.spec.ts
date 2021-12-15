@@ -110,12 +110,7 @@ describe('gem farm', () => {
     let gemOwner: Keypair;
     let gem: ITokenData;
 
-    beforeEach('creates a fresh gem', async () => {
-      ({ gemAmount, gemOwner, gem } = await prepGem(gf, farmerIdentity));
-    });
-
-    it('stakes gems', async () => {
-      //deposit some gems into the vault
+    async function prepDeposit() {
       await gf.depositGem(
         bank.publicKey,
         farmerVault,
@@ -125,22 +120,42 @@ describe('gem farm', () => {
         gem.tokenAcc,
         farmerIdentity
       );
+    }
 
-      const { farmer, vault } = await gf.stake(farm.publicKey, farmerIdentity);
-
-      const farmAcc = await gf.fetchFarmAcc(farm.publicKey);
-      assert(farmAcc.activeFarmerCount.eq(new BN(1)));
-
-      const vaultAcc = await gf.fetchVaultAcc(vault);
-      assert.isTrue(vaultAcc.locked);
-
-      const farmerAcc = await gf.fetchFarmerAcc(farmer);
-      assert(farmerAcc.gemsStaked.eq(gemAmount));
+    beforeEach('creates a fresh gem', async () => {
+      ({ gemAmount, gemOwner, gem } = await prepGem(gf, farmerIdentity));
     });
 
-    // it('unstakes gems', async () => {
-    //   await gf.farmProgram.rpc.unstake({});
-    // });
+    it('stakes / unstakes gems', async () => {
+      //deposit some gems into the vault
+      await prepDeposit();
+
+      //stake
+      const { farmer, vault } = await gf.stake(farm.publicKey, farmerIdentity);
+
+      let farmAcc = await gf.fetchFarmAcc(farm.publicKey);
+      assert(farmAcc.activeFarmerCount.eq(new BN(1)));
+      assert(farmAcc.gemsStaked.eq(gemAmount));
+
+      let vaultAcc = await gf.fetchVaultAcc(vault);
+      assert.isTrue(vaultAcc.locked);
+
+      let farmerAcc = await gf.fetchFarmerAcc(farmer);
+      assert(farmerAcc.gemsStaked.eq(gemAmount));
+
+      //unstake
+      await gf.unstake(farm.publicKey, farmerIdentity);
+
+      farmAcc = await gf.fetchFarmAcc(farm.publicKey);
+      assert(farmAcc.activeFarmerCount.eq(new BN(0)));
+      assert(farmAcc.gemsStaked.eq(new BN(0)));
+
+      vaultAcc = await gf.fetchVaultAcc(vault);
+      assert.isFalse(vaultAcc.locked);
+
+      farmerAcc = await gf.fetchFarmerAcc(farmer);
+      assert(farmerAcc.gemsStaked.eq(new BN(0)));
+    });
 
     // it('claims rewards', async () => {
     //   await gf.program.rpc.claim({});

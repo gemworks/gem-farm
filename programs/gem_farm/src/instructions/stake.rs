@@ -1,10 +1,12 @@
-use crate::rewards::update_accrued_rewards;
 use anchor_lang::prelude::*;
+
 use gem_bank::program::GemBank;
 use gem_bank::{self, cpi::accounts::SetVaultLock, state::Bank, state::Vault};
 use gem_common::*;
 
+use crate::rewards::update_accrued_rewards;
 use crate::state::*;
+
 #[derive(Accounts)]
 #[instruction(bump: u8)]
 pub struct Stake<'info> {
@@ -31,7 +33,7 @@ pub struct Stake<'info> {
 }
 
 impl<'info> Stake<'info> {
-    fn lock_vault_ctx(&self) -> CpiContext<'_, '_, '_, 'info, SetVaultLock<'info>> {
+    fn set_lock_vault_ctx(&self) -> CpiContext<'_, '_, '_, 'info, SetVaultLock<'info>> {
         CpiContext::new(
             self.gem_bank.to_account_info(),
             SetVaultLock {
@@ -49,9 +51,9 @@ pub fn handler(ctx: Context<Stake>) -> ProgramResult {
     // lock the vault so the user can't withdraw their gems
     gem_bank::cpi::set_vault_lock(
         ctx.accounts
-            .lock_vault_ctx()
+            .set_lock_vault_ctx()
             .with_signer(&[&ctx.accounts.farm.farm_seeds()]),
-        true, //setting vault lock to true
+        true,
     )?;
 
     // update accrued rewards BEFORE we increment the stake
@@ -64,7 +66,6 @@ pub fn handler(ctx: Context<Stake>) -> ProgramResult {
     // update farmer
     let vault = &ctx.accounts.vault;
     farmer.gems_staked = vault.gem_count;
-    // todo probably record something around the time they staked?
 
     // update farm
     farm.active_farmer_count.try_self_add(1)?;

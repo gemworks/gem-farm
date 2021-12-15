@@ -27,7 +27,7 @@ pub mod gem_farm {
         instructions::stake::handler(ctx)
     }
 
-    pub fn unstake(ctx: Context<Unstake>) -> ProgramResult {
+    pub fn unstake(ctx: Context<Unstake>, _bump: u8) -> ProgramResult {
         instructions::unstake::handler(ctx)
     }
 
