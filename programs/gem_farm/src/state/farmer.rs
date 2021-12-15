@@ -17,6 +17,7 @@ pub struct Farmer {
     pub gems_staked: u64,
 
     // --------------------------------------- rewards
+    // (!) record absolute instead of per gem - see docs for why todo
     pub paid_out_rewards_total: u64,
 
     pub accrued_rewards_total: u64,

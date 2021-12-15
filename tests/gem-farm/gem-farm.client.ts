@@ -291,7 +291,8 @@ export class GemFarmClient extends GemBankClient {
     rewardsSource: PublicKey,
     rewardsMint: PublicKey,
     funder: PublicKey | Keypair,
-    amount: BN
+    amount: BN,
+    duration: BN
   ) {
     const funderPk = isKp(funder)
       ? (<Keypair>funder).publicKey
@@ -311,6 +312,7 @@ export class GemFarmClient extends GemBankClient {
       rdrBump,
       potBump,
       amount,
+      duration,
       {
         accounts: {
           farm,

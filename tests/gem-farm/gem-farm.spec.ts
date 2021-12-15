@@ -82,6 +82,7 @@ describe('gem farm', () => {
   it('funds the farm', async () => {
     //create token to fund with
     const amount = new BN(10000);
+    const duration = new BN(3600);
     const reward = await gf.createMintAndATA(funder.publicKey, amount);
 
     const { rdr, pot } = await gf.fund(
@@ -89,7 +90,8 @@ describe('gem farm', () => {
       reward.tokenAcc,
       reward.tokenMint,
       funder,
-      amount
+      amount,
+      duration
     );
 
     const farmAcc = await gf.fetchFarmAcc(farm.publicKey);

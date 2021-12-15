@@ -45,7 +45,7 @@ pub struct Farm {
     pub rewards_last_updated_ts: u64,
 
     // in tokens/s, = total reward pot at initialization / reward duration
-    pub reward_rate: u64,
+    pub rewards_rate: u64,
 
     // this is cumulative, since the beginning of time
     pub accrued_rewards_per_gem: u64,

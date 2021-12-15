@@ -13,29 +13,30 @@ pub fn update_accrued_rewards(
     farm: &mut Account<Farm>,
     farmer: Option<&mut Account<Farmer>>,
 ) -> ProgramResult {
-    let clock = clock::Clock::get()?;
+    let now_ts: u64 = clock::Clock::get()?.unix_timestamp.try_into().unwrap();
 
-    let rewards_accrue_up_to_ts = calc_latest_applicable_reward_ts(
-        farm.rewards_end_ts,
-        clock.unix_timestamp.try_into().unwrap(), //i64 -> u64 is fine
+    let rewards_upper_bound_ts = calc_rewards_upper_bound(farm.rewards_end_ts, now_ts);
+
+    let newly_accrued_rewards_per_gem = calc_newly_accrued_rewards(farm, rewards_upper_bound_ts)?;
+
+    msg!(
+        "newly accrued rewards per gem: {}",
+        newly_accrued_rewards_per_gem
     );
 
-    let newly_accrued_rewards_per_gem = calc_newly_accrued_rewards(farm, rewards_accrue_up_to_ts)?;
-
     farm.accrued_rewards_per_gem
-        .try_self_add(newly_accrued_rewards_per_gem);
-    farm.rewards_last_updated_ts = rewards_accrue_up_to_ts;
+        .try_self_add(newly_accrued_rewards_per_gem)?;
+    farm.rewards_last_updated_ts = rewards_upper_bound_ts;
 
     msg!("Rewards updated, Farm: {:?}", **farm);
 
     if let Some(farmer) = farmer {
-        // need to do the multiplication here, because gems staked can vary over time
-        let newly_accrued_rewards_total =
+        let newly_accrued_rewards_per_farmer =
             newly_accrued_rewards_per_gem.try_mul(farmer.gems_staked)?;
 
         farmer
             .accrued_rewards_total
-            .try_self_add(newly_accrued_rewards_total)?;
+            .try_self_add(newly_accrued_rewards_per_farmer)?;
 
         msg!("Rewards updated, Farmer: {:?}", **farmer);
     }
@@ -45,21 +46,53 @@ pub fn update_accrued_rewards(
 
 pub fn calc_newly_accrued_rewards(
     farm: &Account<Farm>,
-    rewards_accrue_up_to_ts: u64,
+    rewards_upper_bound_ts: u64,
 ) -> Result<u64, ProgramError> {
-    // if no gems staked, simply return existing accrued reward
+    // if no gems staked, return existing accrued reward
     if farm.gems_staked == 0 {
         return Ok(farm.accrued_rewards_per_gem);
     }
 
-    let time_since_last_reward_calc_secs =
-        rewards_accrue_up_to_ts.try_sub(farm.rewards_last_updated_ts)?;
+    // if no time has passed, return existing accrued reward
+    if rewards_upper_bound_ts <= farm.rewards_last_updated_ts {
+        return Ok(farm.accrued_rewards_per_gem);
+    }
 
-    time_since_last_reward_calc_secs
-        .try_mul(farm.reward_rate)?
+    let time_since_last_calc_sec = rewards_upper_bound_ts.try_sub(farm.rewards_last_updated_ts)?;
+
+    time_since_last_calc_sec
+        .try_mul(farm.rewards_rate)?
         .try_floor_div(farm.gems_staked)
 }
 
-pub fn calc_latest_applicable_reward_ts(reward_duration_end: u64, now: u64) -> u64 {
-    std::cmp::min(now, reward_duration_end)
+pub fn calc_rewards_upper_bound(rewards_end_ts: u64, now: u64) -> u64 {
+    std::cmp::min(now, rewards_end_ts)
+}
+
+pub fn post_new_rewards(
+    farm: &mut Account<Farm>,
+    new_amount: u64,
+    new_duration_sec: u64,
+) -> ProgramResult {
+    let now_ts: u64 = clock::Clock::get()?.unix_timestamp.try_into().unwrap();
+
+    // if previous rewards have been exhausted
+    if now_ts > farm.rewards_end_ts {
+        farm.rewards_rate = new_amount.try_floor_div(new_duration_sec)?;
+    // else if previous rewards are still active, we need to merge the two
+    } else {
+        let remaining_duration_sec = farm.rewards_end_ts.try_sub(now_ts)?;
+        let remaining_amount = remaining_duration_sec.try_mul(farm.rewards_rate)?;
+
+        farm.rewards_rate = new_amount
+            .try_add(remaining_amount)?
+            .try_floor_div(new_duration_sec)?;
+    }
+
+    // to have a clean calc going forward
+    farm.rewards_last_updated_ts = now_ts;
+    farm.rewards_duration_sec = new_duration_sec;
+    farm.rewards_end_ts = now_ts.try_add(new_duration_sec)?;
+
+    Ok(())
 }

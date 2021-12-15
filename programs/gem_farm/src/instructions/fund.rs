@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
+use crate::rewards::{post_new_rewards, update_accrued_rewards};
 use gem_common::*;
 
 use crate::state::*;
@@ -61,14 +62,18 @@ impl<'info> Fund<'info> {
     }
 }
 
-pub fn handler(ctx: Context<Fund>, amount: u64) -> ProgramResult {
-    // do the transfer
-    let farm = &ctx.accounts.farm;
+pub fn handler(ctx: Context<Fund>, amount: u64, duration_sec: u64) -> ProgramResult {
+    // update rewards + post new ones
+    let farm = &mut ctx.accounts.farm;
 
+    update_accrued_rewards(farm, None)?;
+    post_new_rewards(farm, amount, duration_sec)?;
+
+    // do the transfer
     token::transfer(
         ctx.accounts
             .transfer_ctx()
-            .with_signer(&[&farm.farm_seeds()]),
+            .with_signer(&[&ctx.accounts.farm.farm_seeds()]),
         amount,
     )?;
 

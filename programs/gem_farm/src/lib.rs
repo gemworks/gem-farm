@@ -45,8 +45,9 @@ pub mod gem_farm {
         _bump_rdr: u8,
         _bump_pot: u8,
         amount: u64,
+        duration_sec: u64,
     ) -> ProgramResult {
-        instructions::fund::handler(ctx, amount)
+        instructions::fund::handler(ctx, amount, duration_sec)
     }
 
     pub fn claim(ctx: Context<Claim>) -> ProgramResult {
