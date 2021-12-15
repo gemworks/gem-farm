@@ -6,6 +6,7 @@ import chaiAsPromised from 'chai-as-promised';
 import { BN } from '@project-serum/anchor';
 import { ITokenData } from '../utils/account';
 import { prepGem } from '../utils/gem-common';
+import { Token } from '@solana/spl-token';
 
 chai.use(chaiAsPromised);
 
@@ -18,12 +19,23 @@ describe('gem farm', () => {
 
   // --------------------------------------- state
 
-  const farm = Keypair.generate();
   const bank = Keypair.generate();
+
+  const farm = Keypair.generate();
   let farmManager: Keypair;
   let farmerIdentity: Keypair;
+
+  let rewardAmount = new BN(1000);
+  let rewardDurationSec = new BN(1000);
+
+  let rewardA: Token;
+  let rewardASource: PublicKey;
+  let rewardB: Token;
+  let rewardBSource: PublicKey;
+
   let farmerVault: PublicKey;
-  let funder: Keypair;
+
+  let funder = gf.wallet.payer;
 
   function printState() {}
 
@@ -32,14 +44,33 @@ describe('gem farm', () => {
   before('configures accounts', async () => {
     farmManager = await gf.createWallet(100 * LAMPORTS_PER_SOL);
     farmerIdentity = await gf.createWallet(100 * LAMPORTS_PER_SOL);
-    funder = await gf.createWallet(100 * LAMPORTS_PER_SOL);
+
+    rewardA = await gf.createToken(0, funder.publicKey);
+    rewardASource = await gf.createAndFundATA(rewardA, funder, rewardAmount);
+    rewardB = await gf.createToken(0, funder.publicKey);
+    rewardBSource = await gf.createAndFundATA(rewardB, funder, rewardAmount);
   });
 
   it('inits farm', async () => {
-    await gf.initFarm(farm, farmManager, farmManager, bank);
+    await gf.initFarm(
+      farm,
+      farmManager,
+      farmManager,
+      bank,
+      rewardA.publicKey,
+      rewardB.publicKey
+    );
 
     const farmAcc = await gf.fetchFarmAcc(farm.publicKey);
     assert.equal(farmAcc.bank.toBase58(), bank.publicKey.toBase58());
+    assert.equal(
+      farmAcc.rewardA.rewardMint.toBase58(),
+      rewardA.publicKey.toBase58()
+    );
+    assert.equal(
+      farmAcc.rewardB.rewardMint.toBase58(),
+      rewardB.publicKey.toBase58()
+    );
   });
 
   // --------------------------------------- farmer
@@ -80,29 +111,21 @@ describe('gem farm', () => {
   //
 
   it('funds the farm', async () => {
-    //create token to fund with
-    const amount = new BN(10000);
-    const duration = new BN(3600);
-    const reward = await gf.createMintAndATA(funder.publicKey, amount);
-
-    const { rdr, pot } = await gf.fund(
+    const { pot } = await gf.fund(
       farm.publicKey,
-      reward.tokenAcc,
-      reward.tokenMint,
+      rewardASource,
+      rewardA.publicKey,
       funder,
-      amount,
-      duration
+      rewardAmount,
+      rewardDurationSec
     );
 
     const farmAcc = await gf.fetchFarmAcc(farm.publicKey);
-    assert(farmAcc.fundedRewardsPots.eq(new BN(1)));
+    assert(farmAcc.rewardA.rewardDurationSec.eq(rewardDurationSec));
+    assert(farmAcc.rewardA.totalDepositedAmount.eq(rewardAmount));
 
-    const rdrAcc = await gf.fetchRDRAcc(rdr);
-    assert.equal(rdrAcc.farm.toBase58(), farm.publicKey.toBase58());
-    assert.equal(rdrAcc.rewardsPot.toBase58(), pot.toBase58());
-
-    const rewardsAcc = await gf.fetchRewardsPotAcc(reward.tokenMint, pot);
-    assert(rewardsAcc.amount.eq(amount));
+    const rewardsAcc = await gf.fetchRewardsPotAcc(rewardA.publicKey, pot);
+    assert(rewardsAcc.amount.eq(rewardAmount));
   });
 
   // --------------------------------------- stake & claim

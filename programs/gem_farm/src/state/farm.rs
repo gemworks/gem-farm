@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use gem_common::errors::ErrorCode;
 use gem_common::*;
 use std::ops::Index;
 
@@ -45,10 +46,12 @@ pub struct Farm {
 
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FarmRewardTracker {
+    // --------------------------------------- configured on farm init
     pub reward_mint: Pubkey,
 
     pub reward_pot: Pubkey,
 
+    // --------------------------------------- configured on funding
     pub reward_duration_sec: u64,
 
     pub reward_end_ts: u64,
@@ -56,6 +59,11 @@ pub struct FarmRewardTracker {
     // in tokens/s, = total reward pot at initialization / reward duration
     pub reward_rate: u64,
 
+    pub total_deposited_amount: u64,
+
+    pub total_deposit_count: u64,
+
+    // --------------------------------------- configured whenever rewards update is run
     // this is cumulative, since the beginning of time
     pub accrued_reward_per_gem: u64,
 }
@@ -68,14 +76,17 @@ impl Farm {
         ]
     }
 
-    pub fn get_reward_by_mint(&mut self, reward_mint: Pubkey) -> &mut FarmRewardTracker {
+    pub fn match_reward_by_mint(
+        &mut self,
+        reward_mint: Pubkey,
+    ) -> Result<&mut FarmRewardTracker, ProgramError> {
         let reward_a_mint = self.reward_a.reward_mint;
         let reward_b_mint = self.reward_b.reward_mint;
 
         match reward_mint {
-            _ if reward_mint == reward_a_mint => &mut self.reward_a,
-            _ if reward_mint == reward_b_mint => &mut self.reward_b,
-            _ => panic!("unknown reward mint"),
+            _ if reward_mint == reward_a_mint => Ok(&mut self.reward_a),
+            _ if reward_mint == reward_b_mint => Ok(&mut self.reward_b),
+            _ => Err(ErrorCode::UnknownRewardMint.into()),
         }
     }
 

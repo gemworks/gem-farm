@@ -11,8 +11,13 @@ pub mod state;
 pub mod gem_farm {
     use super::*;
 
-    pub fn init_farm(ctx: Context<InitFarm>, bump: u8) -> ProgramResult {
-        instructions::init_farm::handler(ctx, bump)
+    pub fn init_farm(
+        ctx: Context<InitFarm>,
+        bump_auth: u8,
+        _bump_pot_a: u8,
+        _bump_pot_b: u8,
+    ) -> ProgramResult {
+        instructions::init_farm::handler(ctx, bump_auth)
     }
 
     pub fn init_farmer(
@@ -42,7 +47,6 @@ pub mod gem_farm {
     pub fn fund(
         ctx: Context<Fund>,
         _bump_proof: u8,
-        _bump_rdr: u8,
         _bump_pot: u8,
         amount: u64,
         duration_sec: u64,

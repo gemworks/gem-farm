@@ -36,4 +36,7 @@ pub enum ErrorCode {
 
     #[msg("whitelist proof exists but for the wrong type")]
     WrongWhitelistType,
+
+    #[msg("passed in reward mint is not available for this farm")]
+    UnknownRewardMint,
 }

@@ -16,15 +16,10 @@ pub fn update_accrued_rewards(
 ) -> ProgramResult {
     let now_ts = now_ts()?;
 
-    let farmer_gems_staked = match farmer {
-        Some(ref farmer) => Some(farmer.gems_staked),
-        None => None,
-    };
-
     // reward a
-    let farmer_reward_a = match farmer {
-        Some(ref mut farmer) => Some(&mut farmer.reward_a),
-        None => None,
+    let (farmer_gems_staked, farmer_reward_a) = match farmer {
+        Some(ref mut farmer) => (Some(farmer.gems_staked), Some(&mut farmer.reward_a)),
+        None => (None, None),
     };
 
     update_single_reward_type(
@@ -34,7 +29,7 @@ pub fn update_accrued_rewards(
         &mut farm.reward_a,
         farmer_gems_staked,
         farmer_reward_a,
-    );
+    )?;
 
     // reward b
     let farmer_reward_b = match farmer {
@@ -49,7 +44,7 @@ pub fn update_accrued_rewards(
         &mut farm.reward_b,
         farmer_gems_staked,
         farmer_reward_b,
-    );
+    )?;
 
     farm.rewards_last_updated_ts = now_ts;
 
@@ -62,14 +57,14 @@ pub fn post_new_reward(
     new_duration_sec: u64,
     reward_mint: Pubkey,
 ) -> ProgramResult {
-    let farm_reward = farm.get_reward_by_mint(reward_mint);
+    let farm_reward = farm.match_reward_by_mint(reward_mint)?;
 
     let now_ts = now_ts()?;
 
     // if previous rewards have been exhausted
     if now_ts > farm_reward.reward_end_ts {
         farm_reward.reward_rate = new_amount.try_floor_div(new_duration_sec)?;
-    // else if previous rewards are still active, we need to merge the two
+    // else if previous rewards are still active (merge the two)
     } else {
         let remaining_duration_sec = farm_reward.reward_end_ts.try_sub(now_ts)?;
         let remaining_amount = remaining_duration_sec.try_mul(farm_reward.reward_rate)?;
@@ -79,9 +74,12 @@ pub fn post_new_reward(
             .try_floor_div(new_duration_sec)?;
     }
 
-    // to have a clean calc going forward
     farm_reward.reward_duration_sec = new_duration_sec;
     farm_reward.reward_end_ts = now_ts.try_add(new_duration_sec)?;
+    farm_reward
+        .total_deposited_amount
+        .try_self_add(new_amount)?;
+    farm_reward.total_deposit_count.try_self_add(1)?;
 
     farm.rewards_last_updated_ts = now_ts;
 

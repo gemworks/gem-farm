@@ -7,7 +7,7 @@ use gem_common::*;
 use crate::state::*;
 
 #[derive(Accounts)]
-#[instruction(bump_proof: u8, bump_rdr: u8, bump_pot: u8)]
+#[instruction(bump_proof: u8, bump_pot: u8)]
 pub struct Fund<'info> {
     // core
     #[account(mut)]
@@ -24,25 +24,12 @@ pub struct Fund<'info> {
     pub authorized_funder: Signer<'info>,
 
     // reward
-    #[account(init_if_needed, seeds = [
-            b"reward_deposit_receipt".as_ref(),
-            farm.key().as_ref(),
-            reward_mint.key().as_ref(),
-        ],
-        bump = bump_rdr,
-        payer = authorized_funder,
-        space = 8 + std::mem::size_of::<RewardDepositReceipt>())]
-    pub reward_deposit_receipt: Box<Account<'info, RewardDepositReceipt>>,
-    #[account(init_if_needed,
-        seeds = [
+    #[account(mut, seeds = [
             b"reward_pot".as_ref(),
             farm.key().as_ref(),
             reward_mint.key().as_ref(),
         ],
-        bump = bump_pot,
-        token::mint = reward_mint,
-        token::authority = farm_authority,
-        payer = authorized_funder)]
+        bump = bump_pot)]
     pub reward_pot: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
     pub reward_source: Box<Account<'info, TokenAccount>>,
@@ -51,7 +38,6 @@ pub struct Fund<'info> {
     // misc
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
-    pub rent: Sysvar<'info, Rent>,
 }
 
 impl<'info> Fund<'info> {
@@ -81,18 +67,6 @@ pub fn handler(ctx: Context<Fund>, amount: u64, duration_sec: u64) -> ProgramRes
             .with_signer(&[&ctx.accounts.farm.farm_seeds()]),
         amount,
     )?;
-
-    // create/update a rdr
-    let rdr = &mut ctx.accounts.reward_deposit_receipt;
-    let now_ts = now_ts()?;
-
-    rdr.farm = ctx.accounts.farm.key();
-    rdr.reward_pot = ctx.accounts.reward_pot.key();
-    rdr.reward_mint = ctx.accounts.reward_mint.key();
-    rdr.total_deposit_amount.try_self_add(amount)?;
-    rdr.set_first_deposit_ts(now_ts);
-    rdr.last_deposit_ts = now_ts;
-    rdr.deposit_count.try_self_add(1);
 
     msg!(
         "{} reward tokens deposited into {} pot",

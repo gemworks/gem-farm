@@ -39,7 +39,7 @@ pub fn handler(ctx: Context<AuthorizeFunder>) -> ProgramResult {
     // update farm
     let farm = &mut ctx.accounts.farm;
 
-    farm.authorized_funder_count.try_self_add(1);
+    farm.authorized_funder_count.try_self_add(1)?;
 
     msg!(
         "funded authorized: {}",

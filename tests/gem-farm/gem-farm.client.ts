@@ -53,12 +53,8 @@ export class GemFarmClient extends GemBankClient {
     );
   }
 
-  async fetchRDRAcc(rdr: PublicKey) {
-    return this.farmProgram.account.rewardsDepositReceipt.fetch(rdr);
-  }
-
-  async fetchRewardsPotAcc(rewardsMint: PublicKey, rewardsPot: PublicKey) {
-    return this.deserializeTokenAccount(rewardsMint, rewardsPot);
+  async fetchRewardsPotAcc(rewardMint: PublicKey, rewardPot: PublicKey) {
+    return this.deserializeTokenAccount(rewardMint, rewardPot);
   }
 
   // --------------------------------------- find PDA addresses
@@ -83,19 +79,11 @@ export class GemFarmClient extends GemBankClient {
     ]);
   }
 
-  async findRdrPDA(farm: PublicKey, mint: PublicKey) {
-    return this.findProgramAddress(this.farmProgram.programId, [
-      'reward_deposit_receipt',
-      farm,
-      mint,
-    ]);
-  }
-
-  async findRewardsPotPDA(farm: PublicKey, rewardsMint: PublicKey) {
+  async findRewardsPotPDA(farm: PublicKey, rewardMint: PublicKey) {
     return this.findProgramAddress(this.farmProgram.programId, [
       'reward_pot',
       farm,
-      rewardsMint,
+      rewardMint,
     ]);
   }
 
@@ -108,32 +96,61 @@ export class GemFarmClient extends GemBankClient {
     farm: Keypair,
     farmManager: PublicKey | Keypair,
     payer: PublicKey | Keypair,
-    bank: Keypair
+    bank: Keypair,
+    rewardAMint: PublicKey,
+    rewardBMint: PublicKey
   ) {
     const [farmAuth, farmAuthBump] = await this.findFarmAuthorityPDA(
       farm.publicKey
+    );
+    const [rewardAPot, rewardAPotBump] = await this.findRewardsPotPDA(
+      farm.publicKey,
+      rewardAMint
+    );
+    const [rewardBPot, rewardBPotBump] = await this.findRewardsPotPDA(
+      farm.publicKey,
+      rewardBMint
     );
 
     const signers = [farm, bank];
     if (isKp(farmManager)) signers.push(<Keypair>farmManager);
 
     console.log('starting farm at', bank.publicKey.toBase58());
-    const txSig = await this.farmProgram.rpc.initFarm(farmAuthBump, {
-      accounts: {
-        farm: farm.publicKey,
-        farmManager: isKp(farmManager)
-          ? (<Keypair>farmManager).publicKey
-          : farmManager,
-        farmAuthority: farmAuth,
-        payer: isKp(payer) ? (<Keypair>payer).publicKey : farmManager,
-        bank: bank.publicKey,
-        gemBank: this.bankProgram.programId,
-        systemProgram: SystemProgram.programId,
-      },
-      signers,
-    });
+    const txSig = await this.farmProgram.rpc.initFarm(
+      farmAuthBump,
+      rewardAPotBump,
+      rewardBPotBump,
+      {
+        accounts: {
+          farm: farm.publicKey,
+          farmManager: isKp(farmManager)
+            ? (<Keypair>farmManager).publicKey
+            : farmManager,
+          farmAuthority: farmAuth,
+          payer: isKp(payer) ? (<Keypair>payer).publicKey : farmManager,
+          rewardAPot,
+          rewardAMint,
+          rewardBPot,
+          rewardBMint,
+          bank: bank.publicKey,
+          gemBank: this.bankProgram.programId,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        },
+        signers,
+      }
+    );
 
-    return { farmAuth, farmAuthBump, txSig };
+    return {
+      farmAuth,
+      farmAuthBump,
+      rewardAPot,
+      rewardAPotBump,
+      rewardBPot,
+      rewardBPotBump,
+      txSig,
+    };
   }
 
   async initFarmer(
@@ -288,8 +305,8 @@ export class GemFarmClient extends GemBankClient {
 
   async fund(
     farm: PublicKey,
-    rewardsSource: PublicKey,
-    rewardsMint: PublicKey,
+    rewardSource: PublicKey,
+    rewardMint: PublicKey,
     funder: PublicKey | Keypair,
     amount: BN,
     duration: BN
@@ -301,15 +318,13 @@ export class GemFarmClient extends GemBankClient {
     const [farmAuth, farmAuthBump] = await this.findFarmAuthorityPDA(farm);
     const [authorizationProof, authorizationProofBump] =
       await this.findAuthorizationProofPDA(farm, funderPk);
-    const [rdr, rdrBump] = await this.findRdrPDA(farm, rewardsMint);
-    const [pot, potBump] = await this.findRewardsPotPDA(farm, rewardsMint);
+    const [pot, potBump] = await this.findRewardsPotPDA(farm, rewardMint);
 
     const signers = [];
     if (isKp(funder)) signers.push(<Keypair>funder);
 
     const txSig = await this.farmProgram.rpc.fund(
       authorizationProofBump,
-      rdrBump,
       potBump,
       amount,
       duration,
@@ -318,14 +333,12 @@ export class GemFarmClient extends GemBankClient {
           farm,
           farmAuthority: farmAuth,
           authorizationProof,
-          rewardsDepositReceipt: rdr,
-          rewardsPot: pot,
-          rewardsSource,
-          rewardsMint,
+          rewardPot: pot,
+          rewardSource,
+          rewardMint,
           authorizedFunder: funderPk,
           tokenProgram: TOKEN_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
-          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         },
         signers,
       }
@@ -336,8 +349,6 @@ export class GemFarmClient extends GemBankClient {
       farmAuthBump,
       authorizationProof,
       authorizationProofBump,
-      rdr,
-      rdrBump,
       pot,
       potBump,
       txSig,

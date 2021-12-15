@@ -1,20 +1,46 @@
 use anchor_lang::prelude::*;
+use anchor_spl::token::{Mint, Token, TokenAccount};
 use gem_bank::program::GemBank;
 use gem_bank::{self, cpi::accounts::InitBank, state::Bank};
 
 use crate::state::*;
 
 #[derive(Accounts)]
-#[instruction(bump: u8)]
+#[instruction(bump_auth: u8, bump_pot_a: u8, bump_pot_b: u8)]
 pub struct InitFarm<'info> {
     // core
     #[account(init, payer = payer, space = 8 + std::mem::size_of::<Farm>())]
     pub farm: Account<'info, Farm>,
     pub farm_manager: Signer<'info>,
-    #[account(mut, seeds = [farm.key().as_ref()], bump = bump)]
+    #[account(mut, seeds = [farm.key().as_ref()], bump = bump_auth)]
     pub farm_authority: AccountInfo<'info>,
     #[account(mut)]
     pub payer: Signer<'info>,
+
+    // todo need ixs to be able to update mints/pots
+    // rewards
+    #[account(init, seeds = [
+            b"reward_pot".as_ref(),
+            farm.key().as_ref(),
+            reward_a_mint.key().as_ref(),
+        ],
+        bump = bump_pot_a,
+        token::mint = reward_a_mint,
+        token::authority = farm_authority,
+        payer = payer)]
+    pub reward_a_pot: Box<Account<'info, TokenAccount>>,
+    pub reward_a_mint: Box<Account<'info, Mint>>,
+    #[account(init, seeds = [
+            b"reward_pot".as_ref(),
+            farm.key().as_ref(),
+            reward_b_mint.key().as_ref(),
+        ],
+        bump = bump_pot_b,
+        token::mint = reward_b_mint,
+        token::authority = farm_authority,
+        payer = payer)]
+    pub reward_b_pot: Box<Account<'info, TokenAccount>>,
+    pub reward_b_mint: Box<Account<'info, Mint>>,
 
     // cpi
     // todo should it be less opinionated and simply take in a pre-made bank?
@@ -22,7 +48,9 @@ pub struct InitFarm<'info> {
     #[account(mut)]
     pub bank: Signer<'info>,
     pub gem_bank: Program<'info, GemBank>,
+    pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
+    pub rent: Sysvar<'info, Rent>,
 }
 
 impl<'info> InitFarm<'info> {
@@ -40,7 +68,7 @@ impl<'info> InitFarm<'info> {
     }
 }
 
-pub fn handler(ctx: Context<InitFarm>, bump: u8) -> ProgramResult {
+pub fn handler(ctx: Context<InitFarm>, bump_auth: u8) -> ProgramResult {
     //record new farm details
     let farm_key = ctx.accounts.farm.key().clone();
     let farm = &mut ctx.accounts.farm;
@@ -49,8 +77,14 @@ pub fn handler(ctx: Context<InitFarm>, bump: u8) -> ProgramResult {
     farm.farm_manager = ctx.accounts.farm_manager.key();
     farm.farm_authority = ctx.accounts.farm_authority.key();
     farm.farm_authority_seed = farm_key;
-    farm.farm_authority_bump_seed = [bump];
+    farm.farm_authority_bump_seed = [bump_auth];
     farm.bank = ctx.accounts.bank.key();
+
+    farm.reward_a.reward_mint = ctx.accounts.reward_a_mint.key();
+    farm.reward_a.reward_pot = ctx.accounts.reward_a_pot.key();
+
+    farm.reward_b.reward_mint = ctx.accounts.reward_b_mint.key();
+    farm.reward_b.reward_pot = ctx.accounts.reward_b_pot.key();
 
     // todo worth manually init'ing all the variables at 0s?
 
