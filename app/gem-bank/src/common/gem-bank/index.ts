@@ -3,7 +3,7 @@ import { BN, Idl } from '@project-serum/anchor';
 import {
   GemBankClient,
   WhitelistType,
-} from '../../../../tests/gem-bank/gem-bank.client';
+} from '../../../../../tests/gem-bank/gem-bank.client';
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import { SignerWalletAdapter } from '@solana/wallet-adapter-base';
 import { DEFAULTS } from '@/globals';
