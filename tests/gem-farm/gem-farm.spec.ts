@@ -7,7 +7,7 @@ import { BN } from '@project-serum/anchor';
 import { ITokenData } from '../utils/account';
 import { prepGem } from '../utils/gem-common';
 import { Token } from '@solana/spl-token';
-import { pause } from '../utils/types';
+import { pause, stringifyPubkeysAndBNsInObject } from '../utils/types';
 
 chai.use(chaiAsPromised);
 
@@ -26,8 +26,8 @@ describe('gem farm', () => {
   let farmManager: Keypair;
   let farmerIdentity: Keypair;
 
-  let rewardAmount = new BN(1000);
-  let rewardDurationSec = new BN(2);
+  let rewardAmount = new BN(10000);
+  let rewardDurationSec = new BN(100);
 
   let rewardA: Token;
   let rewardASource: PublicKey;
@@ -39,6 +39,18 @@ describe('gem farm', () => {
   let funder = gf.wallet.payer;
 
   function printState() {}
+
+  async function printStructs() {
+    const farmAcc = await gf.fetchFarmAcc(farm.publicKey);
+    console.log(stringifyPubkeysAndBNsInObject(farmAcc));
+
+    const [farmer] = await gf.findFarmerPDA(
+      farm.publicKey,
+      farmerIdentity.publicKey
+    );
+    const farmerAcc = await gf.fetchFarmerAcc(farmer);
+    console.log(stringifyPubkeysAndBNsInObject(farmerAcc));
+  }
 
   // --------------------------------------- farm
 
@@ -131,6 +143,9 @@ describe('gem farm', () => {
 
     const rewardsAcc = await gf.fetchRewardAcc(rewardA.publicKey, pot);
     assert(rewardsAcc.amount.eq(rewardAmount));
+
+    console.log('// --------------------------------------- FARM FUNDED');
+    await printStructs();
   });
 
   // --------------------------------------- stake & claim
@@ -173,7 +188,11 @@ describe('gem farm', () => {
       let farmerAcc = await gf.fetchFarmerAcc(farmer);
       assert(farmerAcc.gemsStaked.eq(gemAmount));
 
-      pause(2000);
+      console.log('// --------------------------------------- STAKED');
+      await printStructs();
+
+      //wait for a couple seconds, to accrue some rewards
+      await pause(2000);
 
       //unstake
       await gf.unstake(farm.publicKey, farmerIdentity);
@@ -187,6 +206,9 @@ describe('gem farm', () => {
 
       farmerAcc = await gf.fetchFarmerAcc(farmer);
       assert(farmerAcc.gemsStaked.eq(new BN(0)));
+
+      console.log('// --------------------------------------- UNSTAKED');
+      await printStructs();
     });
 
     it('claims rewards', async () => {
@@ -201,7 +223,11 @@ describe('gem farm', () => {
         rewardA.publicKey,
         rewardADestination
       );
-      console.log(rewardADestAcc.amount);
+
+      console.log('// --------------------------------------- CLAIMED');
+      await printStructs();
+
+      assert(rewardADestAcc.amount.toNumber() > 0);
     });
   });
 });
