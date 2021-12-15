@@ -10,6 +10,7 @@ use crate::state::*;
 #[derive(Accounts)]
 #[instruction(bump: u8)]
 pub struct Stake<'info> {
+    // core
     #[account(mut, has_one = farm_authority)]
     pub farm: Account<'info, Farm>,
     #[account(mut, has_one = farm, has_one = identity,
@@ -23,7 +24,7 @@ pub struct Stake<'info> {
     #[account(mut)]
     pub identity: Signer<'info>,
 
-    // --------------------------------------- cpi
+    // cpi
     #[account(constraint = bank.bank_manager == farm_authority.key())]
     pub bank: Account<'info, Bank>,
     #[account(mut, has_one = bank)]

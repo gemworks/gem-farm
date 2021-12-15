@@ -6,10 +6,13 @@ use crate::state::*;
 #[derive(Accounts)]
 #[instruction(bump: u8)]
 pub struct AuthorizeFunder<'info> {
+    // core
     #[account(mut, has_one = farm_manager)]
     pub farm: Account<'info, Farm>,
     #[account(mut)]
     pub farm_manager: Signer<'info>,
+
+    // funder
     pub funder_to_authorize: AccountInfo<'info>,
     #[account(init_if_needed,
         seeds = [
@@ -21,6 +24,8 @@ pub struct AuthorizeFunder<'info> {
         payer = farm_manager,
         space = 8 + std::mem::size_of::<AuthorizationProof>())]
     authorization_proof: Account<'info, AuthorizationProof>,
+
+    // misc
     system_program: Program<'info, System>,
 }
 

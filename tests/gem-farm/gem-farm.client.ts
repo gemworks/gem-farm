@@ -83,17 +83,17 @@ export class GemFarmClient extends GemBankClient {
     ]);
   }
 
-  async findRdrPDA(funder: PublicKey, mint: PublicKey) {
+  async findRdrPDA(farm: PublicKey, mint: PublicKey) {
     return this.findProgramAddress(this.farmProgram.programId, [
-      'rewards_deposit_receipt',
-      funder,
+      'reward_deposit_receipt',
+      farm,
       mint,
     ]);
   }
 
   async findRewardsPotPDA(farm: PublicKey, rewardsMint: PublicKey) {
     return this.findProgramAddress(this.farmProgram.programId, [
-      'rewards_pot',
+      'reward_pot',
       farm,
       rewardsMint,
     ]);
@@ -301,7 +301,7 @@ export class GemFarmClient extends GemBankClient {
     const [farmAuth, farmAuthBump] = await this.findFarmAuthorityPDA(farm);
     const [authorizationProof, authorizationProofBump] =
       await this.findAuthorizationProofPDA(farm, funderPk);
-    const [rdr, rdrBump] = await this.findRdrPDA(funderPk, rewardsMint);
+    const [rdr, rdrBump] = await this.findRdrPDA(farm, rewardsMint);
     const [pot, potBump] = await this.findRewardsPotPDA(farm, rewardsMint);
 
     const signers = [];

@@ -7,6 +7,7 @@ use crate::state::*;
 #[derive(Accounts)]
 #[instruction(bump: u8)]
 pub struct InitFarm<'info> {
+    // core
     #[account(init, payer = payer, space = 8 + std::mem::size_of::<Farm>())]
     pub farm: Account<'info, Farm>,
     pub farm_manager: Signer<'info>,
@@ -15,7 +16,7 @@ pub struct InitFarm<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
 
-    // --------------------------------------- cpi
+    // cpi
     // todo should it be less opinionated and simply take in a pre-made bank?
     //  current thinking no: coz we NEED the bank to be managed by the farm authority
     #[account(mut)]

@@ -8,6 +8,7 @@ use crate::state::*;
 #[derive(Accounts)]
 #[instruction(bump_farmer: u8, bump_vault: u8)]
 pub struct InitFarmer<'info> {
+    // core
     #[account(mut)]
     pub farm: Account<'info, Farm>,
     #[account(init,
@@ -24,7 +25,7 @@ pub struct InitFarmer<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
 
-    // --------------------------------------- cpi
+    // cpi
     // todo should it be less opinionated and simply take in a pre-made vault?
     #[account(mut)]
     pub bank: Account<'info, Bank>,

@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 use gem_common::*;
+use std::ops::Index;
 
 pub const LATEST_FARM_VERSION: u16 = 0;
 
@@ -21,6 +22,7 @@ pub struct Farm {
     // each farm controls a single bank
     pub bank: Pubkey,
 
+    // todo make sure all of the below count vars are incr'ed/decr'ed correctly
     // --------------------------------------- farmers
     // total count, including initialized but inactive farmers
     pub farmer_count: u64,
@@ -33,22 +35,29 @@ pub struct Farm {
     // --------------------------------------- funders
     pub authorized_funder_count: u64,
 
-    pub funded_rewards_pots: u64,
-
-    pub active_rewards_pots: u64,
-
-    // --------------------------------------- rewards calc
-    pub rewards_duration_sec: u64,
-
-    pub rewards_end_ts: u64,
-
+    // --------------------------------------- rewards
     pub rewards_last_updated_ts: u64,
 
+    pub reward_a: FarmRewardTracker,
+
+    pub reward_b: FarmRewardTracker,
+}
+
+#[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
+pub struct FarmRewardTracker {
+    pub reward_mint: Pubkey,
+
+    pub reward_pot: Pubkey,
+
+    pub reward_duration_sec: u64,
+
+    pub reward_end_ts: u64,
+
     // in tokens/s, = total reward pot at initialization / reward duration
-    pub rewards_rate: u64,
+    pub reward_rate: u64,
 
     // this is cumulative, since the beginning of time
-    pub accrued_rewards_per_gem: u64,
+    pub accrued_reward_per_gem: u64,
 }
 
 impl Farm {
@@ -59,7 +68,18 @@ impl Farm {
         ]
     }
 
-    pub fn reward_start_ts(&self) -> Result<u64, ProgramError> {
-        self.rewards_end_ts.try_sub(self.rewards_duration_sec)
+    pub fn get_reward_by_mint(&mut self, reward_mint: Pubkey) -> &mut FarmRewardTracker {
+        let reward_a_mint = self.reward_a.reward_mint;
+        let reward_b_mint = self.reward_b.reward_mint;
+
+        match reward_mint {
+            _ if reward_mint == reward_a_mint => &mut self.reward_a,
+            _ if reward_mint == reward_b_mint => &mut self.reward_b,
+            _ => panic!("unknown reward mint"),
+        }
     }
+
+    // pub fn reward_start_ts(&self) -> Result<u64, ProgramError> {
+    //     self.reward_end_ts.try_sub(self.reward_duration_sec)
+    // }
 }
