@@ -6,11 +6,14 @@ use crate::state::*;
 #[derive(Accounts)]
 #[instruction(bump: u8)]
 pub struct RemoveFromWhitelist<'info> {
+    // bank
     #[account(mut, has_one = bank_manager)]
     pub bank: Account<'info, Bank>,
-    pub address_to_remove: AccountInfo<'info>,
     #[account(mut)]
     pub bank_manager: Signer<'info>,
+
+    // whitelist
+    pub address_to_remove: AccountInfo<'info>,
     #[account(mut,
         seeds = [
             b"whitelist".as_ref(),

@@ -10,7 +10,7 @@ use crate::state::*;
 #[instruction(bump_proof: u8, bump_fr: u8, bump_pot: u8)]
 pub struct Defund<'info> {
     // farm
-    #[account(mut)]
+    #[account(mut, has_one = farm_authority)]
     pub farm: Account<'info, Farm>,
     pub farm_authority: AccountInfo<'info>,
 
@@ -68,10 +68,9 @@ impl<'info> Defund<'info> {
 }
 
 pub fn handler(ctx: Context<Defund>, desired_amount: u64) -> ProgramResult {
-    let now_ts = now_ts()?;
-
     // update existing rewards
     let farm = &mut ctx.accounts.farm;
+    let now_ts = now_ts()?;
 
     farm.update_rewards_for_all_mints(now_ts, None)?;
 

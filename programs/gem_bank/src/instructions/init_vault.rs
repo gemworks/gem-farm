@@ -8,6 +8,7 @@ use gem_common::*;
 #[derive(Accounts)]
 #[instruction(bump: u8)]
 pub struct InitVault<'info> {
+    // bank
     #[account(mut)]
     pub bank: Account<'info, Bank>,
     #[account(init,
@@ -19,9 +20,11 @@ pub struct InitVault<'info> {
         bump = bump,
         payer = payer,
         space = 8 + std::mem::size_of::<Vault>())]
+    // vault
     pub vault: Account<'info, Vault>,
-    // (!) used for PDA initial derivation - CANNOT BE CHANGED
     pub creator: Signer<'info>,
+
+    // misc
     #[account(mut)]
     pub payer: Signer<'info>,
     pub system_program: Program<'info, System>,

@@ -103,7 +103,7 @@ describe('gem farm', () => {
     assert.equal(farmerAcc.farm.toBase58(), farm.publicKey.toBase58());
   });
 
-  // --------------------------------------- fund
+  // --------------------------------------- funding
 
   async function prepAuthorization() {
     return gf.authorizeFunder(farm.publicKey, farmManager, funder.publicKey);
@@ -197,6 +197,16 @@ describe('gem farm', () => {
 
     // console.log('// --------------------------------------- FARM DEFUNDED');
     // await printStructs();
+  });
+
+  it('locks rewards in place', async () => {
+    const defundAmount = new BN(100);
+
+    await gf.lockFunding(farm.publicKey, farmManager, rewardA.publicKey);
+
+    //once locked, no more funding or defunding is possible
+    await expect(prepFunding()).to.be.rejectedWith('0x155');
+    await expect(prepDefunding(defundAmount)).to.be.rejectedWith('0x155');
   });
 
   // --------------------------------------- stake & claim

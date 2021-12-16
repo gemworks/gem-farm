@@ -7,10 +7,13 @@ use crate::state::*;
 #[derive(Accounts)]
 #[instruction(bump: u8)]
 pub struct AddToWhitelist<'info> {
+    // bank
     #[account(mut, has_one = bank_manager)]
     pub bank: Account<'info, Bank>,
     #[account(mut)]
     pub bank_manager: Signer<'info>,
+
+    // whitelist
     pub address_to_whitelist: AccountInfo<'info>,
     // todo - is there any way someone could create this pda outside of this ix to fake-whitelist themselves?
     #[account(init_if_needed,
@@ -23,6 +26,8 @@ pub struct AddToWhitelist<'info> {
         payer = bank_manager,
         space = 8 + std::mem::size_of::<WhitelistProof>())]
     pub whitelist_proof: Account<'info, WhitelistProof>,
+
+    // misc
     pub system_program: Program<'info, System>,
 }
 

@@ -65,6 +65,10 @@ pub mod gem_farm {
         instructions::defund::handler(ctx, desired_amount)
     }
 
+    pub fn lock_funding(ctx: Context<LockFunding>) -> ProgramResult {
+        instructions::lock_funding::handler(ctx)
+    }
+
     pub fn claim(
         ctx: Context<Claim>,
         _bump_auth: u8,

@@ -418,7 +418,6 @@ export class GemFarmClient extends GemBankClient {
         {
           accounts: {
             farm,
-            farmAuthority: farmAuth,
             authorizationProof,
             fundingReceipt,
             rewardPot: pot,
@@ -472,6 +471,28 @@ export class GemFarmClient extends GemBankClient {
     amount: BN
   ) {
     return this.fundCommon(farm, rewardMint, funder, amount, true);
+  }
+
+  async lockFunding(
+    farm: PublicKey,
+    farmManager: PublicKey | Keypair,
+    rewardMint: PublicKey
+  ) {
+    const signers = [];
+    if (isKp(farmManager)) signers.push(<Keypair>farmManager);
+
+    const txSig = await this.farmProgram.rpc.lockFunding({
+      accounts: {
+        farm,
+        farmManager: isKp(farmManager)
+          ? (<Keypair>farmManager).publicKey
+          : farmManager,
+        rewardMint,
+      },
+      signers,
+    });
+
+    return { txSig };
   }
 
   async claim(

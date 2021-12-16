@@ -11,7 +11,6 @@ pub struct Fund<'info> {
     // farm
     #[account(mut)]
     pub farm: Account<'info, Farm>,
-    pub farm_authority: AccountInfo<'info>,
 
     // funder
     #[account(has_one = farm, has_one = authorized_funder ,seeds = [
@@ -64,10 +63,9 @@ impl<'info> Fund<'info> {
 }
 
 pub fn handler(ctx: Context<Fund>, amount: u64, duration_sec: u64) -> ProgramResult {
-    let now_ts = now_ts()?;
-
-    // update existing rewards + post new ones
+    // update existing rewards + record new ones
     let farm = &mut ctx.accounts.farm;
+    let now_ts = now_ts()?;
 
     farm.update_rewards_for_all_mints(now_ts, None)?;
 

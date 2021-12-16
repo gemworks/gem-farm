@@ -18,8 +18,7 @@ pub struct Bank {
     // OR
     // 2)mint from this list
     pub whitelisted_mints: u32,
-    // update authority CAN NOT be used for whitelisting
-    // anyone can set a random UA, w/o it signing off, after the NFT is created
+
     pub vault_count: u64,
 }
 

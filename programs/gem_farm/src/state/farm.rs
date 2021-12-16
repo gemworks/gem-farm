@@ -6,6 +6,9 @@ use std::ops::Index;
 
 pub const LATEST_FARM_VERSION: u16 = 0;
 
+// todo factor in precision later
+const PRECISION: u128 = u64::MAX as u128;
+
 #[repr(C)]
 #[account]
 #[derive(Debug)]
@@ -74,9 +77,9 @@ impl Farm {
         new_duration_sec: u64,
         reward_mint: Pubkey,
     ) -> ProgramResult {
-        let farm_reward = self.match_reward_by_mint(reward_mint)?;
+        let reward = self.match_reward_by_mint(reward_mint)?;
 
-        farm_reward.fund_reward(now_ts, new_amount, new_duration_sec)?;
+        reward.fund_reward(now_ts, new_amount, new_duration_sec)?;
 
         self.rewards_last_updated_ts = now_ts;
 
@@ -90,10 +93,9 @@ impl Farm {
         desired_amount: u64,
         reward_mint: Pubkey,
     ) -> Result<u64, ProgramError> {
-        let farm_reward = self.match_reward_by_mint(reward_mint)?;
+        let reward = self.match_reward_by_mint(reward_mint)?;
 
-        let to_defund =
-            farm_reward.defund_reward(now_ts, desired_amount, funder_withdrawable_amount)?;
+        let to_defund = reward.defund_reward(now_ts, desired_amount, funder_withdrawable_amount)?;
 
         self.rewards_last_updated_ts = now_ts;
 
@@ -137,6 +139,13 @@ impl Farm {
 
         Ok(())
     }
+
+    pub fn lock_funding_by_mint(&mut self, reward_mint: Pubkey) -> ProgramResult {
+        let reward = self.match_reward_by_mint(reward_mint)?;
+        reward.lock_reward();
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
@@ -158,8 +167,8 @@ pub struct FarmRewardTracker {
     // this is cumulative, since the beginning of time
     pub accrued_reward_per_gem: u64,
 
-    // --------------------------------------- configured separately
-    pub locked: bool,
+    // --------------------------------------- configured on locking
+    pub lock_end_ts: u64,
 }
 
 impl FarmRewardTracker {
@@ -173,17 +182,16 @@ impl FarmRewardTracker {
             .try_mul(self.reward_rate)
     }
 
-    pub fn lock_reward(&mut self) -> ProgramResult {
-        self.locked = true;
-        Ok(())
-    }
-
     pub fn fund_reward(
         &mut self,
         now_ts: u64,
         new_amount: u64,
         new_duration_sec: u64,
     ) -> ProgramResult {
+        if self.is_locked(now_ts) {
+            return Err(ErrorCode::RewardLocked.into());
+        }
+
         // if previous rewards have been exhausted
         if now_ts > self.reward_end_ts {
             self.reward_rate = new_amount.try_floor_div(new_duration_sec)?;
@@ -209,6 +217,10 @@ impl FarmRewardTracker {
         desired_amount: u64,
         funder_withdrawable_amount: u64,
     ) -> Result<u64, ProgramError> {
+        if self.is_locked(now_ts) {
+            return Err(ErrorCode::RewardLocked.into());
+        }
+
         let unaccrued_funding = self.unaccrued_funding(now_ts)?;
 
         // calc how much is actually available for defunding
@@ -230,7 +242,7 @@ impl FarmRewardTracker {
         farmer_gems_staked: Option<u64>,
         farmer_reward: Option<&mut FarmerRewardTracker>,
     ) -> ProgramResult {
-        let reward_upper_bound_ts = self.calc_reward_upper_bound(now_ts);
+        let reward_upper_bound_ts = std::cmp::min(self.reward_end_ts, now_ts);
 
         let newly_accrued_reward_per_gem = self.calc_newly_accrued_reward(
             farm_gems_staked,
@@ -278,10 +290,14 @@ impl FarmRewardTracker {
             .try_floor_div(farm_gems_staked)
     }
 
-    fn calc_reward_upper_bound(&self, now_ts: u64) -> u64 {
-        std::cmp::min(self.reward_end_ts, now_ts)
+    /// locking ensures that the promised reward cannot be withdrawn/changed by a malicious farm operator
+    /// once locked, no funding / defunding of this account is possible until reward_end_ts
+    /// (!) THIS OPERATION IS IRREVERSIBLE
+    pub fn lock_reward(&mut self) {
+        self.lock_end_ts = self.reward_end_ts;
+    }
+
+    pub fn is_locked(&self, now_ts: u64) -> bool {
+        now_ts < self.lock_end_ts
     }
 }
-
-// todo factor in precision later
-const PRECISION: u128 = u64::MAX as u128;

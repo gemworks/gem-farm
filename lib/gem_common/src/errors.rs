@@ -77,7 +77,9 @@ pub enum ErrorCode {
     #[msg("passed in reward mint is not available for this farm")]
     UnknownRewardMint,
 
-    Reserved41,
+    #[msg("the reward is locked and cannot be defunded")]
+    RewardLocked,
+
     Reserved42,
     Reserved43,
     Reserved44,

@@ -12,17 +12,15 @@ use crate::state::*;
 #[derive(Accounts)]
 #[instruction(bump_gem_box: u8, bump_gdr: u8, bump_metadata: u8)]
 pub struct DepositGem<'info> {
-    // needed for checking flags
+    // bank
     pub bank: Box<Account<'info, Bank>>,
-    // needed for seeds derivation + we increment gem box count
+
+    // vault
     #[account(mut, has_one = bank, has_one = owner, has_one = authority)]
     pub vault: Account<'info, Vault>,
-    // this ensures only the owner can deposit
     pub owner: Signer<'info>,
-    // needed to be set as authority over newly created token PDA
     pub authority: AccountInfo<'info>,
-    #[account(init_if_needed,
-        seeds = [
+    #[account(init_if_needed, seeds = [
             b"gem_box".as_ref(),
             vault.key().as_ref(),
             gem_mint.key().as_ref(),
@@ -31,9 +29,9 @@ pub struct DepositGem<'info> {
         token::mint = gem_mint,
         token::authority = authority,
         payer = depositor)]
+    // gem
     pub gem_box: Box<Account<'info, TokenAccount>>,
-    #[account(init_if_needed,
-        seeds = [
+    #[account(init_if_needed, seeds = [
             b"gem_deposit_receipt".as_ref(),
             vault.key().as_ref(),
             gem_mint.key().as_ref(),
@@ -47,6 +45,8 @@ pub struct DepositGem<'info> {
     pub gem_mint: Box<Account<'info, Mint>>,
     #[account(mut)]
     pub depositor: Signer<'info>,
+
+    // misc
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,

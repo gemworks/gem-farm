@@ -12,15 +12,14 @@ use gem_common::*;
 #[derive(Accounts)]
 #[instruction(bump: u8)]
 pub struct WithdrawGem<'info> {
-    // needed for checking flags
+    // bank
     pub bank: Box<Account<'info, Bank>>,
-    // needed for seeds derivation
+
+    // vault
     #[account(mut, has_one = bank, has_one = owner, has_one = authority)]
     pub vault: Account<'info, Vault>,
-    // this ensures only the owner can withdraw
     #[account(mut)]
     pub owner: Signer<'info>,
-    // needed to sign token transfer
     pub authority: AccountInfo<'info>,
     #[account(mut,
         seeds = [
@@ -29,6 +28,7 @@ pub struct WithdrawGem<'info> {
             gem_mint.key().as_ref(),
         ],
         bump = bump)]
+    // gem
     pub gem_box: Account<'info, TokenAccount>,
     #[account(mut)]
     pub gem_deposit_receipt: Box<Account<'info, GemDepositReceipt>>,
@@ -40,6 +40,8 @@ pub struct WithdrawGem<'info> {
     pub gem_mint: Box<Account<'info, Mint>>,
     #[account(mut)]
     pub receiver: AccountInfo<'info>,
+
+    // misc
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,

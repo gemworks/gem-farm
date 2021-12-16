@@ -5,13 +5,15 @@ use crate::state::*;
 
 #[derive(Accounts)]
 pub struct SetVaultLock<'info> {
+    // bank
     #[account(has_one = bank_manager)]
     pub bank: Account<'info, Bank>,
+    pub bank_manager: Signer<'info>,
+
+    // vault
     // todo can do seeds verification
     #[account(mut, has_one = bank)]
     pub vault: Account<'info, Vault>,
-    // only the bank manager can un/lock vaults
-    pub bank_manager: Signer<'info>,
 }
 
 pub fn handler(ctx: Context<SetVaultLock>, vault_locked: bool) -> ProgramResult {
