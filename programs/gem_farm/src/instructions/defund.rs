@@ -8,7 +8,7 @@ use crate::state::*;
 
 #[derive(Accounts)]
 #[instruction(bump_proof: u8, bump_fr: u8, bump_pot: u8)]
-pub struct Fund<'info> {
+pub struct Defund<'info> {
     // farm
     #[account(mut)]
     pub farm: Account<'info, Farm>,
@@ -24,14 +24,12 @@ pub struct Fund<'info> {
     pub authorization_proof: Account<'info, AuthorizationProof>,
     #[account(mut)]
     pub authorized_funder: Signer<'info>,
-    #[account(init_if_needed, seeds = [
+    #[account(mut, seeds = [
             b"funding_receipt".as_ref(),
             authorized_funder.key().as_ref(),
             reward_mint.key().as_ref(),
         ],
-        bump = bump_fr,
-        payer = authorized_funder,
-        space = 8 + std::mem::size_of::<FundingReceipt>())]
+        bump = bump_fr)]
     pub funding_receipt: Account<'info, FundingReceipt>,
 
     // reward
@@ -43,7 +41,7 @@ pub struct Fund<'info> {
         bump = bump_pot)]
     pub reward_pot: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
-    pub reward_source: Box<Account<'info, TokenAccount>>,
+    pub reward_destination: Box<Account<'info, TokenAccount>>,
     pub reward_mint: Box<Account<'info, Mint>>,
 
     // misc
@@ -51,48 +49,54 @@ pub struct Fund<'info> {
     pub system_program: Program<'info, System>,
 }
 
-impl<'info> Fund<'info> {
+impl<'info> Defund<'info> {
     fn transfer_ctx(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
         CpiContext::new(
             self.token_program.to_account_info(),
             Transfer {
-                from: self.reward_source.to_account_info(),
-                to: self.reward_pot.to_account_info(),
-                authority: self.authorized_funder.to_account_info(),
+                from: self.reward_pot.to_account_info(),
+                to: self.reward_destination.to_account_info(),
+                authority: self.farm_authority.to_account_info(),
             },
         )
     }
 }
 
-pub fn handler(ctx: Context<Fund>, amount: u64, duration_sec: u64) -> ProgramResult {
+pub fn handler(ctx: Context<Defund>, desired_amount: u64) -> ProgramResult {
     let now_ts = now_ts()?;
 
-    // update existing rewards + post new ones
+    // update existing rewards
     let farm = &mut ctx.accounts.farm;
+    let receipt = &ctx.accounts.funding_receipt;
 
     update_accrued_rewards(farm, None)?;
 
-    farm.fund_reward_by_mint(now_ts, amount, duration_sec, ctx.accounts.reward_mint.key())?;
+    // calculate defund amount & update rate
+    let funder_withdrawable_amount = receipt.funder_withdrawable_amount()?;
+    let to_defund = farm.defund_reward_by_mint(
+        now_ts,
+        funder_withdrawable_amount,
+        desired_amount,
+        ctx.accounts.reward_mint.key(),
+    )?;
 
-    // create/update fr
+    // update fr
     let fr = &mut ctx.accounts.funding_receipt;
-    fr.funder = ctx.accounts.authorized_funder.key();
-    fr.reward_mint = ctx.accounts.reward_mint.key();
-    fr.total_deposited_amount.try_self_add(amount);
-    fr.deposit_count.try_self_add(1);
-    fr.last_deposit_ts = now_ts;
+    fr.total_withdrawn_amount.try_self_add(to_defund)?;
+    fr.withdrawal_count.try_self_add(1)?;
+    fr.last_withdrawal_ts = now_ts;
 
     // do the transfer
     token::transfer(
         ctx.accounts
             .transfer_ctx()
             .with_signer(&[&ctx.accounts.farm.farm_seeds()]),
-        amount,
+        to_defund,
     )?;
 
     msg!(
-        "{} reward tokens deposited into {} pot",
-        amount,
+        "{} reward tokens withdrawn from {} pot",
+        to_defund,
         ctx.accounts.reward_pot.key()
     );
     Ok(())

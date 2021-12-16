@@ -47,11 +47,22 @@ pub mod gem_farm {
     pub fn fund(
         ctx: Context<Fund>,
         _bump_proof: u8,
+        _bump_fr: u8,
         _bump_pot: u8,
         amount: u64,
         duration_sec: u64,
     ) -> ProgramResult {
         instructions::fund::handler(ctx, amount, duration_sec)
+    }
+
+    pub fn defund(
+        ctx: Context<Defund>,
+        _bump_proof: u8,
+        _bump_fr: u8,
+        _bump_pot: u8,
+        desired_amount: u64,
+    ) -> ProgramResult {
+        instructions::defund::handler(ctx, desired_amount)
     }
 
     pub fn claim(

@@ -51,41 +51,6 @@ pub fn update_accrued_rewards(
     Ok(())
 }
 
-pub fn post_new_reward(
-    farm: &mut Account<Farm>,
-    new_amount: u64,
-    new_duration_sec: u64,
-    reward_mint: Pubkey,
-) -> ProgramResult {
-    let farm_reward = farm.match_reward_by_mint(reward_mint)?;
-
-    let now_ts = now_ts()?;
-
-    // if previous rewards have been exhausted
-    if now_ts > farm_reward.reward_end_ts {
-        farm_reward.reward_rate = new_amount.try_floor_div(new_duration_sec)?;
-    // else if previous rewards are still active (merge the two)
-    } else {
-        let remaining_duration_sec = farm_reward.reward_end_ts.try_sub(now_ts)?;
-        let remaining_amount = remaining_duration_sec.try_mul(farm_reward.reward_rate)?;
-
-        farm_reward.reward_rate = new_amount
-            .try_add(remaining_amount)?
-            .try_floor_div(new_duration_sec)?;
-    }
-
-    farm_reward.reward_duration_sec = new_duration_sec;
-    farm_reward.reward_end_ts = now_ts.try_add(new_duration_sec)?;
-    farm_reward
-        .total_deposited_amount
-        .try_self_add(new_amount)?;
-    farm_reward.total_deposit_count.try_self_add(1)?;
-
-    farm.rewards_last_updated_ts = now_ts;
-
-    Ok(())
-}
-
 // --------------------------------------- private
 
 fn update_single_reward_type(
@@ -105,16 +70,9 @@ fn update_single_reward_type(
         rewards_last_updated_ts,
     )?;
 
-    msg!(
-        "newly accrued reward per gem: {}",
-        newly_accrued_reward_per_gem
-    );
-
     farm_reward
         .accrued_reward_per_gem
         .try_self_add(newly_accrued_reward_per_gem)?;
-
-    msg!("Reward updated, Farm: {:?}", farm_reward);
 
     if let Some(farmer_reward) = farmer_reward {
         let newly_accrued_reward_per_farmer =
@@ -123,8 +81,6 @@ fn update_single_reward_type(
         farmer_reward
             .accrued_reward
             .try_self_add(newly_accrued_reward_per_farmer)?;
-
-        msg!("Reward updated, Farmer: {:?}", farmer_reward);
     }
 
     Ok(())
