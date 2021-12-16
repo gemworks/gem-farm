@@ -56,10 +56,11 @@ impl<'info> Fund<'info> {
 }
 
 pub fn handler(ctx: Context<Fund>, amount: u64, duration_sec: u64) -> ProgramResult {
-    // update rewards + post new ones
+    // update existing rewards + post new ones
     let farm = &mut ctx.accounts.farm;
 
     update_accrued_rewards(farm, None)?;
+
     post_new_reward(farm, amount, duration_sec, ctx.accounts.reward_mint.key())?;
 
     // do the transfer

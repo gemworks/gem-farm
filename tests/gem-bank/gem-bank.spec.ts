@@ -288,7 +288,7 @@
 //       let vaultAcc = await gb.fetchVaultAcc(vault);
 //       assert.equal(vaultAcc.locked, true);
 //       //deposit should fail
-//       await expect(prepDeposit(vaultOwner)).to.be.rejectedWith('0x12f');
+//       await expect(prepDeposit(vaultOwner)).to.be.rejectedWith('0x140');
 //
 //       //unlock the vault
 //       await prepLock(false);
@@ -302,7 +302,7 @@
 //       //withdraw should fail
 //       await expect(
 //         prepWithdrawal(vaultOwner, gem.owner, gemAmount)
-//       ).to.be.rejectedWith('0x12f');
+//       ).to.be.rejectedWith('0x140');
 //
 //       //finally unlock the vault
 //       await prepLock(false);
@@ -328,9 +328,9 @@
 //           vaultOwner,
 //           vaultCreator.publicKey
 //         )
-//       ).to.be.rejectedWith('0x12f');
-//       await expect(prepLock(true)).to.be.rejectedWith('0x12f');
-//       await expect(prepDeposit(vaultOwner)).to.be.rejectedWith('0x12f');
+//       ).to.be.rejectedWith('0x140');
+//       await expect(prepLock(true)).to.be.rejectedWith('0x140');
+//       await expect(prepDeposit(vaultOwner)).to.be.rejectedWith('0x140');
 //
 //       //remove flags to be able to do a real deposit - else can't withdraw
 //       await prepFlags(bankManager, 0);
@@ -340,7 +340,7 @@
 //       await prepFlags(bankManager, BankFlags.FreezeVaults);
 //       await expect(
 //         prepWithdrawal(vaultOwner, gem.owner, gemAmount)
-//       ).to.be.rejectedWith('0x12f');
+//       ).to.be.rejectedWith('0x140');
 //
 //       //unfreeze vault in the end
 //       await prepFlags(bankManager, 0);
@@ -549,7 +549,7 @@
 //             gemMetadata,
 //             whitelistProof
 //           )
-//         ).to.be.rejectedWith('0x132');
+//         ).to.be.rejectedWith('0x142');
 //
 //         //clean up after
 //         await prepRemoveFromWhitelist(whitelistedCreator);
@@ -564,7 +564,7 @@
 //
 //         await expect(
 //           prepDeposit(vaultOwner, whitelistProof)
-//         ).to.be.rejectedWith('0x132');
+//         ).to.be.rejectedWith('0x142');
 //
 //         //clean up after
 //         await prepRemoveFromWhitelist(whitelistedMint);
@@ -588,7 +588,7 @@
 //             gemMetadata,
 //             whitelistProof
 //           )
-//         ).to.be.rejectedWith('0x132');
+//         ).to.be.rejectedWith('0x142');
 //
 //         //clean up after
 //         await prepRemoveFromWhitelist(whitelistedCreator);
@@ -617,7 +617,7 @@
 //             gemMetadata,
 //             whitelistProof
 //           )
-//         ).to.be.rejectedWith('0x133');
+//         ).to.be.rejectedWith('0x143');
 //
 //         //clean up after
 //         await prepRemoveFromWhitelist(whitelistedMint);
@@ -650,7 +650,7 @@
 //             gemMetadata,
 //             PublicKey.default
 //           )
-//         ).to.be.rejectedWith('0x132');
+//         ).to.be.rejectedWith('0x142');
 //
 //         //clean up after
 //         await prepRemoveFromWhitelist(whitelistedMint);

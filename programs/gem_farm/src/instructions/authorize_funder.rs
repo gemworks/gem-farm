@@ -14,8 +14,7 @@ pub struct AuthorizeFunder<'info> {
 
     // funder
     pub funder_to_authorize: AccountInfo<'info>,
-    #[account(init_if_needed,
-        seeds = [
+    #[account(init_if_needed, seeds = [
             b"authorization".as_ref(),
             farm.key().as_ref(),
             funder_to_authorize.key().as_ref(),
@@ -42,7 +41,7 @@ pub fn handler(ctx: Context<AuthorizeFunder>) -> ProgramResult {
     farm.authorized_funder_count.try_self_add(1)?;
 
     msg!(
-        "funded authorized: {}",
+        "funder authorized: {}",
         ctx.accounts.funder_to_authorize.key()
     );
     Ok(())

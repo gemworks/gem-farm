@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 
 use gem_bank::program::GemBank;
 use gem_bank::{self, cpi::accounts::SetVaultLock, state::Bank, state::Vault};
+use gem_common::errors::ErrorCode;
 use gem_common::*;
 
 use crate::rewards::update_accrued_rewards;
@@ -49,7 +50,13 @@ impl<'info> Stake<'info> {
 }
 
 pub fn handler(ctx: Context<Stake>) -> ProgramResult {
-    //todo any checks I might want to do here? eg whether staking paused
+    //todo any checks I might want to do here?
+    //  eg probably need a "live/paused" feature
+    //  eg is it okay to start staking when both reward pots are empty?
+
+    if ctx.accounts.vault.gem_count == 0 {
+        return Err(ErrorCode::VaultIsEmpty.into());
+    }
 
     // lock the vault so the user can't withdraw their gems
     gem_bank::cpi::set_vault_lock(
@@ -60,21 +67,19 @@ pub fn handler(ctx: Context<Stake>) -> ProgramResult {
     )?;
 
     // update accrued rewards BEFORE we increment the stake
-    // todo does it actually make sense to update before?
     let farm = &mut ctx.accounts.farm;
     let farmer = &mut ctx.accounts.farmer;
+    let vault = &ctx.accounts.vault;
 
     update_accrued_rewards(farm, Some(farmer))?;
 
     // update farmer
-    let vault = &ctx.accounts.vault;
-
     farmer.gems_staked = vault.gem_count;
 
     // update farm
     farm.active_farmer_count.try_self_add(1)?;
     farm.gems_staked.try_self_add(vault.gem_count)?;
 
-    msg!("{} gems staked", farmer.gems_staked);
+    msg!("{} gems staked by {}", farmer.gems_staked, farmer.key());
     Ok(())
 }

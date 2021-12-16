@@ -74,13 +74,12 @@ impl<'info> InitFarm<'info> {
 
 pub fn handler(ctx: Context<InitFarm>, bump_auth: u8) -> ProgramResult {
     //record new farm details
-    let farm_key = ctx.accounts.farm.key().clone();
     let farm = &mut ctx.accounts.farm;
 
     farm.version = LATEST_FARM_VERSION;
     farm.farm_manager = ctx.accounts.farm_manager.key();
     farm.farm_authority = ctx.accounts.farm_authority.key();
-    farm.farm_authority_seed = farm_key;
+    farm.farm_authority_seed = farm.key();
     farm.farm_authority_bump_seed = [bump_auth];
     farm.bank = ctx.accounts.bank.key();
 

@@ -307,6 +307,37 @@ export class GemFarmClient extends GemBankClient {
     return { authorizationProof, authorizationProofBump, txSig };
   }
 
+  async deauthorizeFunder(
+    farm: PublicKey,
+    farmManager: PublicKey | Keypair,
+    funderToDeauthorize: PublicKey
+  ) {
+    const [authorizationProof, authorizationProofBump] =
+      await this.findAuthorizationProofPDA(farm, funderToDeauthorize);
+
+    const signers = [];
+    if (isKp(farmManager)) signers.push(<Keypair>farmManager);
+
+    console.log('DEauthorizing funder', funderToDeauthorize.toBase58());
+    const txSig = await this.farmProgram.rpc.deauthorizeFunder(
+      authorizationProofBump,
+      {
+        accounts: {
+          farm,
+          farmManager: isKp(farmManager)
+            ? (<Keypair>farmManager).publicKey
+            : farmManager,
+          funderToDeauthorize,
+          authorizationProof,
+          systemProgram: SystemProgram.programId,
+        },
+        signers,
+      }
+    );
+
+    return { authorizationProof, authorizationProofBump, txSig };
+  }
+
   async fund(
     farm: PublicKey,
     rewardSource: PublicKey,

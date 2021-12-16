@@ -40,7 +40,7 @@ pub mod gem_farm {
         instructions::authorize_funder::handler(ctx)
     }
 
-    pub fn deauthorize_funder(ctx: Context<DeauthorizeFunder>) -> ProgramResult {
+    pub fn deauthorize_funder(ctx: Context<DeauthorizeFunder>, _bump: u8) -> ProgramResult {
         instructions::deauthorize_funder::handler(ctx)
     }
 

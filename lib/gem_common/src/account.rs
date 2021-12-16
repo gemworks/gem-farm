@@ -20,6 +20,6 @@ pub fn close_account(
     let mut cursor = std::io::Cursor::new(dst);
     cursor
         .write_all(&CLOSED_ACCOUNT_DISCRIMINATOR)
-        .map_err(|_| ErrorCode::AccountDidNotSerialize)?;
+        .map_err(|_| ErrorCode::AnchorSerializationIssue)?;
     Ok(())
 }
