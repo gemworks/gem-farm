@@ -80,8 +80,12 @@ pub enum ErrorCode {
     #[msg("the reward is locked and cannot be defunded")]
     RewardLocked,
 
-    Reserved42,
-    Reserved43,
+    #[msg("can't unstake, minimum staking period has not passed yet")]
+    MinStakingNotPassed,
+
+    #[msg("can't unstake, cooldown period has not passed yet")]
+    CooldownNotPassed,
+
     Reserved44,
     Reserved45,
     Reserved46,

@@ -77,6 +77,7 @@ pub fn handler(
     bump_auth: u8,
     reward_type_a: RewardType,
     reward_type_b: RewardType,
+    farm_config: FarmConfig,
 ) -> ProgramResult {
     //record new farm details
     let farm = &mut ctx.accounts.farm;
@@ -87,6 +88,7 @@ pub fn handler(
     farm.farm_authority_seed = farm.key();
     farm.farm_authority_bump_seed = [bump_auth];
     farm.bank = ctx.accounts.bank.key();
+    farm.config = farm_config;
 
     farm.reward_a.reward_mint = ctx.accounts.reward_a_mint.key();
     farm.reward_a.reward_pot = ctx.accounts.reward_a_pot.key();

@@ -1,6 +1,15 @@
+use crate::state::Farm;
 use anchor_lang::prelude::*;
+use gem_common::errors::ErrorCode;
 use gem_common::*;
 use std::cell::RefCell;
+
+#[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
+pub enum FarmerStatus {
+    Unstaked,
+    Staked,
+    PendingCooldown,
+}
 
 #[repr(C)]
 #[account]
@@ -14,13 +23,113 @@ pub struct Farmer {
     // vault storing all of the farmer's gems
     pub vault: Pubkey,
 
+    pub status: FarmerStatus,
+
     // total number of gems at the time when the vault is locked
     pub gems_staked: u64,
+
+    pub min_staking_ends_ts: u64,
+
+    pub cooldown_ends_ts: u64,
 
     // --------------------------------------- rewards
     pub reward_a: FarmerRewardTracker,
 
     pub reward_b: FarmerRewardTracker,
+}
+
+impl Farmer {
+    pub fn stake_extra_gems(
+        &mut self,
+        farm: &mut Account<Farm>,
+        gems_in_vault: u64,
+        extra_gems: u64,
+    ) -> ProgramResult {
+        msg!("{}, {}, {}", self.gems_staked, extra_gems, gems_in_vault);
+        if self.gems_staked.try_add(extra_gems)? != gems_in_vault {
+            return Err(ErrorCode::AmountMismatch.into());
+        }
+
+        // farmer
+        self.status = FarmerStatus::Staked;
+        self.gems_staked = gems_in_vault;
+
+        // (!) IMPORTANT - we're resetting the min staking here
+        self.min_staking_ends_ts = now_ts()?.try_add(farm.config.min_staking_period_sec)?;
+        self.cooldown_ends_ts = 0; //zero it out in case it was set before
+
+        // farm
+        farm.gems_staked.try_self_add(extra_gems)
+    }
+
+    pub fn begin_staking(&mut self, farm: &mut Account<Farm>, gems_in_vault: u64) -> ProgramResult {
+        // farmer
+        self.status = FarmerStatus::Staked;
+        self.gems_staked = gems_in_vault;
+        self.min_staking_ends_ts = now_ts()?.try_add(farm.config.min_staking_period_sec)?;
+        self.cooldown_ends_ts = 0; //zero it out in case it was set before
+
+        // farm
+        farm.staked_farmer_count.try_self_add(1)?;
+        farm.gems_staked.try_self_add(gems_in_vault)
+    }
+
+    pub fn end_staking_begin_cooldown(&mut self, farm: &mut Account<Farm>) -> ProgramResult {
+        if !self.can_end_staking()? {
+            return Err(ErrorCode::MinStakingNotPassed.into());
+        }
+
+        // farmer
+        self.status = FarmerStatus::PendingCooldown;
+        let farmer_had_staked = self.gems_staked;
+        self.gems_staked = 0; //no rewards will accrue during cooldown period
+        self.cooldown_ends_ts = now_ts()?.try_add(farm.config.cooldown_period_sec)?;
+
+        // farm
+        farm.staked_farmer_count.try_self_sub(1)?;
+        farm.gems_staked.try_self_sub(farmer_had_staked)?;
+
+        msg!(
+            "{} gems now cooling down for {}",
+            farmer_had_staked,
+            self.identity
+        );
+        Ok(())
+    }
+
+    pub fn end_cooldown(&mut self) -> ProgramResult {
+        if !self.can_end_cooldown()? {
+            return Err(ErrorCode::CooldownNotPassed.into());
+        }
+
+        self.status = FarmerStatus::Unstaked;
+        // zero everything out
+        self.gems_staked = 0;
+        self.min_staking_ends_ts = 0;
+        self.cooldown_ends_ts = 0;
+
+        msg!(
+            "gems now unstaked and available for withdrawal for {}",
+            self.identity
+        );
+        Ok(())
+    }
+
+    pub fn can_end_staking(&self) -> Result<bool, ProgramError> {
+        Ok(now_ts()? > self.min_staking_ends_ts)
+    }
+
+    pub fn can_end_cooldown(&self) -> Result<bool, ProgramError> {
+        Ok(now_ts()? > self.cooldown_ends_ts)
+    }
+
+    pub fn try_unstake(&mut self, farm: &mut Account<Farm>) -> ProgramResult {
+        match self.status {
+            FarmerStatus::Unstaked => Ok(msg!("already unstaked!")),
+            FarmerStatus::Staked => self.end_staking_begin_cooldown(farm),
+            FarmerStatus::PendingCooldown => self.end_cooldown(),
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]

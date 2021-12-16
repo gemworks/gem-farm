@@ -106,7 +106,7 @@ pub fn handler(
         bump_gem_box,
         bump_gdr,
         amount,
-    );
+    )?;
 
     gem_bank::cpi::set_vault_lock(
         ctx.accounts
@@ -118,18 +118,13 @@ pub fn handler(
     // update accrued rewards BEFORE we increment the stake
     let farm = &mut ctx.accounts.farm;
     let farmer = &mut ctx.accounts.farmer;
-    let vault = &ctx.accounts.vault;
 
     farm.update_rewards_for_all_mints(now_ts()?, Some(farmer))?;
 
     // update farmer
-    farmer.gems_staked.try_self_add(amount)?;
+    ctx.accounts.vault.reload()?;
+    farmer.stake_extra_gems(farm, ctx.accounts.vault.gem_count, amount)?;
 
-    // update farm
-    farm.gems_staked.try_self_add(amount)?;
-
-    // todo add locks / cooldowns
-
-    msg!("{} gems flash deposited by {}", amount, farmer.key());
+    msg!("{} extra gems staked for {}", amount, farmer.key());
     Ok(())
 }

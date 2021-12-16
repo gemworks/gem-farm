@@ -9,6 +9,15 @@ pub const LATEST_FARM_VERSION: u16 = 0;
 // todo factor in precision later
 const PRECISION: u128 = u64::MAX as u128;
 
+#[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
+pub struct FarmConfig {
+    // min time the NFT has to be staked
+    pub min_staking_period_sec: u64,
+
+    // time after user decides to unstake before they can actually withdraw
+    pub cooldown_period_sec: u64,
+}
+
 #[repr(C)]
 #[account]
 #[derive(Debug)]
@@ -27,13 +36,15 @@ pub struct Farm {
     // each farm controls a single bank
     pub bank: Pubkey,
 
+    pub config: FarmConfig,
+
     // todo make sure all of the below count vars are incr'ed/decr'ed correctly
     // --------------------------------------- farmers
     // total count, including initialized but inactive farmers
     pub farmer_count: u64,
 
     // active only
-    pub active_farmer_count: u64,
+    pub staked_farmer_count: u64,
 
     pub gems_staked: u64,
 
@@ -254,7 +265,7 @@ impl FarmRewardTracker {
             self.reward_rate = remaining_reward.try_floor_div(self.reward_duration_sec)?;
         }
 
-        self.net_deposited_reward.try_self_sub(to_defund);
+        self.net_deposited_reward.try_self_sub(to_defund)?;
 
         Ok(to_defund)
     }

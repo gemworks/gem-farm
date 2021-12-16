@@ -17,6 +17,11 @@ export const RewardType = {
   Fixed: { fixed: {} },
 };
 
+export interface FarmConfig {
+  minStakingPeriodSec: BN;
+  cooldownPeriodSec: BN;
+}
+
 export type OptionBN = BN | null;
 
 export class GemFarmClient extends GemBankClient {
@@ -124,7 +129,8 @@ export class GemFarmClient extends GemBankClient {
     rewardAMint: PublicKey,
     rewardAType: any, //RewardType instance
     rewardBMint: PublicKey,
-    rewardBType: any //RewardType instance
+    rewardBType: any, //RewardType instance
+    farmConfig: FarmConfig
   ) {
     const [farmAuth, farmAuthBump] = await this.findFarmAuthorityPDA(
       farm.publicKey
@@ -148,6 +154,7 @@ export class GemFarmClient extends GemBankClient {
       rewardBPotBump,
       rewardAType,
       rewardBType,
+      farmConfig,
       {
         accounts: {
           farm: farm.publicKey,

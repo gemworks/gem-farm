@@ -66,14 +66,6 @@ pub fn handler(ctx: Context<Unstake>) -> ProgramResult {
 
     farm.update_rewards_for_all_mints(now_ts()?, Some(farmer))?;
 
-    // update farmer
-    farmer.gems_staked = 0;
-
-    // update farm
-    farm.active_farmer_count.try_self_sub(1)?;
-    farm.gems_staked
-        .try_self_sub(ctx.accounts.vault.gem_count)?;
-
-    msg!("{} gems unstaked by {}", farmer.gems_staked, farmer.key());
-    Ok(())
+    // try end staking
+    farmer.try_unstake(farm)
 }

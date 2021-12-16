@@ -1,6 +1,6 @@
-use crate::state::RewardType;
 use anchor_lang::prelude::*;
 use instructions::*;
+use state::*;
 
 pub mod instructions;
 pub mod state;
@@ -18,8 +18,9 @@ pub mod gem_farm {
         _bump_pot_b: u8,
         reward_type_a: RewardType,
         reward_type_b: RewardType,
+        farm_config: FarmConfig,
     ) -> ProgramResult {
-        instructions::init_farm::handler(ctx, bump_auth, reward_type_a, reward_type_b)
+        instructions::init_farm::handler(ctx, bump_auth, reward_type_a, reward_type_b, farm_config)
     }
 
     pub fn init_farmer(
