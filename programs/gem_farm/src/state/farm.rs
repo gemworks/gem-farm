@@ -91,11 +91,17 @@ impl Farm {
         now_ts: u64,
         funder_withdrawable_amount: u64,
         desired_amount: u64,
+        new_duration_sec: Option<u64>,
         reward_mint: Pubkey,
     ) -> Result<u64, ProgramError> {
         let reward = self.match_reward_by_mint(reward_mint)?;
 
-        let to_defund = reward.defund_reward(now_ts, desired_amount, funder_withdrawable_amount)?;
+        let to_defund = reward.defund_reward(
+            now_ts,
+            desired_amount,
+            new_duration_sec,
+            funder_withdrawable_amount,
+        )?;
 
         self.rewards_last_updated_ts = now_ts;
 
@@ -149,11 +155,19 @@ impl Farm {
 }
 
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
+pub enum RewardType {
+    Variable,
+    Fixed,
+}
+
+#[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FarmRewardTracker {
     // --------------------------------------- configured on farm init
     pub reward_mint: Pubkey,
 
     pub reward_pot: Pubkey,
+
+    pub reward_type: RewardType,
 
     // --------------------------------------- configured on funding
     pub reward_duration_sec: u64,
@@ -163,23 +177,23 @@ pub struct FarmRewardTracker {
     // in tokens/s, = total reward pot at initialization / reward duration
     pub reward_rate: u64,
 
-    // --------------------------------------- configured whenever rewards update is run
+    // --------------------------------------- configured on update
     // this is cumulative, since the beginning of time
     pub accrued_reward_per_gem: u64,
+
+    // needed for fixed rate calculations to work (defund in particular)
+    pub total_accrued_reward: u64,
+
+    // total funded - total defunded
+    pub net_deposited_reward: u64,
 
     // --------------------------------------- configured on locking
     pub lock_end_ts: u64,
 }
 
 impl FarmRewardTracker {
-    pub fn reward_start_ts(&self) -> Result<u64, ProgramError> {
+    pub fn calc_reward_start_ts(&self) -> Result<u64, ProgramError> {
         self.reward_end_ts.try_sub(self.reward_duration_sec)
-    }
-
-    pub fn unaccrued_funding(&self, now_ts: u64) -> Result<u64, ProgramError> {
-        self.reward_end_ts
-            .try_sub(now_ts)?
-            .try_mul(self.reward_rate)
     }
 
     pub fn fund_reward(
@@ -207,6 +221,7 @@ impl FarmRewardTracker {
 
         self.reward_duration_sec = new_duration_sec;
         self.reward_end_ts = now_ts.try_add(new_duration_sec)?;
+        self.net_deposited_reward.try_self_add(new_amount)?;
 
         Ok(())
     }
@@ -215,21 +230,31 @@ impl FarmRewardTracker {
         &mut self,
         now_ts: u64,
         desired_amount: u64,
+        new_duration_sec: Option<u64>,
         funder_withdrawable_amount: u64,
     ) -> Result<u64, ProgramError> {
         if self.is_locked(now_ts) {
             return Err(ErrorCode::RewardLocked.into());
         }
 
-        let unaccrued_funding = self.unaccrued_funding(now_ts)?;
+        let unaccrued_reward = self.calc_unaccrued_reward()?;
 
         // calc how much is actually available for defunding
-        let mut to_defund = std::cmp::min(unaccrued_funding, desired_amount);
+        let mut to_defund = std::cmp::min(unaccrued_reward, desired_amount);
         to_defund = std::cmp::min(to_defund, funder_withdrawable_amount);
 
-        // update reward rate
-        let remaining_funding = unaccrued_funding.try_sub(to_defund)?;
-        self.reward_rate = remaining_funding.try_floor_div(self.reward_duration_sec)?;
+        // update reward
+        let remaining_reward = unaccrued_reward.try_sub(to_defund)?;
+
+        if let Some(new_duration_sec) = new_duration_sec {
+            self.reward_rate = remaining_reward.try_floor_div(new_duration_sec)?;
+            self.reward_duration_sec = new_duration_sec;
+            self.reward_end_ts = now_ts.try_add(new_duration_sec)?;
+        } else {
+            self.reward_rate = remaining_reward.try_floor_div(self.reward_duration_sec)?;
+        }
+
+        self.net_deposited_reward.try_self_sub(to_defund);
 
         Ok(to_defund)
     }
@@ -254,17 +279,21 @@ impl FarmRewardTracker {
         self.accrued_reward_per_gem
             .try_self_add(newly_accrued_reward_per_gem)?;
 
-        // update farmer too, if one has been passed
-        if let Some(farmer_reward) = farmer_reward {
-            let newly_accrued_reward_per_farmer =
-                newly_accrued_reward_per_gem.try_mul(farmer_gems_staked.unwrap())?;
+        self.total_accrued_reward
+            .try_self_add(newly_accrued_reward_per_gem.try_mul(farm_gems_staked)?)?;
 
+        // update farmer, if one has been passed
+        if let Some(farmer_reward) = farmer_reward {
             farmer_reward
                 .accrued_reward
-                .try_self_add(newly_accrued_reward_per_farmer)?;
+                .try_self_add(newly_accrued_reward_per_gem.try_mul(farmer_gems_staked.unwrap())?)?;
         }
 
         Ok(())
+    }
+
+    pub fn calc_unaccrued_reward(&self) -> Result<u64, ProgramError> {
+        self.net_deposited_reward.try_sub(self.total_accrued_reward)
     }
 
     pub fn calc_newly_accrued_reward(
@@ -285,9 +314,16 @@ impl FarmRewardTracker {
 
         let time_since_last_calc_sec = reward_upper_bound_ts.try_sub(rewards_last_updated_ts)?;
 
+        // in fixed rate reward scheme, reward rate is specified PER GEM
+        // and we don't care how many total gems there are
+        let divisor = match self.reward_type {
+            RewardType::Variable => farm_gems_staked,
+            RewardType::Fixed => 1,
+        };
+
         time_since_last_calc_sec
             .try_mul(self.reward_rate)?
-            .try_floor_div(farm_gems_staked)
+            .try_floor_div(divisor)
     }
 
     /// locking ensures that the promised reward cannot be withdrawn/changed by a malicious farm operator

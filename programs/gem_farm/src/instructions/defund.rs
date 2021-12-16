@@ -67,7 +67,11 @@ impl<'info> Defund<'info> {
     }
 }
 
-pub fn handler(ctx: Context<Defund>, desired_amount: u64) -> ProgramResult {
+pub fn handler(
+    ctx: Context<Defund>,
+    desired_amount: u64,
+    new_duration_sec: Option<u64>,
+) -> ProgramResult {
     // update existing rewards
     let farm = &mut ctx.accounts.farm;
     let now_ts = now_ts()?;
@@ -82,6 +86,7 @@ pub fn handler(ctx: Context<Defund>, desired_amount: u64) -> ProgramResult {
         now_ts,
         funder_withdrawable_amount,
         desired_amount,
+        new_duration_sec,
         ctx.accounts.reward_mint.key(),
     )?;
 

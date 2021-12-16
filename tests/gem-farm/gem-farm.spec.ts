@@ -1,13 +1,11 @@
 import * as anchor from '@project-serum/anchor';
-import { GemFarmClient } from './gem-farm.client';
+import { BN } from '@project-serum/anchor';
+import { GemFarmClient, RewardType } from './gem-farm.client';
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import chai, { assert, expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { BN } from '@project-serum/anchor';
-import { ITokenData } from '../utils/account';
-import { prepGem } from '../utils/gem-common';
 import { Token } from '@solana/spl-token';
-import { pause, stringifyPubkeysAndBNsInObject } from '../utils/types';
+import { stringifyPubkeysAndBNsInObject } from '../utils/types';
 
 chai.use(chaiAsPromised);
 
@@ -72,7 +70,9 @@ describe('gem farm', () => {
       farmManager,
       bank,
       rewardA.publicKey,
-      rewardB.publicKey
+      RewardType.Variable,
+      rewardB.publicKey,
+      RewardType.Variable
     );
 
     const farmAcc = await gf.fetchFarmAcc(farm.publicKey);

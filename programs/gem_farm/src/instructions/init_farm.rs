@@ -15,7 +15,7 @@ pub struct InitFarm<'info> {
     #[account(mut, seeds = [farm.key().as_ref()], bump = bump_auth)]
     pub farm_authority: AccountInfo<'info>,
 
-    // todo need ixs to be able to update mints/pots
+    // todo need ixs to be able to update mints/pots/reward type
     // reward a
     #[account(init, seeds = [
             b"reward_pot".as_ref(),
@@ -72,7 +72,12 @@ impl<'info> InitFarm<'info> {
     }
 }
 
-pub fn handler(ctx: Context<InitFarm>, bump_auth: u8) -> ProgramResult {
+pub fn handler(
+    ctx: Context<InitFarm>,
+    bump_auth: u8,
+    reward_type_a: RewardType,
+    reward_type_b: RewardType,
+) -> ProgramResult {
     //record new farm details
     let farm = &mut ctx.accounts.farm;
 
@@ -85,9 +90,11 @@ pub fn handler(ctx: Context<InitFarm>, bump_auth: u8) -> ProgramResult {
 
     farm.reward_a.reward_mint = ctx.accounts.reward_a_mint.key();
     farm.reward_a.reward_pot = ctx.accounts.reward_a_pot.key();
+    farm.reward_a.reward_type = reward_type_a;
 
     farm.reward_b.reward_mint = ctx.accounts.reward_b_mint.key();
     farm.reward_b.reward_pot = ctx.accounts.reward_b_pot.key();
+    farm.reward_b.reward_type = reward_type_b;
 
     // todo worth manually init'ing all the variables at 0s?
 

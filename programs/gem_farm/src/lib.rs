@@ -1,11 +1,12 @@
+use crate::state::RewardType;
 use anchor_lang::prelude::*;
 use instructions::*;
-
-declare_id!("5f8w4vbj1CkUBtiZa5k18AjP4R6Qi63pkruDD5xRZwVT");
 
 pub mod instructions;
 pub mod rewards;
 pub mod state;
+
+declare_id!("5f8w4vbj1CkUBtiZa5k18AjP4R6Qi63pkruDD5xRZwVT");
 
 #[program]
 pub mod gem_farm {
@@ -16,8 +17,10 @@ pub mod gem_farm {
         bump_auth: u8,
         _bump_pot_a: u8,
         _bump_pot_b: u8,
+        reward_type_a: RewardType,
+        reward_type_b: RewardType,
     ) -> ProgramResult {
-        instructions::init_farm::handler(ctx, bump_auth)
+        instructions::init_farm::handler(ctx, bump_auth, reward_type_a, reward_type_b)
     }
 
     pub fn init_farmer(
@@ -61,8 +64,9 @@ pub mod gem_farm {
         _bump_fr: u8,
         _bump_pot: u8,
         desired_amount: u64,
+        new_duration_sec: Option<u64>,
     ) -> ProgramResult {
-        instructions::defund::handler(ctx, desired_amount)
+        instructions::defund::handler(ctx, desired_amount, new_duration_sec)
     }
 
     pub fn lock_funding(ctx: Context<LockFunding>) -> ProgramResult {

@@ -11,6 +11,14 @@ import {
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token';
 
+//acts as an enum
+export const RewardType = {
+  Variable: { variable: {} },
+  Fixed: { fixed: {} },
+};
+
+export type OptionBN = BN | null;
+
 export class GemFarmClient extends GemBankClient {
   farmProgram!: anchor.Program<GemFarm>;
 
@@ -114,7 +122,9 @@ export class GemFarmClient extends GemBankClient {
     payer: PublicKey | Keypair,
     bank: Keypair,
     rewardAMint: PublicKey,
-    rewardBMint: PublicKey
+    rewardAType: any, //RewardType instance
+    rewardBMint: PublicKey,
+    rewardBType: any //RewardType instance
   ) {
     const [farmAuth, farmAuthBump] = await this.findFarmAuthorityPDA(
       farm.publicKey
@@ -136,6 +146,8 @@ export class GemFarmClient extends GemBankClient {
       farmAuthBump,
       rewardAPotBump,
       rewardBPotBump,
+      rewardAType,
+      rewardBType,
       {
         accounts: {
           farm: farm.publicKey,
@@ -362,8 +374,8 @@ export class GemFarmClient extends GemBankClient {
     funder: PublicKey | Keypair,
     amount: BN,
     defund = false,
-    rewardSource?: PublicKey,
-    duration?: BN
+    duration: OptionBN = null,
+    rewardSource?: PublicKey
   ) {
     const funderPk = isKp(funder)
       ? (<Keypair>funder).publicKey
@@ -389,6 +401,7 @@ export class GemFarmClient extends GemBankClient {
         fundingReceiptBump,
         potBump,
         amount,
+        duration,
         {
           accounts: {
             farm,
@@ -459,8 +472,8 @@ export class GemFarmClient extends GemBankClient {
       funder,
       amount,
       false,
-      rewardSource,
-      duration
+      duration,
+      rewardSource
     );
   }
 
@@ -468,9 +481,10 @@ export class GemFarmClient extends GemBankClient {
     farm: PublicKey,
     rewardMint: PublicKey,
     funder: PublicKey | Keypair,
-    amount: BN
+    amount: BN,
+    newDuration: OptionBN = null
   ) {
-    return this.fundCommon(farm, rewardMint, funder, amount, true);
+    return this.fundCommon(farm, rewardMint, funder, amount, true, newDuration);
   }
 
   async lockFunding(
