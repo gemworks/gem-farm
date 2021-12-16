@@ -307,28 +307,40 @@ describe('gem farm', () => {
 
     it('flash deposits a gems', async () => {
       //need at least 1 gem to lock the vault
-      await prepDeposit(new BN(1));
+      const initialDeposit = new BN(1);
+
+      await prepDeposit(initialDeposit);
 
       //stake
       const { farmer, vault } = await gf.stake(farm.publicKey, farmerIdentity);
 
-      // let vaultAcc = await gf.fetchVaultAcc(vault);
-      // assert(vaultAcc.gemCount.eq(new BN(1)));
-      // assert.isTrue(vaultAcc.locked);
+      let vaultAcc = await gf.fetchVaultAcc(vault);
+      assert(vaultAcc.gemCount.eq(initialDeposit));
+      assert.isTrue(vaultAcc.locked);
+
+      let farmAcc = await gf.fetchFarmAcc(farm.publicKey);
+      assert(farmAcc.activeFarmerCount.eq(new BN(1)));
+      assert(farmAcc.gemsStaked.eq(initialDeposit));
+
+      let farmerAcc = await gf.fetchFarmerAcc(farmer);
+      assert(farmerAcc.gemsStaked.eq(initialDeposit));
 
       //flash deposit after vault locked
-      await prepFlashDeposit(new BN(1));
+      const flashDeposit = new BN(1);
+      const totalDeposit = initialDeposit.add(flashDeposit);
 
-      // vaultAcc = await gf.fetchVaultAcc(vault);
-      // assert(vaultAcc.gemCount.eq(new BN(2)));
-      // assert.isTrue(vaultAcc.locked);
+      await prepFlashDeposit(flashDeposit);
 
-      // let farmAcc = await gf.fetchFarmAcc(farm.publicKey);
-      // assert(farmAcc.activeFarmerCount.eq(new BN(1)));
-      // assert(farmAcc.gemsStaked.eq(gemAmount));
-      //
-      // let farmerAcc = await gf.fetchFarmerAcc(farmer);
-      // assert(farmerAcc.gemsStaked.eq(gemAmount));
+      vaultAcc = await gf.fetchVaultAcc(vault);
+      assert(vaultAcc.gemCount.eq(totalDeposit));
+      assert.isTrue(vaultAcc.locked);
+
+      farmAcc = await gf.fetchFarmAcc(farm.publicKey);
+      assert(farmAcc.activeFarmerCount.eq(new BN(1)));
+      assert(farmAcc.gemsStaked.eq(totalDeposit));
+
+      farmerAcc = await gf.fetchFarmerAcc(farmer);
+      assert(farmerAcc.gemsStaked.eq(totalDeposit));
     });
   });
 });

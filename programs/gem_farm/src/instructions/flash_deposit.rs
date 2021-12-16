@@ -89,14 +89,11 @@ pub fn handler(
     bump_gdr: u8,
     amount: u64,
 ) -> ProgramResult {
-    // //todo any checks I might want to do here?
-    // //  eg probably need a "live/paused" feature
-    // //  eg is it okay to start staking when both reward pots are empty?
-    //
-    // if ctx.accounts.vault.gem_count == 0 {
-    //     return Err(ErrorCode::VaultIsEmpty.into());
-    // }
+    //todo any checks I might want to do here?
+    //  eg probably need a "live/paused" feature
+    //  eg is it okay to start staking when both reward pots are empty?
 
+    // flash deposit a gem into a locked vault
     gem_bank::cpi::set_vault_lock(
         ctx.accounts
             .set_lock_vault_ctx()
@@ -118,20 +115,21 @@ pub fn handler(
         true,
     )?;
 
-    // // update accrued rewards BEFORE we increment the stake
-    // let farm = &mut ctx.accounts.farm;
-    // let farmer = &mut ctx.accounts.farmer;
-    // let vault = &ctx.accounts.vault;
-    //
-    // farm.update_rewards_for_all_mints(now_ts()?, Some(farmer))?;
-    //
-    // // update farmer
-    // farmer.gems_staked = vault.gem_count;
-    //
-    // // update farm
-    // farm.active_farmer_count.try_self_add(1)?;
-    // farm.gems_staked.try_self_add(vault.gem_count)?;
-    //
-    // msg!("{} gems staked by {}", farmer.gems_staked, farmer.key());
+    // update accrued rewards BEFORE we increment the stake
+    let farm = &mut ctx.accounts.farm;
+    let farmer = &mut ctx.accounts.farmer;
+    let vault = &ctx.accounts.vault;
+
+    farm.update_rewards_for_all_mints(now_ts()?, Some(farmer))?;
+
+    // update farmer
+    farmer.gems_staked.try_self_add(amount)?;
+
+    // update farm
+    farm.gems_staked.try_self_add(amount)?;
+
+    // todo add locks / cooldowns
+
+    msg!("{} gems flash deposited by {}", amount, farmer.key());
     Ok(())
 }
