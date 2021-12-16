@@ -3,11 +3,9 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token::{self, CloseAccount, Mint, Token, TokenAccount, Transfer},
 };
+use gem_common::{errors::ErrorCode, *};
 
 use crate::state::*;
-
-use gem_common::errors::ErrorCode;
-use gem_common::*;
 
 #[derive(Accounts)]
 #[instruction(bump: u8)]

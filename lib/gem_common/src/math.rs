@@ -1,5 +1,6 @@
-use anchor_lang::prelude::*;
 use std::convert::TryFrom;
+
+use anchor_lang::prelude::*;
 
 use crate::errors::ErrorCode;
 

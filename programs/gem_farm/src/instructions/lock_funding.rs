@@ -1,6 +1,7 @@
-use crate::state::Farm;
 use anchor_lang::prelude::*;
 use anchor_spl::token::Mint;
+
+use crate::state::Farm;
 
 #[derive(Accounts)]
 pub struct LockFunding<'info> {

@@ -1,8 +1,7 @@
-use crate::state::{Farmer, FarmerRewardTracker};
 use anchor_lang::prelude::*;
-use gem_common::errors::ErrorCode;
-use gem_common::*;
-use std::ops::Index;
+use gem_common::{errors::ErrorCode, *};
+
+use crate::state::{Farmer, FarmerRewardTracker};
 
 pub const LATEST_FARM_VERSION: u16 = 0;
 

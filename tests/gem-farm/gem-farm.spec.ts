@@ -21,26 +21,28 @@ describe('gem farm', () => {
 
   // --------------------------------------- state
 
+  //farm + bank
   const bank = Keypair.generate();
-
   const farm = Keypair.generate();
   const farmConfig = <FarmConfig>{
     minStakingPeriodSec: new BN(0),
     cooldownPeriodSec: new BN(0),
   };
   let farmManager: Keypair;
-  let farmerIdentity: Keypair;
 
+  //farmer + vault
+  let farmerIdentity: Keypair;
+  let farmerVault: PublicKey;
+
+  //rewards
   let rewardAmount = new BN(10000);
   let rewardDurationSec = new BN(100);
-
   let rewardA: Token;
   let rewardASource: PublicKey;
   let rewardB: Token;
   let rewardBSource: PublicKey;
 
-  let farmerVault: PublicKey;
-
+  //funder
   let funder = gf.wallet.payer;
 
   function printState() {}

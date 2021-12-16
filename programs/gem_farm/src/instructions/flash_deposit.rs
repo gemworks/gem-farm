@@ -1,12 +1,11 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
-
-use gem_bank::program::GemBank;
-use gem_bank::state::GemDepositReceipt;
 use gem_bank::{
-    self, cpi::accounts::DepositGem, cpi::accounts::SetVaultLock, state::Bank, state::Vault,
+    self,
+    cpi::accounts::{DepositGem, SetVaultLock},
+    program::GemBank,
+    state::{Bank, GemDepositReceipt, Vault},
 };
-use gem_common::errors::ErrorCode;
 use gem_common::*;
 
 use crate::state::*;

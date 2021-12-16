@@ -1,8 +1,7 @@
-use crate::state::Farm;
 use anchor_lang::prelude::*;
-use gem_common::errors::ErrorCode;
-use gem_common::*;
-use std::cell::RefCell;
+use gem_common::{errors::ErrorCode, *};
+
+use crate::state::Farm;
 
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub enum FarmerStatus {

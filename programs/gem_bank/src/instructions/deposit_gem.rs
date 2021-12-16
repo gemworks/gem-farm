@@ -1,10 +1,8 @@
-use std::convert::TryFrom;
 use std::str::FromStr;
 
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
-use gem_common::errors::ErrorCode;
-use gem_common::*;
+use gem_common::{errors::ErrorCode, *};
 use metaplex_token_metadata::state::Metadata;
 
 use crate::state::*;
@@ -90,7 +88,7 @@ fn assert_valid_metadata(
     let (metadata_addr, _bump) = Pubkey::find_program_address(seed, &metadata_program);
     assert_eq!(metadata_addr, gem_metadata.key());
 
-    Metadata::from_account_info(&gem_metadata)
+    Metadata::from_account_info(gem_metadata)
 }
 
 fn assert_valid_whitelist_proof<'info>(
@@ -115,7 +113,7 @@ fn assert_valid_whitelist_proof<'info>(
 
     // 2 no need to verify ownership, deserialization does that for us
     // https://github.com/project-serum/anchor/blob/fcb07eb8c3c9355f3cabc00afa4faa6247ccc960/lang/src/account.rs#L36
-    let proof = Account::<'info, WhitelistProof>::try_from(&whitelist_proof)?;
+    let proof = Account::<'info, WhitelistProof>::try_from(whitelist_proof)?;
 
     // 3 verify whitelist type matches
     proof.contains_type(expected_whitelist_type)

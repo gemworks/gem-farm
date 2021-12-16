@@ -1,6 +1,5 @@
 use anchor_lang::prelude::*;
-use gem_bank::program::GemBank;
-use gem_bank::{self, cpi::accounts::InitVault, state::Bank, state::Vault};
+use gem_bank::{self, cpi::accounts::InitVault, program::GemBank, state::Bank};
 use gem_common::*;
 
 use crate::state::*;

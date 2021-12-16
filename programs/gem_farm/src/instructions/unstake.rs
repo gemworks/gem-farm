@@ -1,7 +1,10 @@
 use anchor_lang::prelude::*;
-
-use gem_bank::program::GemBank;
-use gem_bank::{self, cpi::accounts::SetVaultLock, state::Bank, state::Vault};
+use gem_bank::{
+    self,
+    cpi::accounts::SetVaultLock,
+    program::GemBank,
+    state::{Bank, Vault},
+};
 use gem_common::*;
 
 use crate::state::*;

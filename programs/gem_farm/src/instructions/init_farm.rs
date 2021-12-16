@@ -1,7 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
-use gem_bank::program::GemBank;
-use gem_bank::{self, cpi::accounts::InitBank, state::Bank};
+use gem_bank::{self, cpi::accounts::InitBank, program::GemBank};
 
 use crate::state::*;
 
