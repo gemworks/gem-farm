@@ -12,6 +12,7 @@ pub struct Unstake<'info> {
     // farm
     #[account(mut, has_one = farm_authority)]
     pub farm: Account<'info, Farm>,
+    pub farm_authority: AccountInfo<'info>,
 
     // farmer
     #[account(mut, has_one = farm, has_one = identity,
@@ -30,7 +31,6 @@ pub struct Unstake<'info> {
     pub bank: Account<'info, Bank>,
     #[account(mut, has_one = bank)]
     pub vault: Account<'info, Vault>,
-    pub farm_authority: AccountInfo<'info>,
     pub gem_bank: Program<'info, GemBank>,
 }
 

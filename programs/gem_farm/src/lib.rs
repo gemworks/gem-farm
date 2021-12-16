@@ -81,4 +81,14 @@ pub mod gem_farm {
     ) -> ProgramResult {
         instructions::claim::handler(ctx)
     }
+
+    pub fn flash_deposit(
+        ctx: Context<FlashDeposit>,
+        _bump_farmer: u8,
+        bump_gem_box: u8,
+        bump_gdr: u8,
+        amount: u64,
+    ) -> ProgramResult {
+        instructions::flash_deposit::handler(ctx, bump_gem_box, bump_gdr, amount)
+    }
 }

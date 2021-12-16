@@ -569,4 +569,103 @@ export class GemFarmClient extends GemBankClient {
       txSig,
     };
   }
+
+  async flashDeposit(
+    farm: PublicKey,
+    farmerIdentity: PublicKey | Keypair,
+    vaultOwner: PublicKey | Keypair,
+    gemAmount: BN,
+    gemMint: PublicKey,
+    gemSource: PublicKey,
+    depositor: PublicKey | Keypair,
+    mintProof?: PublicKey,
+    metadata?: PublicKey,
+    creatorProof?: PublicKey
+  ) {
+    const identityPk = isKp(farmerIdentity)
+      ? (<Keypair>farmerIdentity).publicKey
+      : <PublicKey>farmerIdentity;
+
+    const farmAcc = await this.fetchFarmAcc(farm);
+
+    const [farmer, farmerBump] = await this.findFarmerPDA(farm, identityPk);
+    const [vault, vaultBump] = await this.findVaultPDA(
+      farmAcc.bank,
+      identityPk
+    );
+    const [farmAuth, farmAuthBump] = await this.findFarmAuthorityPDA(farm);
+
+    const [gemBox, gemBoxBump] = await this.findGemBoxPDA(vault, gemMint);
+    const [GDR, GDRBump] = await this.findGdrPDA(vault, gemMint);
+    const [vaultAuth, vaultAuthBump] = await this.findVaultAuthorityPDA(vault);
+
+    const remainingAccounts = []; //todo
+    if (mintProof)
+      remainingAccounts.push({
+        pubkey: mintProof,
+        isWritable: false,
+        isSigner: false,
+      });
+    if (metadata)
+      remainingAccounts.push({
+        pubkey: metadata,
+        isWritable: false,
+        isSigner: false,
+      });
+    if (creatorProof)
+      remainingAccounts.push({
+        pubkey: creatorProof,
+        isWritable: false,
+        isSigner: false,
+      });
+
+    const signers = [];
+    if (isKp(farmerIdentity)) signers.push(<Keypair>farmerIdentity);
+    if (isKp(vaultOwner)) signers.push(<Keypair>vaultOwner);
+    if (isKp(depositor)) signers.push(<Keypair>depositor);
+
+    console.log('flash depositing on behalf of', identityPk.toBase58());
+    const txSig = await this.farmProgram.rpc.flashDeposit(
+      farmerBump,
+      gemBoxBump,
+      GDRBump,
+      gemAmount,
+      {
+        accounts: {
+          farm,
+          farmAuthority: farmAuth,
+          farmer,
+          identity: identityPk,
+          bank: farmAcc.bank,
+          vault,
+          vaultAuthority: vaultAuth,
+          gemBox,
+          gemDepositReceipt: GDR,
+          gemSource,
+          gemMint,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+          gemBank: this.bankProgram.programId,
+        },
+        signers,
+      }
+    );
+
+    return {
+      farmer,
+      farmerBump,
+      vault,
+      vaultBump,
+      farmAuth,
+      farmAuthBump,
+      gemBox,
+      gemBoxBump,
+      GDR,
+      GDRBump,
+      vaultAuth,
+      vaultAuthBump,
+      txSig,
+    };
+  }
 }

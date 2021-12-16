@@ -17,9 +17,12 @@ pub struct DepositGem<'info> {
 
     // vault
     #[account(mut, has_one = bank, has_one = owner, has_one = authority)]
-    pub vault: Account<'info, Vault>,
+    pub vault: Box<Account<'info, Vault>>,
+    // todo does it make sense for both the owner and the depositor to sign? aren't they the same?
     pub owner: Signer<'info>,
     pub authority: AccountInfo<'info>,
+
+    // gem
     #[account(init_if_needed, seeds = [
             b"gem_box".as_ref(),
             vault.key().as_ref(),
@@ -29,7 +32,6 @@ pub struct DepositGem<'info> {
         token::mint = gem_mint,
         token::authority = authority,
         payer = depositor)]
-    // gem
     pub gem_box: Box<Account<'info, TokenAccount>>,
     #[account(init_if_needed, seeds = [
             b"gem_deposit_receipt".as_ref(),

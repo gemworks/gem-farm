@@ -13,6 +13,7 @@ pub struct Stake<'info> {
     // farm
     #[account(mut, has_one = farm_authority)]
     pub farm: Account<'info, Farm>,
+    pub farm_authority: AccountInfo<'info>,
 
     // farmer
     #[account(mut, has_one = farm, has_one = identity,
@@ -27,11 +28,11 @@ pub struct Stake<'info> {
     pub identity: Signer<'info>,
 
     // cpi
+    // todo I don't think I need to re-do these checks here do I?
     #[account(constraint = bank.bank_manager == farm_authority.key())]
     pub bank: Account<'info, Bank>,
     #[account(mut, has_one = bank)]
     pub vault: Account<'info, Vault>,
-    pub farm_authority: AccountInfo<'info>,
     pub gem_bank: Program<'info, GemBank>,
 }
 

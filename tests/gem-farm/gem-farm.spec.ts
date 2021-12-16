@@ -185,31 +185,31 @@ describe('gem farm', () => {
     // await printStructs();
   });
 
-  it('defunds the farm', async () => {
-    const defundAmount = new BN(100);
-
-    const { pot, fundingReceipt } = await prepDefunding(defundAmount);
-
-    const rewardsPotAcc = await gf.fetchRewardAcc(rewardA.publicKey, pot);
-    assert(rewardsPotAcc.amount.eq(rewardAmount.sub(defundAmount)));
-
-    const frAcc = await gf.fetchFundingReceiptAcc(fundingReceipt);
-    assert(frAcc.totalWithdrawnAmount.eq(defundAmount));
-    assert(frAcc.withdrawalCount.eq(new BN(1)));
-
-    // console.log('// --------------------------------------- FARM DEFUNDED');
-    // await printStructs();
-  });
-
-  it('locks rewards in place', async () => {
-    const defundAmount = new BN(100);
-
-    await gf.lockFunding(farm.publicKey, farmManager, rewardA.publicKey);
-
-    //once locked, no more funding or defunding is possible
-    await expect(prepFunding()).to.be.rejectedWith('0x155');
-    await expect(prepDefunding(defundAmount)).to.be.rejectedWith('0x155');
-  });
+  // it('defunds the farm', async () => {
+  //   const defundAmount = new BN(100);
+  //
+  //   const { pot, fundingReceipt } = await prepDefunding(defundAmount);
+  //
+  //   const rewardsPotAcc = await gf.fetchRewardAcc(rewardA.publicKey, pot);
+  //   assert(rewardsPotAcc.amount.eq(rewardAmount.sub(defundAmount)));
+  //
+  //   const frAcc = await gf.fetchFundingReceiptAcc(fundingReceipt);
+  //   assert(frAcc.totalWithdrawnAmount.eq(defundAmount));
+  //   assert(frAcc.withdrawalCount.eq(new BN(1)));
+  //
+  //   // console.log('// --------------------------------------- FARM DEFUNDED');
+  //   // await printStructs();
+  // });
+  //
+  // it('locks rewards in place', async () => {
+  //   const defundAmount = new BN(100);
+  //
+  //   await gf.lockFunding(farm.publicKey, farmManager, rewardA.publicKey);
+  //
+  //   //once locked, no more funding or defunding is possible
+  //   await expect(prepFunding()).to.be.rejectedWith('0x155');
+  //   await expect(prepDefunding(defundAmount)).to.be.rejectedWith('0x155');
+  // });
 
   // --------------------------------------- stake & claim
 
@@ -218,7 +218,7 @@ describe('gem farm', () => {
     let gemOwner: Keypair;
     let gem: ITokenData;
 
-    async function prepDeposit() {
+    async function prepDeposit(gemAmount: BN) {
       await gf.depositGem(
         bank.publicKey,
         farmerVault,
@@ -230,67 +230,105 @@ describe('gem farm', () => {
       );
     }
 
+    async function prepFlashDeposit(gemAmount: BN) {
+      await gf.flashDeposit(
+        farm.publicKey,
+        farmerIdentity,
+        gemOwner,
+        gemAmount,
+        gem.tokenMint,
+        gem.tokenAcc,
+        gemOwner
+      );
+    }
+
     beforeEach('creates a fresh gem', async () => {
       ({ gemAmount, gemOwner, gem } = await prepGem(gf, farmerIdentity));
     });
 
-    it('stakes / unstakes gems', async () => {
-      //deposit some gems into the vault
-      await prepDeposit();
+    // it('stakes / unstakes gems', async () => {
+    //   //deposit some gems into the vault
+    //   await prepDeposit();
+    //
+    //   //stake
+    //   const { farmer, vault } = await gf.stake(farm.publicKey, farmerIdentity);
+    //
+    //   let farmAcc = await gf.fetchFarmAcc(farm.publicKey);
+    //   assert(farmAcc.activeFarmerCount.eq(new BN(1)));
+    //   assert(farmAcc.gemsStaked.eq(gemAmount));
+    //
+    //   let vaultAcc = await gf.fetchVaultAcc(vault);
+    //   assert.isTrue(vaultAcc.locked);
+    //
+    //   let farmerAcc = await gf.fetchFarmerAcc(farmer);
+    //   assert(farmerAcc.gemsStaked.eq(gemAmount));
+    //
+    //   // console.log('// --------------------------------------- STAKED');
+    //   // await printStructs();
+    //
+    //   //wait for a couple seconds, to accrue some rewards
+    //   await pause(2000);
+    //
+    //   //unstake
+    //   await gf.unstake(farm.publicKey, farmerIdentity);
+    //
+    //   farmAcc = await gf.fetchFarmAcc(farm.publicKey);
+    //   assert(farmAcc.activeFarmerCount.eq(new BN(0)));
+    //   assert(farmAcc.gemsStaked.eq(new BN(0)));
+    //
+    //   vaultAcc = await gf.fetchVaultAcc(vault);
+    //   assert.isFalse(vaultAcc.locked);
+    //
+    //   farmerAcc = await gf.fetchFarmerAcc(farmer);
+    //   assert(farmerAcc.gemsStaked.eq(new BN(0)));
+    //
+    //   // console.log('// --------------------------------------- UNSTAKED');
+    //   // await printStructs();
+    // });
+    //
+    // it('claims rewards', async () => {
+    //   const { rewardADestination } = await gf.claim(
+    //     farm.publicKey,
+    //     farmerIdentity,
+    //     rewardA.publicKey,
+    //     rewardB.publicKey
+    //   );
+    //
+    //   const rewardADestAcc = await gf.fetchRewardAcc(
+    //     rewardA.publicKey,
+    //     rewardADestination
+    //   );
+    //
+    //   // console.log('// --------------------------------------- CLAIMED');
+    //   // await printStructs();
+    //
+    //   assert(rewardADestAcc.amount.toNumber() > 0);
+    // });
+
+    it('flash deposits a gems', async () => {
+      //need at least 1 gem to lock the vault
+      await prepDeposit(new BN(1));
 
       //stake
       const { farmer, vault } = await gf.stake(farm.publicKey, farmerIdentity);
 
-      let farmAcc = await gf.fetchFarmAcc(farm.publicKey);
-      assert(farmAcc.activeFarmerCount.eq(new BN(1)));
-      assert(farmAcc.gemsStaked.eq(gemAmount));
+      // let vaultAcc = await gf.fetchVaultAcc(vault);
+      // assert(vaultAcc.gemCount.eq(new BN(1)));
+      // assert.isTrue(vaultAcc.locked);
 
-      let vaultAcc = await gf.fetchVaultAcc(vault);
-      assert.isTrue(vaultAcc.locked);
+      //flash deposit after vault locked
+      await prepFlashDeposit(new BN(1));
 
-      let farmerAcc = await gf.fetchFarmerAcc(farmer);
-      assert(farmerAcc.gemsStaked.eq(gemAmount));
+      // vaultAcc = await gf.fetchVaultAcc(vault);
+      // assert(vaultAcc.gemCount.eq(new BN(2)));
+      // assert.isTrue(vaultAcc.locked);
 
-      // console.log('// --------------------------------------- STAKED');
-      // await printStructs();
-
-      //wait for a couple seconds, to accrue some rewards
-      await pause(2000);
-
-      //unstake
-      await gf.unstake(farm.publicKey, farmerIdentity);
-
-      farmAcc = await gf.fetchFarmAcc(farm.publicKey);
-      assert(farmAcc.activeFarmerCount.eq(new BN(0)));
-      assert(farmAcc.gemsStaked.eq(new BN(0)));
-
-      vaultAcc = await gf.fetchVaultAcc(vault);
-      assert.isFalse(vaultAcc.locked);
-
-      farmerAcc = await gf.fetchFarmerAcc(farmer);
-      assert(farmerAcc.gemsStaked.eq(new BN(0)));
-
-      // console.log('// --------------------------------------- UNSTAKED');
-      // await printStructs();
-    });
-
-    it('claims rewards', async () => {
-      const { rewardADestination } = await gf.claim(
-        farm.publicKey,
-        farmerIdentity,
-        rewardA.publicKey,
-        rewardB.publicKey
-      );
-
-      const rewardADestAcc = await gf.fetchRewardAcc(
-        rewardA.publicKey,
-        rewardADestination
-      );
-
-      // console.log('// --------------------------------------- CLAIMED');
-      // await printStructs();
-
-      assert(rewardADestAcc.amount.toNumber() > 0);
+      // let farmAcc = await gf.fetchFarmAcc(farm.publicKey);
+      // assert(farmAcc.activeFarmerCount.eq(new BN(1)));
+      // assert(farmAcc.gemsStaked.eq(gemAmount));
+      //
+      // let farmerAcc = await gf.fetchFarmerAcc(farmer);
+      // assert(farmerAcc.gemsStaked.eq(gemAmount));
     });
   });
 });
