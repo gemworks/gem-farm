@@ -32,7 +32,7 @@ pub struct Fund<'info> {
         bump = bump_fr,
         payer = authorized_funder,
         space = 8 + std::mem::size_of::<FundingReceipt>())]
-    pub funding_receipt: Account<'info, FundingReceipt>,
+    pub funding_receipt: Box<Account<'info, FundingReceipt>>,
 
     // reward
     #[account(mut, seeds = [

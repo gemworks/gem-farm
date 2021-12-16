@@ -116,12 +116,16 @@ describe('gem farm', () => {
   async function prepFunding() {
     return gf.fund(
       farm.publicKey,
-      rewardASource,
       rewardA.publicKey,
+      rewardASource,
       funder,
       rewardAmount,
       rewardDurationSec
     );
+  }
+
+  async function prepDefunding(amount: BN) {
+    return gf.defund(farm.publicKey, rewardA.publicKey, funder, amount);
   }
 
   it('authorizes funder', async () => {
@@ -161,18 +165,37 @@ describe('gem farm', () => {
     // need to authorize again
     await prepAuthorization();
 
-    const { pot } = await prepFunding();
+    const { pot, fundingReceipt } = await prepFunding();
 
     const farmAcc = await gf.fetchFarmAcc(farm.publicKey);
     // @ts-ignore
     assert(farmAcc.rewardA.rewardDurationSec.eq(rewardDurationSec));
-    // @ts-ignore
-    assert(farmAcc.rewardA.totalDepositedAmount.eq(rewardAmount));
 
-    const rewardsAcc = await gf.fetchRewardAcc(rewardA.publicKey, pot);
-    assert(rewardsAcc.amount.eq(rewardAmount));
+    const rewardsPotAcc = await gf.fetchRewardAcc(rewardA.publicKey, pot);
+    assert(rewardsPotAcc.amount.eq(rewardAmount));
+
+    const frAcc = await gf.fetchFundingReceiptAcc(fundingReceipt);
+    assert.equal(frAcc.funder.toBase58(), funder.publicKey.toBase58());
+    assert(frAcc.totalDepositedAmount.eq(rewardAmount));
+    assert(frAcc.depositCount.eq(new BN(1)));
 
     // console.log('// --------------------------------------- FARM FUNDED');
+    // await printStructs();
+  });
+
+  it('defunds the farm', async () => {
+    const defundAmount = new BN(100);
+
+    const { pot, fundingReceipt } = await prepDefunding(defundAmount);
+
+    const rewardsPotAcc = await gf.fetchRewardAcc(rewardA.publicKey, pot);
+    assert(rewardsPotAcc.amount.eq(rewardAmount.sub(defundAmount)));
+
+    const frAcc = await gf.fetchFundingReceiptAcc(fundingReceipt);
+    assert(frAcc.totalWithdrawnAmount.eq(defundAmount));
+    assert(frAcc.withdrawalCount.eq(new BN(1)));
+
+    // console.log('// --------------------------------------- FARM DEFUNDED');
     // await printStructs();
   });
 

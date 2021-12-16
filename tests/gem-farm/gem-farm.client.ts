@@ -61,6 +61,10 @@ export class GemFarmClient extends GemBankClient {
     return this.deserializeTokenAccount(rewardMint, rewardAcc);
   }
 
+  async fetchFundingReceiptAcc(fundingReceipt: PublicKey) {
+    return this.farmProgram.account.fundingReceipt.fetch(fundingReceipt);
+  }
+
   // --------------------------------------- find PDA addresses
 
   async findFarmerPDA(farm: PublicKey, identity: PublicKey) {
@@ -88,6 +92,14 @@ export class GemFarmClient extends GemBankClient {
       'reward_pot',
       farm,
       rewardMint,
+    ]);
+  }
+
+  async findFundingReceiptPDA(funder: PublicKey, mint: PublicKey) {
+    return this.findProgramAddress(this.farmProgram.programId, [
+      'funding_receipt',
+      funder,
+      mint,
     ]);
   }
 
@@ -208,7 +220,7 @@ export class GemFarmClient extends GemBankClient {
   async stakeCommon(
     farm: PublicKey,
     farmerIdentity: PublicKey | Keypair,
-    unstake: boolean
+    unstake = false
   ) {
     const identityPk = isKp(farmerIdentity)
       ? (<Keypair>farmerIdentity).publicKey
@@ -228,7 +240,7 @@ export class GemFarmClient extends GemBankClient {
 
     let txSig;
     if (unstake) {
-      console.log('unstaking gems for', identityPk.toBase58());
+      console.log('UNstaking gems for', identityPk.toBase58());
       txSig = await this.farmProgram.rpc.unstake(farmerBump, {
         accounts: {
           farm,
@@ -276,35 +288,64 @@ export class GemFarmClient extends GemBankClient {
     return this.stakeCommon(farm, farmerIdentity, true);
   }
 
+  async authorizeCommon(
+    farm: PublicKey,
+    farmManager: PublicKey | Keypair,
+    funder: PublicKey,
+    deauthorize = false
+  ) {
+    const [authorizationProof, authorizationProofBump] =
+      await this.findAuthorizationProofPDA(farm, funder);
+
+    const signers = [];
+    if (isKp(farmManager)) signers.push(<Keypair>farmManager);
+
+    let txSig;
+    if (deauthorize) {
+      console.log('DEauthorizing funder', funder.toBase58());
+      txSig = await this.farmProgram.rpc.deauthorizeFunder(
+        authorizationProofBump,
+        {
+          accounts: {
+            farm,
+            farmManager: isKp(farmManager)
+              ? (<Keypair>farmManager).publicKey
+              : farmManager,
+            funderToDeauthorize: funder,
+            authorizationProof,
+            systemProgram: SystemProgram.programId,
+          },
+          signers,
+        }
+      );
+    } else {
+      console.log('authorizing funder', funder.toBase58());
+      txSig = await this.farmProgram.rpc.authorizeFunder(
+        authorizationProofBump,
+        {
+          accounts: {
+            farm,
+            farmManager: isKp(farmManager)
+              ? (<Keypair>farmManager).publicKey
+              : farmManager,
+            funderToAuthorize: funder,
+            authorizationProof,
+            systemProgram: SystemProgram.programId,
+          },
+          signers,
+        }
+      );
+    }
+
+    return { authorizationProof, authorizationProofBump, txSig };
+  }
+
   async authorizeFunder(
     farm: PublicKey,
     farmManager: PublicKey | Keypair,
     funderToAuthorize: PublicKey
   ) {
-    const [authorizationProof, authorizationProofBump] =
-      await this.findAuthorizationProofPDA(farm, funderToAuthorize);
-
-    const signers = [];
-    if (isKp(farmManager)) signers.push(<Keypair>farmManager);
-
-    console.log('authorizing funder', funderToAuthorize.toBase58());
-    const txSig = await this.farmProgram.rpc.authorizeFunder(
-      authorizationProofBump,
-      {
-        accounts: {
-          farm,
-          farmManager: isKp(farmManager)
-            ? (<Keypair>farmManager).publicKey
-            : farmManager,
-          funderToAuthorize,
-          authorizationProof,
-          systemProgram: SystemProgram.programId,
-        },
-        signers,
-      }
-    );
-
-    return { authorizationProof, authorizationProofBump, txSig };
+    return this.authorizeCommon(farm, farmManager, funderToAuthorize, false);
   }
 
   async deauthorizeFunder(
@@ -312,39 +353,17 @@ export class GemFarmClient extends GemBankClient {
     farmManager: PublicKey | Keypair,
     funderToDeauthorize: PublicKey
   ) {
-    const [authorizationProof, authorizationProofBump] =
-      await this.findAuthorizationProofPDA(farm, funderToDeauthorize);
-
-    const signers = [];
-    if (isKp(farmManager)) signers.push(<Keypair>farmManager);
-
-    console.log('DEauthorizing funder', funderToDeauthorize.toBase58());
-    const txSig = await this.farmProgram.rpc.deauthorizeFunder(
-      authorizationProofBump,
-      {
-        accounts: {
-          farm,
-          farmManager: isKp(farmManager)
-            ? (<Keypair>farmManager).publicKey
-            : farmManager,
-          funderToDeauthorize,
-          authorizationProof,
-          systemProgram: SystemProgram.programId,
-        },
-        signers,
-      }
-    );
-
-    return { authorizationProof, authorizationProofBump, txSig };
+    return this.authorizeCommon(farm, farmManager, funderToDeauthorize, true);
   }
 
-  async fund(
+  async fundCommon(
     farm: PublicKey,
-    rewardSource: PublicKey,
     rewardMint: PublicKey,
     funder: PublicKey | Keypair,
     amount: BN,
-    duration: BN
+    defund = false,
+    rewardSource?: PublicKey,
+    duration?: BN
   ) {
     const funderPk = isKp(funder)
       ? (<Keypair>funder).publicKey
@@ -354,31 +373,65 @@ export class GemFarmClient extends GemBankClient {
     const [authorizationProof, authorizationProofBump] =
       await this.findAuthorizationProofPDA(farm, funderPk);
     const [pot, potBump] = await this.findRewardsPotPDA(farm, rewardMint);
+    const [fundingReceipt, fundingReceiptBump] =
+      await this.findFundingReceiptPDA(funderPk, rewardMint);
+
+    const rewardDestination = await this.findATA(rewardMint, funderPk);
 
     const signers = [];
     if (isKp(funder)) signers.push(<Keypair>funder);
 
-    console.log('funding reward pot', pot.toBase58());
-    const txSig = await this.farmProgram.rpc.fund(
-      authorizationProofBump,
-      potBump,
-      amount,
-      duration,
-      {
-        accounts: {
-          farm,
-          farmAuthority: farmAuth,
-          authorizationProof,
-          rewardPot: pot,
-          rewardSource,
-          rewardMint,
-          authorizedFunder: funderPk,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          systemProgram: SystemProgram.programId,
-        },
-        signers,
-      }
-    );
+    let txSig;
+    if (defund) {
+      console.log('DEfunding reward pot', pot.toBase58());
+      txSig = await this.farmProgram.rpc.defund(
+        authorizationProofBump,
+        fundingReceiptBump,
+        potBump,
+        amount,
+        {
+          accounts: {
+            farm,
+            farmAuthority: farmAuth,
+            authorizationProof,
+            fundingReceipt,
+            rewardPot: pot,
+            rewardDestination,
+            rewardMint,
+            authorizedFunder: funderPk,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+            systemProgram: SystemProgram.programId,
+            rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+          },
+          signers,
+        }
+      );
+    } else {
+      console.log('funding reward pot', pot.toBase58());
+      txSig = await this.farmProgram.rpc.fund(
+        authorizationProofBump,
+        fundingReceiptBump,
+        potBump,
+        amount,
+        duration!,
+        {
+          accounts: {
+            farm,
+            farmAuthority: farmAuth,
+            authorizationProof,
+            fundingReceipt,
+            rewardPot: pot,
+            rewardSource: rewardSource!,
+            rewardMint,
+            authorizedFunder: funderPk,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            systemProgram: SystemProgram.programId,
+          },
+          signers,
+        }
+      );
+    }
 
     return {
       farmAuth,
@@ -387,8 +440,38 @@ export class GemFarmClient extends GemBankClient {
       authorizationProofBump,
       pot,
       potBump,
+      fundingReceipt,
+      fundingReceiptBump,
       txSig,
     };
+  }
+
+  async fund(
+    farm: PublicKey,
+    rewardMint: PublicKey,
+    rewardSource: PublicKey,
+    funder: PublicKey | Keypair,
+    amount: BN,
+    duration: BN
+  ) {
+    return this.fundCommon(
+      farm,
+      rewardMint,
+      funder,
+      amount,
+      false,
+      rewardSource,
+      duration
+    );
+  }
+
+  async defund(
+    farm: PublicKey,
+    rewardMint: PublicKey,
+    funder: PublicKey | Keypair,
+    amount: BN
+  ) {
+    return this.fundCommon(farm, rewardMint, funder, amount, true);
   }
 
   async claim(

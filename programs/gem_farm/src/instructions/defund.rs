@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
 use crate::rewards::update_accrued_rewards;
@@ -30,7 +31,7 @@ pub struct Defund<'info> {
             reward_mint.key().as_ref(),
         ],
         bump = bump_fr)]
-    pub funding_receipt: Account<'info, FundingReceipt>,
+    pub funding_receipt: Box<Account<'info, FundingReceipt>>,
 
     // reward
     #[account(mut, seeds = [
@@ -40,13 +41,18 @@ pub struct Defund<'info> {
         ],
         bump = bump_pot)]
     pub reward_pot: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
+    #[account(init_if_needed,
+        associated_token::mint = reward_mint,
+        associated_token::authority = authorized_funder,
+        payer = authorized_funder)]
     pub reward_destination: Box<Account<'info, TokenAccount>>,
     pub reward_mint: Box<Account<'info, Mint>>,
 
     // misc
     pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
+    pub rent: Sysvar<'info, Rent>,
 }
 
 impl<'info> Defund<'info> {
