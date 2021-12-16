@@ -1,7 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
-use crate::rewards::update_accrued_rewards;
 use gem_common::*;
 
 use crate::state::*;
@@ -70,17 +69,17 @@ pub fn handler(ctx: Context<Fund>, amount: u64, duration_sec: u64) -> ProgramRes
     // update existing rewards + post new ones
     let farm = &mut ctx.accounts.farm;
 
-    update_accrued_rewards(farm, None)?;
+    farm.update_rewards_for_all_mints(now_ts, None)?;
 
     farm.fund_reward_by_mint(now_ts, amount, duration_sec, ctx.accounts.reward_mint.key())?;
 
-    // create/update fr
-    let fr = &mut ctx.accounts.funding_receipt;
-    fr.funder = ctx.accounts.authorized_funder.key();
-    fr.reward_mint = ctx.accounts.reward_mint.key();
-    fr.total_deposited_amount.try_self_add(amount);
-    fr.deposit_count.try_self_add(1);
-    fr.last_deposit_ts = now_ts;
+    // create/update funding receipt
+    let receipt = &mut ctx.accounts.funding_receipt;
+    receipt.funder = ctx.accounts.authorized_funder.key();
+    receipt.reward_mint = ctx.accounts.reward_mint.key();
+    receipt.total_deposited_amount.try_self_add(amount);
+    receipt.deposit_count.try_self_add(1);
+    receipt.last_deposit_ts = now_ts;
 
     // do the transfer
     token::transfer(

@@ -5,7 +5,6 @@ use gem_bank::{self, cpi::accounts::SetVaultLock, state::Bank, state::Vault};
 use gem_common::errors::ErrorCode;
 use gem_common::*;
 
-use crate::rewards::update_accrued_rewards;
 use crate::state::*;
 
 #[derive(Accounts)]
@@ -71,7 +70,7 @@ pub fn handler(ctx: Context<Stake>) -> ProgramResult {
     let farmer = &mut ctx.accounts.farmer;
     let vault = &ctx.accounts.vault;
 
-    update_accrued_rewards(farm, Some(farmer))?;
+    farm.update_rewards_for_all_mints(now_ts()?, Some(farmer))?;
 
     // update farmer
     farmer.gems_staked = vault.gem_count;

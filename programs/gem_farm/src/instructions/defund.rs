@@ -2,7 +2,6 @@ use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
-use crate::rewards::update_accrued_rewards;
 use gem_common::*;
 
 use crate::state::*;
@@ -73,11 +72,12 @@ pub fn handler(ctx: Context<Defund>, desired_amount: u64) -> ProgramResult {
 
     // update existing rewards
     let farm = &mut ctx.accounts.farm;
-    let receipt = &ctx.accounts.funding_receipt;
 
-    update_accrued_rewards(farm, None)?;
+    farm.update_rewards_for_all_mints(now_ts, None)?;
 
     // calculate defund amount & update rate
+    let receipt = &mut ctx.accounts.funding_receipt;
+
     let funder_withdrawable_amount = receipt.funder_withdrawable_amount()?;
     let to_defund = farm.defund_reward_by_mint(
         now_ts,
@@ -86,11 +86,10 @@ pub fn handler(ctx: Context<Defund>, desired_amount: u64) -> ProgramResult {
         ctx.accounts.reward_mint.key(),
     )?;
 
-    // update fr
-    let fr = &mut ctx.accounts.funding_receipt;
-    fr.total_withdrawn_amount.try_self_add(to_defund)?;
-    fr.withdrawal_count.try_self_add(1)?;
-    fr.last_withdrawal_ts = now_ts;
+    // update funding receipt
+    receipt.total_withdrawn_amount.try_self_add(to_defund)?;
+    receipt.withdrawal_count.try_self_add(1)?;
+    receipt.last_withdrawal_ts = now_ts;
 
     // do the transfer
     token::transfer(

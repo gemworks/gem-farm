@@ -6,7 +6,6 @@ use anchor_spl::{
 
 use crate::state::*;
 
-use crate::rewards::update_accrued_rewards;
 use gem_common::errors::ErrorCode;
 use gem_common::*;
 
@@ -96,7 +95,7 @@ pub fn handler(ctx: Context<Claim>) -> ProgramResult {
     let farm = &mut ctx.accounts.farm;
     let farmer = &mut ctx.accounts.farmer;
 
-    update_accrued_rewards(farm, Some(farmer))?;
+    farm.update_rewards_for_all_mints(now_ts()?, Some(farmer))?;
 
     // calculate claimed amounts (capped at what's available in the pot)
     let to_claim_a = farmer

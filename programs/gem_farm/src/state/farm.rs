@@ -1,3 +1,4 @@
+use crate::state::{Farmer, FarmerRewardTracker};
 use anchor_lang::prelude::*;
 use gem_common::errors::ErrorCode;
 use gem_common::*;
@@ -98,6 +99,44 @@ impl Farm {
 
         Ok(to_defund)
     }
+
+    pub fn update_rewards_for_all_mints(
+        &mut self,
+        now_ts: u64,
+        mut farmer: Option<&mut Account<Farmer>>,
+    ) -> ProgramResult {
+        // reward a
+        let (farmer_gems_staked, farmer_reward_a) = match farmer {
+            Some(ref mut farmer) => (Some(farmer.gems_staked), Some(&mut farmer.reward_a)),
+            None => (None, None),
+        };
+
+        self.reward_a.update_accrued_reward(
+            now_ts,
+            self.rewards_last_updated_ts,
+            self.gems_staked,
+            farmer_gems_staked,
+            farmer_reward_a,
+        )?;
+
+        // reward b
+        let farmer_reward_b = match farmer {
+            Some(ref mut farmer) => Some(&mut farmer.reward_b),
+            None => None,
+        };
+
+        self.reward_b.update_accrued_reward(
+            now_ts,
+            self.rewards_last_updated_ts,
+            self.gems_staked,
+            farmer_gems_staked,
+            farmer_reward_b,
+        )?;
+
+        self.rewards_last_updated_ts = now_ts;
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
@@ -182,4 +221,67 @@ impl FarmRewardTracker {
 
         Ok(to_defund)
     }
+
+    fn update_accrued_reward(
+        &mut self,
+        now_ts: u64,
+        rewards_last_updated_ts: u64,
+        farm_gems_staked: u64,
+        farmer_gems_staked: Option<u64>,
+        farmer_reward: Option<&mut FarmerRewardTracker>,
+    ) -> ProgramResult {
+        let reward_upper_bound_ts = self.calc_reward_upper_bound(now_ts);
+
+        let newly_accrued_reward_per_gem = self.calc_newly_accrued_reward(
+            farm_gems_staked,
+            reward_upper_bound_ts,
+            rewards_last_updated_ts,
+        )?;
+
+        // update farm
+        self.accrued_reward_per_gem
+            .try_self_add(newly_accrued_reward_per_gem)?;
+
+        // update farmer too, if one has been passed
+        if let Some(farmer_reward) = farmer_reward {
+            let newly_accrued_reward_per_farmer =
+                newly_accrued_reward_per_gem.try_mul(farmer_gems_staked.unwrap())?;
+
+            farmer_reward
+                .accrued_reward
+                .try_self_add(newly_accrued_reward_per_farmer)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn calc_newly_accrued_reward(
+        &self,
+        farm_gems_staked: u64,
+        reward_upper_bound_ts: u64,
+        rewards_last_updated_ts: u64,
+    ) -> Result<u64, ProgramError> {
+        // if no gems staked, return existing accrued reward
+        if farm_gems_staked == 0 {
+            return Ok(self.accrued_reward_per_gem);
+        }
+
+        // if no time has passed, return existing accrued reward
+        if reward_upper_bound_ts <= rewards_last_updated_ts {
+            return Ok(self.accrued_reward_per_gem);
+        }
+
+        let time_since_last_calc_sec = reward_upper_bound_ts.try_sub(rewards_last_updated_ts)?;
+
+        time_since_last_calc_sec
+            .try_mul(self.reward_rate)?
+            .try_floor_div(farm_gems_staked)
+    }
+
+    fn calc_reward_upper_bound(&self, now_ts: u64) -> u64 {
+        std::cmp::min(self.reward_end_ts, now_ts)
+    }
 }
+
+// todo factor in precision later
+const PRECISION: u128 = u64::MAX as u128;
