@@ -50,6 +50,10 @@ pub struct DepositGem<'info> {
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
+    // remaining accounts could be passed, in this order:
+    // - mint_whitelist_proof
+    // - gem_metadata <- if we got to this point we can assume gem = NFT, not a fungible token
+    // - creator_whitelist_proof
 }
 
 impl<'info> DepositGem<'info> {
