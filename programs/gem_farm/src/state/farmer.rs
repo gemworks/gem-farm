@@ -115,11 +115,11 @@ impl Farmer {
     }
 
     pub fn can_end_staking(&self) -> Result<bool, ProgramError> {
-        Ok(now_ts()? > self.min_staking_ends_ts)
+        Ok(now_ts()? >= self.min_staking_ends_ts)
     }
 
     pub fn can_end_cooldown(&self) -> Result<bool, ProgramError> {
-        Ok(now_ts()? > self.cooldown_ends_ts)
+        Ok(now_ts()? >= self.cooldown_ends_ts)
     }
 
     pub fn try_unstake(&mut self, farm: &mut Account<Farm>) -> ProgramResult {
