@@ -1,7 +1,7 @@
 pub mod functions;
-pub mod math2;
 pub mod number;
+pub mod try_math;
 
 pub use functions::*;
-pub use math2::*;
 pub use number::*;
+pub use try_math::*;

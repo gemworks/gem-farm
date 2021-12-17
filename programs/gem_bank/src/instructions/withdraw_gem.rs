@@ -92,7 +92,7 @@ pub fn handler(ctx: Context<WithdrawGem>, amount: u64) -> ProgramResult {
     let gdr = &mut *ctx.accounts.gem_deposit_receipt;
     let gem_box = &ctx.accounts.gem_box;
 
-    gdr.gem_count.try_self_sub(amount)?;
+    gdr.gem_count.try_sub_assign(amount)?;
 
     // this check is semi-useless but won't hurt
     if gdr.gem_count != gem_box.amount - amount {
@@ -116,12 +116,12 @@ pub fn handler(ctx: Context<WithdrawGem>, amount: u64) -> ProgramResult {
 
         // decrement gem box count stored in vault's state
         let vault = &mut ctx.accounts.vault;
-        vault.gem_box_count.try_self_sub(1)?;
+        vault.gem_box_count.try_sub_assign(1)?;
     }
 
     // decrement gem count as well
     let vault = &mut ctx.accounts.vault;
-    vault.gem_count.try_self_sub(amount)?;
+    vault.gem_count.try_sub_assign(amount)?;
 
     msg!("{} gems withdrawn from ${} gem box", amount, gem_box.key());
     Ok(())

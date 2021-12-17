@@ -92,8 +92,8 @@ pub fn handler(
     )?;
 
     // update funding receipt
-    receipt.total_withdrawn_amount.try_self_add(to_defund)?;
-    receipt.withdrawal_count.try_self_add(1)?;
+    receipt.total_withdrawn_amount.try_add_assign(to_defund)?;
+    receipt.withdrawal_count.try_add_assign(1)?;
     receipt.last_withdrawal_ts = now_ts;
 
     // do the transfer

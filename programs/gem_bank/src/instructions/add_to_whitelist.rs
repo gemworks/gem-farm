@@ -43,10 +43,10 @@ pub fn handler(ctx: Context<AddToWhitelist>, whitelist_type: u8) -> ProgramResul
     let bank = &mut ctx.accounts.bank;
 
     if whitelist_type.contains(WhitelistType::CREATOR) {
-        bank.whitelisted_creators.try_self_add(1)?;
+        bank.whitelisted_creators.try_add_assign(1)?;
     }
     if whitelist_type.contains(WhitelistType::MINT) {
-        bank.whitelisted_mints.try_self_add(1)?;
+        bank.whitelisted_mints.try_add_assign(1)?;
     }
 
     msg!(

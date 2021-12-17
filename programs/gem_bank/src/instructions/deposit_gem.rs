@@ -199,8 +199,8 @@ pub fn handler(ctx: Context<DepositGem>, amount: u64) -> ProgramResult {
 
     // record total number of gem boxes in vault's state
     let vault = &mut ctx.accounts.vault;
-    vault.gem_box_count.try_self_add(1)?;
-    vault.gem_count.try_self_add(amount)?;
+    vault.gem_box_count.try_add_assign(1)?;
+    vault.gem_count.try_add_assign(amount)?;
 
     // record a gdr
     let gdr = &mut *ctx.accounts.gem_deposit_receipt;
@@ -209,7 +209,7 @@ pub fn handler(ctx: Context<DepositGem>, amount: u64) -> ProgramResult {
     gdr.vault = vault.key();
     gdr.gem_box_address = gem_box.key();
     gdr.gem_mint = gem_box.mint;
-    gdr.gem_count.try_self_add(amount)?;
+    gdr.gem_count.try_add_assign(amount)?;
 
     // this check is semi-useless but won't hurt
     if gdr.gem_count != gem_box.amount + amount {

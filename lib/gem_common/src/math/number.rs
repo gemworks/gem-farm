@@ -5,6 +5,9 @@ use std::{
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign},
 };
 
+use crate::errors::ErrorCode;
+use crate::TrySub;
+use anchor_lang::prelude::*;
 use std::fmt::{Display, Formatter};
 use thiserror::Error;
 
@@ -146,7 +149,7 @@ impl Number {
     }
 }
 
-// --------------------------------------- math ops
+// --------------------------------------- add
 
 impl Add<Number> for Number {
     type Output = Number;
@@ -162,11 +165,7 @@ impl AddAssign<Number> for Number {
     }
 }
 
-impl SubAssign<Number> for Number {
-    fn sub_assign(&mut self, rhs: Number) {
-        self.0.sub_assign(rhs.0)
-    }
-}
+// --------------------------------------- sub
 
 impl Sub<Number> for Number {
     type Output = Number;
@@ -175,6 +174,28 @@ impl Sub<Number> for Number {
         Self(self.0.sub(rhs.0))
     }
 }
+
+impl SubAssign<Number> for Number {
+    fn sub_assign(&mut self, rhs: Number) {
+        self.0.sub_assign(rhs.0)
+    }
+}
+
+impl TrySub for Number {
+    fn try_sub(self, rhs: Self) -> Result<Self, ProgramError> {
+        let result = self
+            .0
+            .checked_sub(rhs.0)
+            .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
+        Ok(Self(result))
+    }
+    fn try_sub_assign(&mut self, rhs: Self) -> ProgramResult {
+        *self = self.try_sub(rhs)?;
+        Ok(())
+    }
+}
+
+// --------------------------------------- mul
 
 impl Mul<Number> for Number {
     type Output = Number;
@@ -191,19 +212,21 @@ impl MulAssign<Number> for Number {
     }
 }
 
-impl Div<Number> for Number {
-    type Output = Number;
-
-    fn div(self, rhs: Number) -> Self::Output {
-        Self(self.0.mul(ONE).div(rhs.0))
-    }
-}
-
 impl<T: Into<U192>> Mul<T> for Number {
     type Output = Number;
 
     fn mul(self, rhs: T) -> Self::Output {
         Self(self.0.mul(rhs.into()))
+    }
+}
+
+// --------------------------------------- div
+
+impl Div<Number> for Number {
+    type Output = Number;
+
+    fn div(self, rhs: Number) -> Self::Output {
+        Self(self.0.mul(ONE).div(rhs.0))
     }
 }
 
@@ -214,6 +237,8 @@ impl<T: Into<U192>> Div<T> for Number {
         Self(self.0.div(rhs.into()))
     }
 }
+
+// --------------------------------------- sum
 
 impl Sum for Number {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {

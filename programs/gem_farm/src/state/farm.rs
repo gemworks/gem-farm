@@ -236,7 +236,7 @@ impl FarmRewardTracker {
 
         self.reward_duration_sec = new_duration_sec;
         self.reward_end_ts = now_ts.try_add(new_duration_sec)?;
-        self.net_deposited_reward.try_self_add(new_amount)?;
+        self.net_deposited_reward.try_add_assign(new_amount)?;
 
         Ok(())
     }
@@ -269,7 +269,7 @@ impl FarmRewardTracker {
             self.reward_rate = remaining_reward.try_floor_div(self.reward_duration_sec)?;
         }
 
-        self.net_deposited_reward.try_self_sub(to_defund)?;
+        self.net_deposited_reward.try_sub_assign(to_defund)?;
 
         Ok(to_defund)
     }
@@ -292,16 +292,16 @@ impl FarmRewardTracker {
 
         // update farm
         self.accrued_reward_per_gem
-            .try_self_add(newly_accrued_reward_per_gem)?;
+            .try_add_assign(newly_accrued_reward_per_gem)?;
 
         self.total_accrued_reward
-            .try_self_add(newly_accrued_reward_per_gem.try_mul(farm_gems_staked)?)?;
+            .try_add_assign(newly_accrued_reward_per_gem.try_mul(farm_gems_staked)?)?;
 
         // update farmer, if one has been passed
         if let Some(farmer_reward) = farmer_reward {
-            farmer_reward
-                .accrued_reward
-                .try_self_add(newly_accrued_reward_per_gem.try_mul(farmer_gems_staked.unwrap())?)?;
+            farmer_reward.accrued_reward.try_add_assign(
+                newly_accrued_reward_per_gem.try_mul(farmer_gems_staked.unwrap())?,
+            )?;
         }
 
         Ok(())

@@ -67,7 +67,7 @@ pub fn handler(ctx: Context<InitFarmer>, bump_vault: u8) -> ProgramResult {
     // update farm
     let farm = &mut ctx.accounts.farm;
 
-    farm.farmer_count.try_self_add(1)?;
+    farm.farmer_count.try_add_assign(1)?;
 
     // do a cpi call to start a new vault
     let vault_owner = ctx.accounts.identity.key();

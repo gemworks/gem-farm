@@ -30,10 +30,10 @@ pub fn handler(ctx: Context<RemoveFromWhitelist>) -> ProgramResult {
     let proof = &mut ctx.accounts.whitelist_proof;
 
     if let Ok(()) = proof.contains_type(WhitelistType::MINT) {
-        bank.whitelisted_mints.try_self_sub(1)?;
+        bank.whitelisted_mints.try_sub_assign(1)?;
     }
     if let Ok(()) = proof.contains_type(WhitelistType::CREATOR) {
-        bank.whitelisted_creators.try_self_sub(1)?;
+        bank.whitelisted_creators.try_sub_assign(1)?;
     }
 
     // delete whitelist proof

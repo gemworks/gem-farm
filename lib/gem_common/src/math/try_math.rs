@@ -8,17 +8,18 @@ use crate::errors::ErrorCode;
 
 pub trait TrySub: Sized {
     fn try_sub(self, rhs: Self) -> Result<Self, ProgramError>;
-    fn try_self_sub(&mut self, rhs: Self) -> ProgramResult;
+    fn try_sub_assign(&mut self, rhs: Self) -> ProgramResult;
 }
 
 pub trait TryAdd: Sized {
     fn try_add(self, rhs: Self) -> Result<Self, ProgramError>;
-    fn try_self_add(&mut self, rhs: Self) -> ProgramResult;
+    fn try_add_assign(&mut self, rhs: Self) -> ProgramResult;
 }
 
 pub trait TryDiv<RHS>: Sized {
     fn try_floor_div(self, rhs: RHS) -> Result<Self, ProgramError>;
     // fn try_ceil_div(self, rhs: RHS) -> Result<Self, ProgramError>;
+    // fn try_rounded_div(self, rhs: RHS) -> Result<Self, ProgramError>;
 }
 
 pub trait TryMul<RHS>: Sized {
@@ -50,7 +51,7 @@ impl TrySub for u32 {
         self.checked_sub(rhs)
             .ok_or(ErrorCode::ArithmeticError.into())
     }
-    fn try_self_sub(&mut self, rhs: Self) -> ProgramResult {
+    fn try_sub_assign(&mut self, rhs: Self) -> ProgramResult {
         *self = self.try_sub(rhs)?;
         Ok(())
     }
@@ -61,7 +62,7 @@ impl TryAdd for u32 {
         self.checked_add(rhs)
             .ok_or(ErrorCode::ArithmeticError.into())
     }
-    fn try_self_add(&mut self, rhs: Self) -> ProgramResult {
+    fn try_add_assign(&mut self, rhs: Self) -> ProgramResult {
         *self = self.try_add(rhs)?;
         Ok(())
     }
@@ -102,7 +103,7 @@ impl TrySub for u64 {
         self.checked_sub(rhs)
             .ok_or(ErrorCode::ArithmeticError.into())
     }
-    fn try_self_sub(&mut self, rhs: Self) -> ProgramResult {
+    fn try_sub_assign(&mut self, rhs: Self) -> ProgramResult {
         *self = self.try_sub(rhs)?;
         Ok(())
     }
@@ -113,7 +114,7 @@ impl TryAdd for u64 {
         self.checked_add(rhs)
             .ok_or(ErrorCode::ArithmeticError.into())
     }
-    fn try_self_add(&mut self, rhs: Self) -> ProgramResult {
+    fn try_add_assign(&mut self, rhs: Self) -> ProgramResult {
         *self = self.try_add(rhs)?;
         Ok(())
     }
@@ -154,7 +155,7 @@ impl TrySub for u128 {
         self.checked_sub(rhs)
             .ok_or(ErrorCode::ArithmeticError.into())
     }
-    fn try_self_sub(&mut self, rhs: Self) -> ProgramResult {
+    fn try_sub_assign(&mut self, rhs: Self) -> ProgramResult {
         *self = self.try_sub(rhs)?;
         Ok(())
     }
@@ -165,7 +166,7 @@ impl TryAdd for u128 {
         self.checked_add(rhs)
             .ok_or(ErrorCode::ArithmeticError.into())
     }
-    fn try_self_add(&mut self, rhs: Self) -> ProgramResult {
+    fn try_add_assign(&mut self, rhs: Self) -> ProgramResult {
         *self = self.try_add(rhs)?;
         Ok(())
     }
@@ -240,18 +241,18 @@ mod tests {
     }
 
     #[test]
-    fn test_self_add() {
+    fn test_add_assign() {
         let mut x = 10_u64;
         let y = 2;
-        x.try_self_add(y).unwrap();
+        x.try_add_assign(y).unwrap();
         assert_eq!(x, 12);
     }
 
     #[test]
-    fn test_self_sub() {
+    fn test_sub_assign() {
         let mut x = 10_u64;
         let y = 2;
-        x.try_self_sub(y).unwrap();
+        x.try_sub_assign(y).unwrap();
         assert_eq!(x, 8);
     }
 }

@@ -38,7 +38,7 @@ pub fn handler(ctx: Context<DeauthorizeFunder>) -> ProgramResult {
     // update farm
     let farm = &mut ctx.accounts.farm;
 
-    farm.authorized_funder_count.try_self_sub(1)?;
+    farm.authorized_funder_count.try_sub_assign(1)?;
 
     msg!(
         "funder DEauthorized: {}",

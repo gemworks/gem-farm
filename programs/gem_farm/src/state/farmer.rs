@@ -58,7 +58,7 @@ impl Farmer {
         self.cooldown_ends_ts = 0; //zero it out in case it was set before
 
         // farm
-        farm.gems_staked.try_self_add(extra_gems)
+        farm.gems_staked.try_add_assign(extra_gems)
     }
 
     pub fn begin_staking(&mut self, farm: &mut Account<Farm>, gems_in_vault: u64) -> ProgramResult {
@@ -69,8 +69,8 @@ impl Farmer {
         self.cooldown_ends_ts = 0; //zero it out in case it was set before
 
         // farm
-        farm.staked_farmer_count.try_self_add(1)?;
-        farm.gems_staked.try_self_add(gems_in_vault)
+        farm.staked_farmer_count.try_add_assign(1)?;
+        farm.gems_staked.try_add_assign(gems_in_vault)
     }
 
     pub fn end_staking_begin_cooldown(&mut self, farm: &mut Account<Farm>) -> ProgramResult {
@@ -85,8 +85,8 @@ impl Farmer {
         self.cooldown_ends_ts = now_ts()?.try_add(farm.config.cooldown_period_sec)?;
 
         // farm
-        farm.staked_farmer_count.try_self_sub(1)?;
-        farm.gems_staked.try_self_sub(farmer_had_staked)?;
+        farm.staked_farmer_count.try_sub_assign(1)?;
+        farm.gems_staked.try_sub_assign(farmer_had_staked)?;
 
         msg!(
             "{} gems now cooling down for {}",
@@ -148,7 +148,7 @@ impl FarmerRewardTracker {
         let outstanding = self.outstanding_reward()?;
         let to_claim = std::cmp::min(outstanding, pot_balance);
 
-        self.paid_out_reward.try_self_add(to_claim)?;
+        self.paid_out_reward.try_add_assign(to_claim)?;
 
         Ok(to_claim)
     }

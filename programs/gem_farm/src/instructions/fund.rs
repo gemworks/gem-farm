@@ -74,8 +74,8 @@ pub fn handler(ctx: Context<Fund>, amount: u64, duration_sec: u64) -> ProgramRes
     let receipt = &mut ctx.accounts.funding_receipt;
     receipt.funder = ctx.accounts.authorized_funder.key();
     receipt.reward_mint = ctx.accounts.reward_mint.key();
-    receipt.total_deposited_amount.try_self_add(amount)?;
-    receipt.deposit_count.try_self_add(1)?;
+    receipt.total_deposited_amount.try_add_assign(amount)?;
+    receipt.deposit_count.try_add_assign(1)?;
     receipt.last_deposit_ts = now_ts;
 
     // do the transfer
