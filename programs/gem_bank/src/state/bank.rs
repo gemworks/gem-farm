@@ -10,7 +10,7 @@ pub struct Bank {
 
     pub bank_manager: Pubkey,
 
-    pub flags: u8,
+    pub flags: u32,
 
     // only gems allowed will be those that have EITHER a:
     // 1)creator from this list
@@ -23,7 +23,7 @@ pub struct Bank {
 }
 
 impl Bank {
-    pub fn read_flags(flags: u8) -> Result<BankFlags, ProgramError> {
+    pub fn read_flags(flags: u32) -> Result<BankFlags, ProgramError> {
         BankFlags::from_bits(flags).ok_or(ErrorCode::InvalidParameter.into())
     }
 
@@ -33,7 +33,7 @@ impl Bank {
 }
 
 bitflags::bitflags! {
-    pub struct BankFlags: u8 {
+    pub struct BankFlags: u32 {
         const FREEZE_VAULTS = 1 << 0;
     }
 }

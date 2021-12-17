@@ -14,7 +14,7 @@ pub mod gem_bank {
         instructions::init_bank::handler(ctx)
     }
 
-    pub fn set_bank_flags(ctx: Context<SetBankFlags>, flags: u8) -> ProgramResult {
+    pub fn set_bank_flags(ctx: Context<SetBankFlags>, flags: u32) -> ProgramResult {
         instructions::set_bank_flags::handler(ctx, flags)
     }
 

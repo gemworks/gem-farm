@@ -37,7 +37,7 @@ impl Vault {
         [self.authority_seed.as_ref(), &self.authority_bump_seed]
     }
 
-    pub fn access_suspended(&self, flags: u8) -> Result<bool, ProgramError> {
+    pub fn access_suspended(&self, flags: u32) -> Result<bool, ProgramError> {
         let bank_flags = Bank::read_flags(flags)?;
 
         if self.locked {

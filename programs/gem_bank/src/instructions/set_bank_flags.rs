@@ -10,7 +10,7 @@ pub struct SetBankFlags<'info> {
     pub bank_manager: Signer<'info>,
 }
 
-pub fn handler(ctx: Context<SetBankFlags>, flags: u8) -> ProgramResult {
+pub fn handler(ctx: Context<SetBankFlags>, flags: u32) -> ProgramResult {
     let bank = &mut ctx.accounts.bank;
 
     let flags = Bank::read_flags(flags)?;
