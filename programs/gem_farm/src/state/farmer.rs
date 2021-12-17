@@ -3,7 +3,7 @@ use gem_common::{errors::ErrorCode, *};
 
 use crate::state::Farm;
 
-#[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
+#[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize, PartialEq)]
 pub enum FarmerStatus {
     Unstaked,
     Staked,

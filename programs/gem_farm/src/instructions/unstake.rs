@@ -55,14 +55,6 @@ pub fn handler(ctx: Context<Unstake>) -> ProgramResult {
     //  eg probably need a "live/paused" feature
     //  eg is it okay to start staking when both reward pots are empty?
 
-    // unlock the vault so the user can withdraw their gems
-    gem_bank::cpi::set_vault_lock(
-        ctx.accounts
-            .set_lock_vault_ctx()
-            .with_signer(&[&ctx.accounts.farm.farm_seeds()]),
-        false,
-    )?;
-
     // update accrued rewards BEFORE we decrement the stake
     let farm = &mut ctx.accounts.farm;
     let farmer = &mut ctx.accounts.farmer;
@@ -70,5 +62,17 @@ pub fn handler(ctx: Context<Unstake>) -> ProgramResult {
     farm.update_rewards_for_all_mints(now_ts()?, Some(farmer))?;
 
     // try end staking
-    farmer.try_unstake(farm)
+    farmer.try_unstake(farm)?;
+
+    if farmer.status == FarmerStatus::Unstaked {
+        // unlock the vault so the user can withdraw their gems
+        gem_bank::cpi::set_vault_lock(
+            ctx.accounts
+                .set_lock_vault_ctx()
+                .with_signer(&[&ctx.accounts.farm.farm_seeds()]),
+            false,
+        )?;
+    }
+
+    Ok(())
 }
