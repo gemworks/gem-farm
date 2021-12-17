@@ -2,7 +2,7 @@ use std::io::Write;
 
 use anchor_lang::{__private::CLOSED_ACCOUNT_DISCRIMINATOR, prelude::*};
 
-use crate::{errors::ErrorCode, math::*};
+use crate::{errors::ErrorCode, math2::*};
 
 pub fn close_account(
     pda_to_close: &mut AccountInfo,

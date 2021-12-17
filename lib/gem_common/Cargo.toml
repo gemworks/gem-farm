@@ -8,3 +8,6 @@ edition = "2018"
 [dependencies]
 anchor-lang = "0.18.2"
 anchor-spl = "0.18.2"
+uint = "0.9.1"
+thiserror = "1.0.30"
+static_assertions = "1.1.0"
