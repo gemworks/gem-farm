@@ -98,16 +98,35 @@ impl TryRem for u32 {
 
 // --------------------------------------- u64
 
-impl TrySub for u64 {
-    fn try_sub(self, rhs: Self) -> Result<Self, ProgramError> {
-        self.checked_sub(rhs)
-            .ok_or(ErrorCode::ArithmeticError.into())
-    }
-    fn try_sub_assign(&mut self, rhs: Self) -> ProgramResult {
-        *self = self.try_sub(rhs)?;
-        Ok(())
-    }
+macro_rules! try_math {
+    ($our_type:ty) => {
+        impl TrySub for $our_type {
+            fn try_sub(self, rhs: Self) -> Result<Self, ProgramError> {
+                self.checked_sub(rhs)
+                    .ok_or(ErrorCode::ArithmeticError.into())
+            }
+            fn try_sub_assign(&mut self, rhs: Self) -> ProgramResult {
+                *self = self.try_sub(rhs)?;
+                Ok(())
+            }
+        }
+    };
 }
+
+pub(crate) use try_math;
+
+try_math! {u64}
+
+// impl TrySub for u64 {
+//     fn try_sub(self, rhs: Self) -> Result<Self, ProgramError> {
+//         self.checked_sub(rhs)
+//             .ok_or(ErrorCode::ArithmeticError.into())
+//     }
+//     fn try_sub_assign(&mut self, rhs: Self) -> ProgramResult {
+//         *self = self.try_sub(rhs)?;
+//         Ok(())
+//     }
+// }
 
 impl TryAdd for u64 {
     fn try_add(self, rhs: Self) -> Result<Self, ProgramError> {
