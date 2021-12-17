@@ -85,6 +85,7 @@ pub fn handler(
 
     farm.version = LATEST_FARM_VERSION;
     farm.farm_manager = ctx.accounts.farm_manager.key();
+    farm.farm_treasury = ctx.accounts.farm_treasury.key();
     farm.farm_authority = ctx.accounts.farm_authority.key();
     farm.farm_authority_seed = farm.key();
     farm.farm_authority_bump_seed = [bump_auth];

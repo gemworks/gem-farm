@@ -15,7 +15,7 @@ use crate::state::*;
 #[instruction(bump_treasury: u8, bump_farmer: u8)]
 pub struct Unstake<'info> {
     // farm
-    #[account(mut, has_one = farm_authority)]
+    #[account(mut, has_one = farm_authority, has_one = farm_treasury)]
     pub farm: Box<Account<'info, Farm>>,
     pub farm_authority: AccountInfo<'info>,
     #[account(mut, seeds = [b"treasury".as_ref(), farm.key().as_ref()], bump = bump_treasury)]

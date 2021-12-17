@@ -93,4 +93,12 @@ pub mod gem_farm {
     ) -> ProgramResult {
         instructions::flash_deposit::handler(ctx, bump_gem_box, bump_gdr, amount)
     }
+
+    pub fn payout_from_treasury(
+        ctx: Context<TreasuryPayout>,
+        bump: u8,
+        lamports: u64,
+    ) -> ProgramResult {
+        instructions::treasury_payout::handler(ctx, bump, lamports)
+    }
 }

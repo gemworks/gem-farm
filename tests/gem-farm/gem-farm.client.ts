@@ -699,4 +699,45 @@ export class GemFarmClient extends GemBankClient {
       txSig,
     };
   }
+
+  async payoutFromTreasury(
+    farm: PublicKey,
+    farmManager: PublicKey | Keypair,
+    destination: PublicKey,
+    lamports: BN
+  ) {
+    const [farmAuth, farmAuthBump] = await this.findFarmAuthorityPDA(farm);
+    const [farmTreasury, farmTreasuryBump] = await this.findFarmTreasuryPDA(
+      farm
+    );
+
+    const signers = [];
+    if (isKp(farmManager)) signers.push(<Keypair>farmManager);
+
+    const txSig = await this.farmProgram.rpc.payoutFromTreasury(
+      farmTreasuryBump,
+      lamports,
+      {
+        accounts: {
+          farm,
+          farmManager: isKp(farmManager)
+            ? (<Keypair>farmManager).publicKey
+            : farmManager,
+          farmAuthority: farmAuth,
+          farmTreasury,
+          destination,
+          systemProgram: SystemProgram.programId,
+        },
+        signers,
+      }
+    );
+
+    return {
+      farmAuth,
+      farmAuthBump,
+      farmTreasury,
+      farmTreasuryBump,
+      txSig,
+    };
+  }
 }

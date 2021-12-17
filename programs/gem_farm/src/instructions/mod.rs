@@ -8,6 +8,7 @@ pub mod init_farm;
 pub mod init_farmer;
 pub mod lock_funding;
 pub mod stake;
+pub mod treasury_payout;
 pub mod unstake;
 
 pub use authorize_funder::*;
@@ -20,4 +21,5 @@ pub use init_farm::*;
 pub use init_farmer::*;
 pub use lock_funding::*;
 pub use stake::*;
+pub use treasury_payout::*;
 pub use unstake::*;

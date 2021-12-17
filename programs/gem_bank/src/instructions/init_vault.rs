@@ -11,6 +11,8 @@ pub struct InitVault<'info> {
     // bank
     #[account(mut)]
     pub bank: Account<'info, Bank>,
+
+    // vault
     #[account(init,
         seeds = [
             b"vault".as_ref(),
@@ -20,7 +22,6 @@ pub struct InitVault<'info> {
         bump = bump,
         payer = payer,
         space = 8 + std::mem::size_of::<Vault>())]
-    // vault
     pub vault: Account<'info, Vault>,
     pub creator: Signer<'info>,
 

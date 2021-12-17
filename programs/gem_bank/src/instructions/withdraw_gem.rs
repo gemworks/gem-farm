@@ -19,6 +19,8 @@ pub struct WithdrawGem<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
     pub authority: AccountInfo<'info>,
+
+    // gem
     #[account(mut,
         seeds = [
             b"gem_box".as_ref(),
@@ -26,7 +28,6 @@ pub struct WithdrawGem<'info> {
             gem_mint.key().as_ref(),
         ],
         bump = bump)]
-    // gem
     pub gem_box: Account<'info, TokenAccount>,
     #[account(mut)]
     pub gem_deposit_receipt: Box<Account<'info, GemDepositReceipt>>,
