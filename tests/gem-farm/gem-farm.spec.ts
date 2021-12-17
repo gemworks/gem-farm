@@ -11,16 +11,14 @@ import { ITokenData } from '../utils/account';
 
 chai.use(chaiAsPromised);
 
+const _provider = anchor.Provider.env();
+const gf = new GemFarmClient(
+  _provider.connection,
+  _provider.wallet as anchor.Wallet
+);
+
 //todo once happy with architecture do proper testing
-describe('gem farm', () => {
-  const _provider = anchor.Provider.env();
-  const gf = new GemFarmClient(
-    _provider.connection,
-    _provider.wallet as anchor.Wallet
-  );
-
-  // --------------------------------------- state
-
+describe('gem farm (0 min staking / cooldown)', () => {
   //farm + bank
   const bank = Keypair.generate();
   const farm = Keypair.generate();
@@ -34,15 +32,13 @@ describe('gem farm', () => {
   let farmerIdentity: Keypair;
   let farmerVault: PublicKey;
 
-  //rewards
+  //rewards + funder
   let rewardAmount = new BN(10000);
   let rewardDurationSec = new BN(100);
   let rewardA: Token;
   let rewardASource: PublicKey;
   let rewardB: Token;
   let rewardBSource: PublicKey;
-
-  //funder
   let funder = gf.wallet.payer;
 
   function printState() {}
@@ -222,7 +218,6 @@ describe('gem farm', () => {
 
   describe('gem operations', () => {
     let gemAmount: anchor.BN;
-    let gemOwner: Keypair;
     let gem: ITokenData;
 
     async function prepDeposit(gemAmount: BN) {
@@ -232,8 +227,7 @@ describe('gem farm', () => {
         farmerIdentity,
         gemAmount,
         gem.tokenMint,
-        gem.tokenAcc,
-        farmerIdentity
+        gem.tokenAcc
       );
     }
 
@@ -241,16 +235,18 @@ describe('gem farm', () => {
       await gf.flashDeposit(
         farm.publicKey,
         farmerIdentity,
-        gemOwner,
         gemAmount,
         gem.tokenMint,
-        gem.tokenAcc,
-        gemOwner
+        gem.tokenAcc
       );
     }
 
     beforeEach('creates a fresh gem', async () => {
-      ({ gemAmount, gemOwner, gem } = await prepGem(gf, farmerIdentity));
+      ({
+        gemAmount,
+        gemOwner: farmerIdentity,
+        gem,
+      } = await prepGem(gf, farmerIdentity));
     });
 
     it('stakes / unstakes gems', async () => {
@@ -348,5 +344,131 @@ describe('gem farm', () => {
       farmerAcc = await gf.fetchFarmerAcc(farmer);
       assert(farmerAcc.gemsStaked.eq(oldGemsInVault.add(flashDeposit)));
     });
+  });
+});
+
+describe('gem farm (w/ min staking / cooldown)', () => {
+  //farm + bank
+  const bank = Keypair.generate();
+  const farm = Keypair.generate();
+  const farmConfig = <FarmConfig>{
+    minStakingPeriodSec: new BN(5),
+    cooldownPeriodSec: new BN(5),
+  };
+  let farmManager: Keypair;
+
+  //farmer + vault
+  let farmerIdentity: Keypair;
+  let farmerVault: PublicKey;
+
+  //rewards + funder
+  let rewardA: Token;
+  let rewardB: Token;
+
+  //gems
+  let gemAmount: anchor.BN;
+  let gem: ITokenData;
+
+  before('configures accounts', async () => {
+    farmManager = await gf.createWallet(100 * LAMPORTS_PER_SOL);
+    farmerIdentity = await gf.createWallet(100 * LAMPORTS_PER_SOL);
+
+    //farm
+    await gf.initFarm(
+      farm,
+      farmManager,
+      farmManager,
+      bank,
+      rewardA.publicKey,
+      RewardType.Variable,
+      rewardB.publicKey,
+      RewardType.Variable,
+      farmConfig
+    );
+
+    //farmer
+    const { vault } = await gf.initFarmer(
+      farm.publicKey,
+      farmerIdentity,
+      farmerIdentity
+    );
+    farmerVault = vault;
+
+    //gem
+    ({
+      gemAmount,
+      gemOwner: farmerIdentity,
+      gem,
+    } = await prepGem(gf, farmerIdentity));
+  });
+
+  async function prepDeposit(gemAmount: BN) {
+    await gf.depositGem(
+      bank.publicKey,
+      farmerVault,
+      farmerIdentity,
+      gemAmount,
+      gem.tokenMint,
+      gem.tokenAcc
+    );
+  }
+
+  it('stakes / unstakes gems', async () => {
+    //deposit some gems into the vault
+    await prepDeposit(gemAmount);
+
+    //stake
+    const { farmer, vault } = await gf.stake(farm.publicKey, farmerIdentity);
+
+    let farmAcc = await gf.fetchFarmAcc(farm.publicKey);
+    assert(farmAcc.stakedFarmerCount.eq(new BN(1)));
+    assert(farmAcc.gemsStaked.eq(gemAmount));
+
+    let vaultAcc = await gf.fetchVaultAcc(vault);
+    assert.isTrue(vaultAcc.locked);
+
+    let farmerAcc = await gf.fetchFarmerAcc(farmer);
+    assert(farmerAcc.gemsStaked.eq(gemAmount));
+
+    // console.log('// --------------------------------------- STAKED');
+    // await printStructs();
+
+    //wait for a couple seconds, to accrue some rewards
+    await pause(2000);
+
+    //unstake
+    await gf.unstake(farm.publicKey, farmerIdentity);
+
+    farmAcc = await gf.fetchFarmAcc(farm.publicKey);
+    assert(farmAcc.stakedFarmerCount.eq(new BN(0)));
+    assert(farmAcc.gemsStaked.eq(new BN(0)));
+
+    vaultAcc = await gf.fetchVaultAcc(vault);
+    assert.isFalse(vaultAcc.locked);
+
+    farmerAcc = await gf.fetchFarmerAcc(farmer);
+    assert(farmerAcc.gemsStaked.eq(new BN(0)));
+
+    // console.log('// --------------------------------------- UNSTAKED');
+    // await printStructs();
+  });
+
+  it('claims rewards', async () => {
+    const { rewardADestination } = await gf.claim(
+      farm.publicKey,
+      farmerIdentity,
+      rewardA.publicKey,
+      rewardB.publicKey
+    );
+
+    const rewardADestAcc = await gf.fetchRewardAcc(
+      rewardA.publicKey,
+      rewardADestination
+    );
+
+    // console.log('// --------------------------------------- CLAIMED');
+    // await printStructs();
+
+    assert(rewardADestAcc.amount.toNumber() > 0);
   });
 });

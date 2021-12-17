@@ -16,7 +16,9 @@ pub struct DepositGem<'info> {
     // vault
     #[account(mut, has_one = bank, has_one = owner, has_one = authority)]
     pub vault: Box<Account<'info, Vault>>,
-    // todo does it make sense for both the owner and the depositor to sign? aren't they the same?
+    // currently only the vault owner can deposit
+    // add a "depositor" account, and remove Signer from vault owner to let anyone to deposit
+    #[account(mut)]
     pub owner: Signer<'info>,
     pub authority: AccountInfo<'info>,
 
@@ -29,7 +31,7 @@ pub struct DepositGem<'info> {
         bump = bump_gem_box,
         token::mint = gem_mint,
         token::authority = authority,
-        payer = depositor)]
+        payer = owner)]
     pub gem_box: Box<Account<'info, TokenAccount>>,
     #[account(init_if_needed, seeds = [
             b"gem_deposit_receipt".as_ref(),
@@ -37,14 +39,12 @@ pub struct DepositGem<'info> {
             gem_mint.key().as_ref(),
         ],
         bump = bump_gdr,
-        payer = depositor,
+        payer = owner,
         space = 8 + std::mem::size_of::<GemDepositReceipt>())]
     pub gem_deposit_receipt: Box<Account<'info, GemDepositReceipt>>,
     #[account(mut)]
     pub gem_source: Box<Account<'info, TokenAccount>>,
     pub gem_mint: Box<Account<'info, Mint>>,
-    #[account(mut)]
-    pub depositor: Signer<'info>,
 
     // misc
     pub token_program: Program<'info, Token>,
@@ -63,7 +63,7 @@ impl<'info> DepositGem<'info> {
             Transfer {
                 from: self.gem_source.to_account_info(),
                 to: self.gem_box.to_account_info(),
-                authority: self.depositor.to_account_info(),
+                authority: self.owner.to_account_info(),
             },
         )
     }

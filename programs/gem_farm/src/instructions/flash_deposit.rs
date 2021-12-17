@@ -72,10 +72,10 @@ impl<'info> FlashDeposit<'info> {
                 gem_deposit_receipt: self.gem_deposit_receipt.to_account_info(),
                 gem_source: self.gem_source.to_account_info(),
                 gem_mint: self.gem_mint.to_account_info(),
-                depositor: self.identity.to_account_info(),
                 token_program: self.token_program.to_account_info(),
                 system_program: self.system_program.to_account_info(),
                 rent: self.rent.to_account_info(),
+                //     todo creator proofs and shit
             },
         )
     }

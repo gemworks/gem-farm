@@ -36,6 +36,7 @@ pub struct WithdrawGem<'info> {
         payer = owner)]
     pub gem_destination: Box<Account<'info, TokenAccount>>,
     pub gem_mint: Box<Account<'info, Mint>>,
+    // unlike with deposits, the gem can be sent out to anyone, not just the owner
     #[account(mut)]
     pub receiver: AccountInfo<'info>,
 

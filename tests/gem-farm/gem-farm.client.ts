@@ -580,11 +580,9 @@ export class GemFarmClient extends GemBankClient {
   async flashDeposit(
     farm: PublicKey,
     farmerIdentity: PublicKey | Keypair,
-    vaultOwner: PublicKey | Keypair,
     gemAmount: BN,
     gemMint: PublicKey,
     gemSource: PublicKey,
-    depositor: PublicKey | Keypair,
     mintProof?: PublicKey,
     metadata?: PublicKey,
     creatorProof?: PublicKey
@@ -628,8 +626,6 @@ export class GemFarmClient extends GemBankClient {
 
     const signers = [];
     if (isKp(farmerIdentity)) signers.push(<Keypair>farmerIdentity);
-    if (isKp(vaultOwner)) signers.push(<Keypair>vaultOwner);
-    if (isKp(depositor)) signers.push(<Keypair>depositor);
 
     console.log('flash depositing on behalf of', identityPk.toBase58());
     const txSig = await this.farmProgram.rpc.flashDeposit(

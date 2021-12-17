@@ -335,7 +335,6 @@ export class GemBankClient extends AccountUtils {
     gemAmount: BN,
     gemMint: PublicKey,
     gemSource: PublicKey,
-    depositor: PublicKey | Keypair,
     mintProof?: PublicKey,
     metadata?: PublicKey,
     creatorProof?: PublicKey
@@ -366,7 +365,6 @@ export class GemBankClient extends AccountUtils {
 
     const signers = [];
     if (isKp(vaultOwner)) signers.push(<Keypair>vaultOwner);
-    if (isKp(depositor)) signers.push(<Keypair>depositor);
 
     console.log(
       `depositing ${gemAmount} gems into ${gemBox.toBase58()}, GDR ${GDR.toBase58()}`
@@ -387,9 +385,6 @@ export class GemBankClient extends AccountUtils {
           gemDepositReceipt: GDR,
           gemSource,
           gemMint,
-          depositor: isKp(depositor)
-            ? (<Keypair>depositor).publicKey
-            : depositor,
           tokenProgram: TOKEN_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,

@@ -4,11 +4,11 @@
 // import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 // import { ITokenData } from '../utils/account';
 // import { assert } from 'chai';
+// import { prepGem } from '../utils/gem-common';
 //
 // interface IGem {
 //   gem: ITokenData;
 //   gemBox: PublicKey;
-//   gemOwner: Keypair;
 //   gemAmount: BN;
 // }
 //
@@ -25,10 +25,10 @@
 //  * 2) test finding & deserializing appropriate PDA state accounts
 //  */
 // describe('looper', () => {
-//   const provider = anchor.Provider.env();
+//   const _provider = anchor.Provider.env();
 //   const gb = new GemBankClient(
-//     provider.connection,
-//     provider.wallet as anchor.Wallet
+//     _provider.connection,
+//     _provider.wallet as anchor.Wallet
 //   );
 //
 //   const nVaults = 10;
@@ -36,6 +36,7 @@
 //
 //   const bank = Keypair.generate();
 //   const bankManager = gb.wallet.publicKey;
+//
 //   let vaults: IVault[] = [];
 //
 //   async function prepVault() {
@@ -58,9 +59,8 @@
 //   }
 //
 //   async function prepGemDeposit(vault: IVault) {
-//     const gemAmount = new BN(Math.ceil(Math.random() * 100));
-//     const gemOwner = await gb.createWallet(100 * LAMPORTS_PER_SOL);
-//     const gem = await gb.createMintAndATA(gemOwner.publicKey, gemAmount);
+//     //many gems, different amounts, but same owner (who also owns the vault)
+//     const { gemAmount, gem } = await prepGem(gb, vault.vaultOwner);
 //
 //     const { gemBox } = await gb.depositGem(
 //       bank.publicKey,
@@ -68,29 +68,25 @@
 //       vault.vaultOwner,
 //       gemAmount,
 //       gem.tokenMint,
-//       gem.tokenAcc,
-//       gemOwner
+//       gem.tokenAcc
 //     );
 //     vault.gemBoxes.push({
 //       gem,
 //       gemBox,
-//       gemOwner,
 //       gemAmount,
 //     });
 //   }
 //
 //   async function prepGemWithdrawal(vault: IVault, gemIdx: number) {
-//     const gem = vault.gemBoxes[gemIdx];
-//     const gemDest = await gb.getATA(gem.gem.tokenMint, gem.gemOwner.publicKey);
+//     const g = vault.gemBoxes[gemIdx];
 //
 //     await gb.withdrawGem(
 //       bank.publicKey,
 //       vault.vault,
 //       vault.vaultOwner,
-//       gem.gemAmount,
-//       gem.gem.tokenMint,
-//       gemDest,
-//       gem.gemOwner.publicKey
+//       g.gemAmount,
+//       g.gem.tokenMint,
+//       vault.vaultOwner.publicKey //the receiver = owner of gemDest, NOT gemDest itself
 //     );
 //   }
 //

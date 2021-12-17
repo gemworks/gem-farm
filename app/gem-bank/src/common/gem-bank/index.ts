@@ -88,7 +88,6 @@ export class GemBank extends GemBankClient {
       gemAmount,
       gemMint,
       gemSource,
-      this.wallet.publicKey,
       mintProof,
       metadata,
       creatorProof
