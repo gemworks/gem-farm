@@ -5,9 +5,6 @@ use crate::state::{Farmer, FarmerRewardTracker};
 
 pub const LATEST_FARM_VERSION: u16 = 0;
 
-// todo factor in precision later
-const PRECISION: u128 = u64::MAX as u128;
-
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FarmConfig {
     // min time the NFT has to be staked
@@ -223,7 +220,7 @@ impl FarmRewardTracker {
 
         // if previous rewards have been exhausted
         if now_ts > self.reward_end_ts {
-            self.reward_rate = new_amount.try_floor_div(new_duration_sec)?;
+            self.reward_rate = new_amount.try_div(new_duration_sec)?;
         // else if previous rewards are still active (merge the two)
         } else {
             let remaining_duration_sec = self.reward_end_ts.try_sub(now_ts)?;
@@ -231,7 +228,7 @@ impl FarmRewardTracker {
 
             self.reward_rate = new_amount
                 .try_add(remaining_amount)?
-                .try_floor_div(new_duration_sec)?;
+                .try_div(new_duration_sec)?;
         }
 
         self.reward_duration_sec = new_duration_sec;
@@ -262,11 +259,11 @@ impl FarmRewardTracker {
         let remaining_reward = unaccrued_reward.try_sub(to_defund)?;
 
         if let Some(new_duration_sec) = new_duration_sec {
-            self.reward_rate = remaining_reward.try_floor_div(new_duration_sec)?;
+            self.reward_rate = remaining_reward.try_div(new_duration_sec)?;
             self.reward_duration_sec = new_duration_sec;
             self.reward_end_ts = now_ts.try_add(new_duration_sec)?;
         } else {
-            self.reward_rate = remaining_reward.try_floor_div(self.reward_duration_sec)?;
+            self.reward_rate = remaining_reward.try_div(self.reward_duration_sec)?;
         }
 
         self.net_deposited_reward.try_sub_assign(to_defund)?;
@@ -338,7 +335,7 @@ impl FarmRewardTracker {
 
         time_since_last_calc_sec
             .try_mul(self.reward_rate)?
-            .try_floor_div(divisor)
+            .try_div(divisor)
     }
 
     /// locking ensures that the promised reward cannot be withdrawn/changed by a malicious farm operator

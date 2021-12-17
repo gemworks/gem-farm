@@ -24,9 +24,9 @@ pub trait TryAdd: Sized + Copy {
 }
 
 pub trait TryDiv: Sized + Copy {
-    fn try_floor_div(self, rhs: Self) -> Result<Self, ProgramError>;
-    fn try_floor_div_assign(&mut self, rhs: Self) -> ProgramResult {
-        *self = self.try_floor_div(rhs)?;
+    fn try_div(self, rhs: Self) -> Result<Self, ProgramError>;
+    fn try_div_assign(&mut self, rhs: Self) -> ProgramResult {
+        *self = self.try_div(rhs)?;
         Ok(())
     }
 
@@ -75,15 +75,13 @@ pub trait TryCast<Into>: Sized + Copy {
     fn try_cast(self) -> Result<Into, ProgramError>;
 }
 
-// pub trait TrySum: Sized + Copy + TryAdd {
-//     fn sum<I: Iterator<Item = Self>>(iter: I) -> Result<Self, ProgramError> {
-//         iter.reduce(|a, b| {
-//             a.try_add(b)
-//                 .unwrap_or_else(|| return Err(ErrorCode::ArithmeticError).into())
-//         })
-//         .ok_or(ErrorCode::ArithmeticError.into())
-//     }
-// }
+pub trait TrySum: Sized + Copy + TryAdd {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Result<Self, ProgramError> {
+        // todo for now using unwrap() since can't "?" inside an iterator
+        iter.reduce(|a, b| a.try_add(b).unwrap())
+            .ok_or(ErrorCode::ArithmeticError.into())
+    }
+}
 
 // --------------------------------------- impl
 
@@ -104,7 +102,7 @@ macro_rules! try_math {
         }
 
         impl TryDiv for $our_type {
-            fn try_floor_div(self, rhs: Self) -> Result<Self, ProgramError> {
+            fn try_div(self, rhs: Self) -> Result<Self, ProgramError> {
                 self.checked_div(rhs)
                     .ok_or(ErrorCode::ArithmeticError.into())
             }
@@ -194,39 +192,34 @@ impl TryCast<u32> for u64 {
 
 #[cfg(test)]
 mod tests {
-    fn type_of<T>(_: T) -> &'static str {
-        type_name::<T>()
-    }
-
     use super::*;
-    use std::any::type_name;
 
     // --------------------------------------- division types
 
     #[test]
-    fn test_floor_div() {
+    fn test_div() {
         //the easy (no remainder) case
         let x = 10_u64;
         let y = 5;
-        let r = x.try_floor_div(y).unwrap();
+        let r = x.try_div(y).unwrap();
         assert_eq!(r, 2);
 
         //<.5 case (2.2)
         let x = 11_u64;
         let y = 5;
-        let r = x.try_floor_div(y).unwrap();
+        let r = x.try_div(y).unwrap();
         assert_eq!(r, 2);
 
         //>.5 case (2.8)
         let x = 14_u64;
         let y = 5;
-        let r = x.try_floor_div(y).unwrap();
+        let r = x.try_div(y).unwrap();
         assert_eq!(r, 2);
 
         //.5 case
         let x = 5_u64;
         let y = 2;
-        let r = x.try_floor_div(y).unwrap();
+        let r = x.try_div(y).unwrap();
         assert_eq!(r, 2);
     }
 
@@ -303,10 +296,10 @@ mod tests {
     }
 
     #[test]
-    fn test_floor_div_assign() {
+    fn test_div_assign() {
         let mut x = 10_u64;
         let y = 3;
-        x.try_floor_div_assign(y).unwrap();
+        x.try_div_assign(y).unwrap();
         assert_eq!(x, 3);
     }
 
@@ -359,6 +352,6 @@ mod tests {
     #[should_panic]
     fn test_try_cast() {
         let x = 0xffffffffffffffff_u64;
-        let y = x.try_cast().unwrap();
+        let _y = x.try_cast().unwrap();
     }
 }

@@ -1,16 +1,11 @@
 //! Yet another decimal library
 
 use std::fmt::{Display, Formatter};
-use std::{
-    iter::Sum,
-    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign},
-};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 use crate::errors::ErrorCode;
-use crate::{TryAdd, TryDiv, TryMul, TryPow, TryRem, TrySqrt, TrySub};
+use crate::{TryAdd, TryDiv, TryMul, TryPow, TryRem, TrySub};
 use anchor_lang::prelude::*;
-use spl_math::approximations::sqrt;
-use std::convert::TryFrom;
 
 uint::construct_uint! {
     pub struct U192(3);
@@ -149,108 +144,7 @@ impl Number {
     }
 }
 
-impl TrySub for Number {
-    fn try_sub(self, rhs: Self) -> Result<Self, ProgramError> {
-        let result = self
-            .0
-            .checked_sub(rhs.0)
-            .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
-        Ok(Self(result))
-    }
-}
-
-impl TryAdd for Number {
-    fn try_add(self, rhs: Self) -> Result<Self, ProgramError> {
-        let result = self
-            .0
-            .checked_add(rhs.0)
-            .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
-        Ok(Self(result))
-    }
-}
-
-impl TryDiv for Number {
-    fn try_floor_div(self, rhs: Self) -> Result<Self, ProgramError> {
-        let result = self
-            .0
-            .checked_div(rhs.0)
-            .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
-        Ok(Self(result))
-    }
-    fn try_ceil_div(self, rhs: Self) -> Result<Self, ProgramError> {
-        let reduced_by_one = self
-            .0
-            .checked_sub(ONE)
-            .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
-
-        let divided = reduced_by_one
-            .checked_div(rhs.0)
-            .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
-
-        let result = ONE
-            .checked_add(divided)
-            .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
-
-        Ok(Self(result))
-    }
-    fn try_rounded_div(self, rhs: Self) -> Result<Self, ProgramError> {
-        let rounding = rhs
-            .0
-            .checked_div(ONE * 2)
-            .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
-
-        let with_rounding = self
-            .0
-            .checked_add(rounding)
-            .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
-
-        let result = with_rounding
-            .checked_div(rhs.0)
-            .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
-
-        Ok(Self(result))
-    }
-}
-
-impl TryMul for Number {
-    fn try_mul(self, rhs: Self) -> Result<Self, ProgramError> {
-        let result = self
-            .0
-            .checked_mul(rhs.0)
-            .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
-        Ok(Self(result))
-    }
-}
-
-impl TryPow for Number {
-    fn try_pow(self, rhs: u32) -> Result<Self, ProgramError> {
-        let result = self
-            .0
-            .checked_pow(U192::from(rhs))
-            .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
-        Ok(Self(result))
-    }
-}
-
-impl TryRem for Number {
-    fn try_rem(self, rhs: Self) -> Result<Self, ProgramError> {
-        let result = self
-            .0
-            .checked_rem(rhs.0)
-            .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
-        Ok(Self(result))
-    }
-}
-
-// todo won't work out of the box
-// impl TrySqrt for Number {
-//     fn try_sqrt(self) -> Result<Self, ProgramError> {
-//         let result = sqrt(self.0).ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
-//         Ok(Self(result))
-//     }
-// }
-
-// --------------------------------------- add
+// --------------------------------------- normal math
 
 impl Add<Number> for Number {
     type Output = Number;
@@ -266,8 +160,6 @@ impl AddAssign<Number> for Number {
     }
 }
 
-// --------------------------------------- sub
-
 impl Sub<Number> for Number {
     type Output = Number;
 
@@ -281,8 +173,6 @@ impl SubAssign<Number> for Number {
         self.0.sub_assign(rhs.0)
     }
 }
-
-// --------------------------------------- mul
 
 impl Mul<Number> for Number {
     type Output = Number;
@@ -307,8 +197,6 @@ impl<T: Into<U192>> Mul<T> for Number {
     }
 }
 
-// --------------------------------------- div
-
 impl Div<Number> for Number {
     type Output = Number;
 
@@ -325,13 +213,89 @@ impl<T: Into<U192>> Div<T> for Number {
     }
 }
 
-// --------------------------------------- sum
+// --------------------------------------- try math
 
-impl Sum for Number {
-    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.reduce(|a, b| a + b).unwrap_or(Self::ZERO)
+impl TrySub for Number {
+    fn try_sub(self, rhs: Self) -> Result<Self, ProgramError> {
+        let result = self
+            .0
+            .checked_sub(rhs.0)
+            .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
+        Ok(Self(result))
     }
 }
+
+impl TryAdd for Number {
+    fn try_add(self, rhs: Self) -> Result<Self, ProgramError> {
+        let result = self
+            .0
+            .checked_add(rhs.0)
+            .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
+        Ok(Self(result))
+    }
+}
+
+impl TryDiv for Number {
+    fn try_div(self, rhs: Self) -> Result<Self, ProgramError> {
+        let result = self
+            .0
+            .checked_mul(ONE)
+            .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?
+            .checked_div(rhs.0)
+            .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
+        Ok(Self(result))
+    }
+    fn try_ceil_div(self, rhs: Self) -> Result<Self, ProgramError> {
+        self.try_div(rhs)
+    }
+    fn try_rounded_div(self, rhs: Self) -> Result<Self, ProgramError> {
+        self.try_div(rhs)
+    }
+}
+
+impl TryMul for Number {
+    fn try_mul(self, rhs: Self) -> Result<Self, ProgramError> {
+        let result = self
+            .0
+            .checked_mul(rhs.0)
+            .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?
+            .checked_div(ONE)
+            .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
+        Ok(Self(result))
+    }
+}
+
+impl TryPow for Number {
+    fn try_pow(self, rhs: u32) -> Result<Self, ProgramError> {
+        let result = self
+            .0
+            .checked_pow(U192::from(rhs))
+            .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?
+            .checked_div(ONE)
+            .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
+        Ok(Self(result))
+    }
+}
+
+impl TryRem for Number {
+    fn try_rem(self, rhs: Self) -> Result<Self, ProgramError> {
+        let result = self
+            .0
+            .checked_mul(ONE)
+            .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?
+            .checked_rem(rhs.0)
+            .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
+        Ok(Self(result))
+    }
+}
+
+// todo won't work out of the box
+// impl TrySqrt for Number {
+//     fn try_sqrt(self) -> Result<Self, ProgramError> {
+//         let result = sqrt(self.0).ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
+//         Ok(Self(result))
+//     }
+// }
 
 // --------------------------------------- from / into
 
@@ -450,5 +414,74 @@ mod tests {
         assert_eq!("1000.0", Number::from(1000).to_string());
         assert_eq!("1.0", Number::from(1).to_string());
         assert_eq!("0.001", Number::from_decimal(1, -3).to_string());
+    }
+
+    // --------------------------------------- try math
+
+    #[test]
+    fn test_div() {
+        //the easy (no remainder) case
+        let x = Number::from(10_u64);
+        let y = Number::from(5);
+        let r = x.try_div(y).unwrap();
+        assert_eq!(r, Number::from(2));
+
+        //<.5 case (2.2)
+        let x = Number::from(11_u64);
+        let y = Number::from(5);
+        let r = x.try_div(y).unwrap();
+        assert_eq!(r, Number::from_decimal(22, -1));
+
+        //>.5 case (2.8)
+        let x = Number::from(14_u64);
+        let y = Number::from(5);
+        let r = x.try_div(y).unwrap();
+        assert_eq!(r, Number::from_decimal(28, -1));
+
+        //.5 case
+        let x = Number::from(5_u64);
+        let y = Number::from(2);
+        let r = x.try_div(y).unwrap();
+        assert_eq!(r, Number::from_decimal(25, -1));
+    }
+
+    #[test]
+    fn test_add_assign() {
+        let mut x = Number::from(10_u64);
+        let y = Number::from(2);
+        x.try_add_assign(y).unwrap();
+        assert_eq!(x, Number::from(12));
+    }
+
+    #[test]
+    fn test_sub_assign() {
+        let mut x = Number::from(10_u64);
+        let y = Number::from(2);
+        x.try_sub_assign(y).unwrap();
+        assert_eq!(x, Number::from(8));
+    }
+
+    #[test]
+    fn test_div_assign() {
+        let mut x = Number::from(10_u64);
+        let y = Number::from(2);
+        x.try_div_assign(y).unwrap();
+        assert_eq!(x, Number::from(5));
+    }
+
+    #[test]
+    fn test_mul_assign() {
+        let mut x = Number::from(10_u64);
+        let y = Number::from(2);
+        x.try_mul_assign(y).unwrap();
+        assert_eq!(x, Number::from(20));
+    }
+
+    #[test]
+    fn test_pow_assign() {
+        let mut x = Number::from(10_u64);
+        let y = 2;
+        x.try_pow_assign(y).unwrap();
+        assert_eq!(x, Number::from(100));
     }
 }
