@@ -143,6 +143,10 @@ export class AccountUtils {
     return new TestToken(this.conn, token, 9);
   }
 
+  async getBalance(publicKey: PublicKey): Promise<number> {
+    return this.conn.getBalance(publicKey);
+  }
+
   // --------------------------------------- Token Acc / ATA
 
   async deserializeTokenAccount(

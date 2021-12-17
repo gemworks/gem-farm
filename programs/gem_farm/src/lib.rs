@@ -14,6 +14,7 @@ pub mod gem_farm {
     pub fn init_farm(
         ctx: Context<InitFarm>,
         bump_auth: u8,
+        _bump_treasury: u8,
         _bump_pot_a: u8,
         _bump_pot_b: u8,
         reward_type_a: RewardType,
@@ -35,7 +36,7 @@ pub mod gem_farm {
         instructions::stake::handler(ctx)
     }
 
-    pub fn unstake(ctx: Context<Unstake>, _bump: u8) -> ProgramResult {
+    pub fn unstake(ctx: Context<Unstake>, _bump_treasury: u8, _bump_farmer: u8) -> ProgramResult {
         instructions::unstake::handler(ctx)
     }
 

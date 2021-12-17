@@ -5,7 +5,7 @@ use gem_bank::{self, cpi::accounts::InitBank, program::GemBank};
 use crate::state::*;
 
 #[derive(Accounts)]
-#[instruction(bump_auth: u8, bump_pot_a: u8, bump_pot_b: u8)]
+#[instruction(bump_auth: u8, bump_treasury: u8, bump_pot_a: u8, bump_pot_b: u8)]
 pub struct InitFarm<'info> {
     // farm
     #[account(init, payer = payer, space = 8 + std::mem::size_of::<Farm>())]
@@ -13,6 +13,8 @@ pub struct InitFarm<'info> {
     pub farm_manager: Signer<'info>,
     #[account(mut, seeds = [farm.key().as_ref()], bump = bump_auth)]
     pub farm_authority: AccountInfo<'info>,
+    #[account(seeds = [b"treasury".as_ref(), farm.key().as_ref()], bump = bump_treasury)]
+    pub farm_treasury: AccountInfo<'info>,
 
     // todo need ixs to be able to update mints/pots/reward type
     // reward a

@@ -10,6 +10,7 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token';
+import { assert } from 'chai';
 
 //acts as an enum
 export const RewardType = {
@@ -20,6 +21,7 @@ export const RewardType = {
 export interface FarmConfig {
   minStakingPeriodSec: BN;
   cooldownPeriodSec: BN;
+  unstakingFeeLamp: BN;
 }
 
 export type OptionBN = BN | null;
@@ -78,6 +80,11 @@ export class GemFarmClient extends GemBankClient {
     return this.farmProgram.account.fundingReceipt.fetch(fundingReceipt);
   }
 
+  async fetchTreasuryBalance(farm: PublicKey) {
+    const [treasury] = await this.findFarmTreasuryPDA(farm);
+    return this.getBalance(treasury);
+  }
+
   // --------------------------------------- find PDA addresses
 
   async findFarmerPDA(farm: PublicKey, identity: PublicKey) {
@@ -90,6 +97,13 @@ export class GemFarmClient extends GemBankClient {
 
   async findFarmAuthorityPDA(farm: PublicKey) {
     return this.findProgramAddress(this.farmProgram.programId, [farm]);
+  }
+
+  async findFarmTreasuryPDA(farm: PublicKey) {
+    return this.findProgramAddress(this.farmProgram.programId, [
+      'treasury',
+      farm,
+    ]);
   }
 
   async findAuthorizationProofPDA(farm: PublicKey, funder: PublicKey) {
@@ -135,6 +149,9 @@ export class GemFarmClient extends GemBankClient {
     const [farmAuth, farmAuthBump] = await this.findFarmAuthorityPDA(
       farm.publicKey
     );
+    const [farmTreasury, farmTreasuryBump] = await this.findFarmTreasuryPDA(
+      farm.publicKey
+    );
     const [rewardAPot, rewardAPotBump] = await this.findRewardsPotPDA(
       farm.publicKey,
       rewardAMint
@@ -150,6 +167,7 @@ export class GemFarmClient extends GemBankClient {
     console.log('starting farm at', bank.publicKey.toBase58());
     const txSig = await this.farmProgram.rpc.initFarm(
       farmAuthBump,
+      farmTreasuryBump,
       rewardAPotBump,
       rewardBPotBump,
       rewardAType,
@@ -162,6 +180,7 @@ export class GemFarmClient extends GemBankClient {
             ? (<Keypair>farmManager).publicKey
             : farmManager,
           farmAuthority: farmAuth,
+          farmTreasury,
           payer: isKp(payer) ? (<Keypair>payer).publicKey : farmManager,
           rewardAPot,
           rewardAMint,
@@ -180,6 +199,8 @@ export class GemFarmClient extends GemBankClient {
     return {
       farmAuth,
       farmAuthBump,
+      farmTreasury,
+      farmTreasuryBump,
       rewardAPot,
       rewardAPotBump,
       rewardBPot,
@@ -253,6 +274,9 @@ export class GemFarmClient extends GemBankClient {
       identityPk
     );
     const [farmAuth, farmAuthBump] = await this.findFarmAuthorityPDA(farm);
+    const [farmTreasury, farmTreasuryBump] = await this.findFarmTreasuryPDA(
+      farm
+    );
 
     const signers = [];
     if (isKp(farmerIdentity)) signers.push(<Keypair>farmerIdentity);
@@ -260,15 +284,17 @@ export class GemFarmClient extends GemBankClient {
     let txSig;
     if (unstake) {
       console.log('UNstaking gems for', identityPk.toBase58());
-      txSig = await this.farmProgram.rpc.unstake(farmerBump, {
+      txSig = await this.farmProgram.rpc.unstake(farmTreasuryBump, farmerBump, {
         accounts: {
           farm,
           farmer,
+          farmTreasury,
           identity: identityPk,
           bank: farmAcc.bank,
           vault,
           farmAuthority: farmAuth,
           gemBank: this.bankProgram.programId,
+          systemProgram: SystemProgram.programId,
         },
         signers,
       });
@@ -295,6 +321,8 @@ export class GemFarmClient extends GemBankClient {
       vaultBump,
       farmAuth,
       farmAuthBump,
+      farmTreasury,
+      farmTreasuryBump,
       txSig,
     };
   }

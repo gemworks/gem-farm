@@ -15,6 +15,8 @@ pub struct FarmConfig {
 
     // time after user decides to unstake before they can actually withdraw
     pub cooldown_period_sec: u64,
+
+    pub unstaking_fee_lamp: u64,
 }
 
 #[repr(C)]
@@ -24,6 +26,9 @@ pub struct Farm {
     pub version: u16,
 
     pub farm_manager: Pubkey,
+
+    // used for collecting any fees earned by the farm
+    pub farm_treasury: Pubkey,
 
     // signs off on any bank operations related to the farm
     pub farm_authority: Pubkey,
