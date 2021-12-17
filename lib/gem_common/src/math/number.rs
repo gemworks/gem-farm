@@ -1,15 +1,16 @@
 //! Yet another decimal library
 
+use std::fmt::{Display, Formatter};
 use std::{
     iter::Sum,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign},
 };
 
-use crate::errors::ErrorCode;
-use crate::TrySub;
-use anchor_lang::prelude::*;
-use std::fmt::{Display, Formatter};
-use thiserror::Error;
+// use std::convert::TryFrom;
+// use anchor_lang::prelude::*;
+// use spl_math::approximations::sqrt;
+// use crate::errors::ErrorCode;
+// use crate::{TryAdd, TryDiv, TryMul, TryPow, TryRem, TrySqrt, TrySub};
 
 uint::construct_uint! {
     pub struct U192(3);
@@ -22,7 +23,7 @@ const U64_MAX: U192 = U192([0xffffffffffffffff, 0x0, 0x0]);
 
 #[derive(Default, Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 #[repr(transparent)]
-pub struct Number(U192);
+pub struct Number(pub U192);
 
 static_assertions::const_assert_eq!(24, std::mem::size_of::<Number>());
 static_assertions::const_assert_eq!(0, std::mem::size_of::<Number>() % 8);
@@ -102,19 +103,18 @@ impl Number {
     }
 
     pub fn from_decimal(value: impl Into<U192>, exponent: impl Into<i32>) -> Self {
-        // interesting, so exponent needs to be 1 or less, because we're already at 15
-        let extra_precision = PRECISION + exponent.into(); //eg default 15
-        let mut prec_value = Self::ten_pow(extra_precision.abs() as u32); //eg then 1_000_000_000_000_000
+        let extra_precision = PRECISION + exponent.into();
+        let mut prec_value = Self::ten_pow(extra_precision.abs() as u32);
 
         if extra_precision < 0 {
             prec_value = ONE / prec_value;
         }
 
-        Self(value.into() * prec_value) //eg then value * 1_000_000_000_000_000
+        Self(value.into() * prec_value)
     }
 
     pub fn from_bps(basis_points: u16) -> Number {
-        Number::from_decimal(basis_points, BPS_EXPONENT) //15-4 = 11 precision
+        Number::from_decimal(basis_points, BPS_EXPONENT)
     }
 
     pub fn pow(&self, exp: impl Into<Number>) -> Number {
@@ -149,6 +149,128 @@ impl Number {
     }
 }
 
+// impl TrySub for Number {
+//     fn try_sub(self, rhs: Self) -> Result<Self, ProgramError> {
+//         self.checked_sub(rhs)
+//             .ok_or(ErrorCode::ArithmeticError.into())
+//     }
+//     fn try_sub_assign(&mut self, rhs: Self) -> ProgramResult {
+//         *self = self.try_sub(rhs)?;
+//         Ok(())
+//     }
+// }
+//
+// impl TryAdd for Number {
+//     fn try_add(self, rhs: Self) -> Result<Self, ProgramError> {
+//         self.checked_add(rhs)
+//             .ok_or(ErrorCode::ArithmeticError.into())
+//     }
+//     fn try_add_assign(&mut self, rhs: Self) -> ProgramResult {
+//         *self = self.try_add(rhs)?;
+//         Ok(())
+//     }
+// }
+//
+// impl TryDiv for Number {
+//     fn try_floor_div(self, rhs: Self) -> Result<Self, ProgramError> {
+//         self.checked_div(rhs)
+//             .ok_or(ErrorCode::ArithmeticError.into())
+//     }
+//     fn try_floor_div_assign(&mut self, rhs: Self) -> ProgramResult {
+//         *self = self.try_floor_div(rhs)?;
+//         Ok(())
+//     }
+//     fn try_ceil_div(self, rhs: Self) -> Result<Self, ProgramError> {
+//         let reduced_by_one = self
+//             .checked_sub(1)
+//             .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
+//
+//         let divided = reduced_by_one
+//             .checked_div(rhs)
+//             .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
+//
+//         (1 as Number)
+//             .checked_add(divided)
+//             .ok_or(ErrorCode::ArithmeticError.into())
+//     }
+//     fn try_ceil_div_assign(&mut self, rhs: Self) -> ProgramResult {
+//         *self = self.try_ceil_div(rhs)?;
+//         Ok(())
+//     }
+//     fn try_rounded_div(self, rhs: Self) -> Result<Self, ProgramError> {
+//         let rounding = rhs
+//             .checked_div(2)
+//             .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
+//
+//         let with_rounding = self
+//             .checked_add(rounding)
+//             .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
+//
+//         with_rounding
+//             .checked_div(rhs)
+//             .ok_or(ErrorCode::ArithmeticError.into())
+//     }
+//     fn try_rounded_div_assign(&mut self, rhs: Self) -> ProgramResult {
+//         *self = self.try_rounded_div(rhs)?;
+//         Ok(())
+//     }
+// }
+//
+// impl TryMul for Number {
+//     fn try_mul(self, rhs: Self) -> Result<Self, ProgramError> {
+//         self.checked_mul(rhs)
+//             .ok_or(ErrorCode::ArithmeticError.into())
+//     }
+//     fn try_mul_assign(&mut self, rhs: Self) -> ProgramResult {
+//         *self = self.try_mul(rhs)?;
+//         Ok(())
+//     }
+// }
+//
+// impl TryPow for Number {
+//     fn try_pow(self, rhs: u32) -> Result<Self, ProgramError> {
+//         self.checked_pow(rhs)
+//             .ok_or(ErrorCode::ArithmeticError.into())
+//     }
+//     fn try_pow_assign(&mut self, rhs: u32) -> ProgramResult {
+//         *self = self.try_pow(rhs)?;
+//         Ok(())
+//     }
+// }
+//
+// impl TryRem for Number {
+//     fn try_rem(self, rhs: Self) -> Result<Self, ProgramError> {
+//         self.checked_rem(rhs)
+//             .ok_or(ErrorCode::ArithmeticError.into())
+//     }
+// }
+//
+// // based on solana's spl math crate
+// // https://github.com/solana-labs/solana-program-library/blob/master/libraries/math/src/approximations.rs
+// impl TrySqrt for Number {
+//     fn try_sqrt(self) -> Result<Self, ProgramError> {
+//         sqrt(self).ok_or(ErrorCode::ArithmeticError.into())
+//     }
+//     fn try_sqrt_assign(&mut self) -> ProgramResult {
+//         *self = self.try_sqrt()?;
+//         Ok(())
+//     }
+// }
+
+// impl TrySub for Number {
+//     fn try_sub(self, rhs: Self) -> Result<Self, ProgramError> {
+//         let result = self
+//             .0
+//             .checked_sub(rhs.0)
+//             .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
+//         Ok(Self(result))
+//     }
+//     fn try_sub_assign(&mut self, rhs: Self) -> ProgramResult {
+//         *self = self.try_sub(rhs)?;
+//         Ok(())
+//     }
+// }
+
 // --------------------------------------- add
 
 impl Add<Number> for Number {
@@ -178,20 +300,6 @@ impl Sub<Number> for Number {
 impl SubAssign<Number> for Number {
     fn sub_assign(&mut self, rhs: Number) {
         self.0.sub_assign(rhs.0)
-    }
-}
-
-impl TrySub for Number {
-    fn try_sub(self, rhs: Self) -> Result<Self, ProgramError> {
-        let result = self
-            .0
-            .checked_sub(rhs.0)
-            .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
-        Ok(Self(result))
-    }
-    fn try_sub_assign(&mut self, rhs: Self) -> ProgramResult {
-        *self = self.try_sub(rhs)?;
-        Ok(())
     }
 }
 

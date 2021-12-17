@@ -4,6 +4,48 @@ use anchor_lang::prelude::*;
 use spl_math::approximations::sqrt;
 
 use crate::errors::ErrorCode;
+use crate::Number;
+
+pub trait CheckedMath: Sized {
+    fn checked_sub(self, rhs: Self) -> Option<Self>;
+    fn checked_add(self, rhs: Self) -> Option<Self>;
+    fn checked_div(self, rhs: Self) -> Option<Self>;
+    fn checked_mul(self, rhs: Self) -> Option<Self>;
+    fn checked_rem(self, rhs: Self) -> Option<Self>;
+}
+
+impl CheckedMath for Number {
+    fn checked_sub(self, rhs: Self) -> Option<Self> {
+        if let Some(v) = self.0.checked_sub(rhs.0) {
+            return Some(Self(v));
+        }
+        None
+    }
+    fn checked_add(self, rhs: Self) -> Option<Self> {
+        if let Some(v) = self.0.checked_add(rhs.0) {
+            return Some(Self(v));
+        }
+        None
+    }
+    fn checked_div(self, rhs: Self) -> Option<Self> {
+        if let Some(v) = self.0.checked_div(rhs.0) {
+            return Some(Self(v));
+        }
+        None
+    }
+    fn checked_mul(self, rhs: Self) -> Option<Self> {
+        if let Some(v) = self.0.checked_mul(rhs.0) {
+            return Some(Self(v));
+        }
+        None
+    }
+    fn checked_rem(self, rhs: Self) -> Option<Self> {
+        if let Some(v) = self.0.checked_rem(rhs.0) {
+            return Some(Self(v));
+        }
+        None
+    }
+}
 
 // --------------------------------------- traits
 
@@ -175,6 +217,7 @@ try_math! {u64}
 try_math! {i64}
 try_math! {u128}
 try_math! {i128}
+try_math! {Number}
 
 impl TryCast<u64> for u128 {
     fn try_cast(self) -> Result<u64, ProgramError> {
@@ -197,7 +240,7 @@ mod tests {
     use super::*;
     use std::any::type_name;
 
-    // --------------------------------------- dividison types
+    // --------------------------------------- division types
 
     #[test]
     fn test_floor_div() {
