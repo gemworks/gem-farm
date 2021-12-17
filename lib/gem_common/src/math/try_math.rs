@@ -4,92 +4,86 @@ use anchor_lang::prelude::*;
 use spl_math::approximations::sqrt;
 
 use crate::errors::ErrorCode;
-use crate::Number;
-
-pub trait CheckedMath: Sized {
-    fn checked_sub(self, rhs: Self) -> Option<Self>;
-    fn checked_add(self, rhs: Self) -> Option<Self>;
-    fn checked_div(self, rhs: Self) -> Option<Self>;
-    fn checked_mul(self, rhs: Self) -> Option<Self>;
-    fn checked_rem(self, rhs: Self) -> Option<Self>;
-}
-
-impl CheckedMath for Number {
-    fn checked_sub(self, rhs: Self) -> Option<Self> {
-        if let Some(v) = self.0.checked_sub(rhs.0) {
-            return Some(Self(v));
-        }
-        None
-    }
-    fn checked_add(self, rhs: Self) -> Option<Self> {
-        if let Some(v) = self.0.checked_add(rhs.0) {
-            return Some(Self(v));
-        }
-        None
-    }
-    fn checked_div(self, rhs: Self) -> Option<Self> {
-        if let Some(v) = self.0.checked_div(rhs.0) {
-            return Some(Self(v));
-        }
-        None
-    }
-    fn checked_mul(self, rhs: Self) -> Option<Self> {
-        if let Some(v) = self.0.checked_mul(rhs.0) {
-            return Some(Self(v));
-        }
-        None
-    }
-    fn checked_rem(self, rhs: Self) -> Option<Self> {
-        if let Some(v) = self.0.checked_rem(rhs.0) {
-            return Some(Self(v));
-        }
-        None
-    }
-}
 
 // --------------------------------------- traits
 
-pub trait TrySub: Sized {
+pub trait TrySub: Sized + Copy {
     fn try_sub(self, rhs: Self) -> Result<Self, ProgramError>;
-    fn try_sub_assign(&mut self, rhs: Self) -> ProgramResult;
+    fn try_sub_assign(&mut self, rhs: Self) -> ProgramResult {
+        *self = self.try_sub(rhs)?;
+        Ok(())
+    }
 }
 
-pub trait TryAdd: Sized {
+pub trait TryAdd: Sized + Copy {
     fn try_add(self, rhs: Self) -> Result<Self, ProgramError>;
-    fn try_add_assign(&mut self, rhs: Self) -> ProgramResult;
+    fn try_add_assign(&mut self, rhs: Self) -> ProgramResult {
+        *self = self.try_add(rhs)?;
+        Ok(())
+    }
 }
 
-pub trait TryDiv: Sized {
+pub trait TryDiv: Sized + Copy {
     fn try_floor_div(self, rhs: Self) -> Result<Self, ProgramError>;
-    fn try_floor_div_assign(&mut self, rhs: Self) -> ProgramResult;
+    fn try_floor_div_assign(&mut self, rhs: Self) -> ProgramResult {
+        *self = self.try_floor_div(rhs)?;
+        Ok(())
+    }
+
     fn try_ceil_div(self, rhs: Self) -> Result<Self, ProgramError>;
-    fn try_ceil_div_assign(&mut self, rhs: Self) -> ProgramResult;
+    fn try_ceil_div_assign(&mut self, rhs: Self) -> ProgramResult {
+        *self = self.try_ceil_div(rhs)?;
+        Ok(())
+    }
+
     fn try_rounded_div(self, rhs: Self) -> Result<Self, ProgramError>;
-    fn try_rounded_div_assign(&mut self, rhs: Self) -> ProgramResult;
+    fn try_rounded_div_assign(&mut self, rhs: Self) -> ProgramResult {
+        *self = self.try_rounded_div(rhs)?;
+        Ok(())
+    }
 }
 
-pub trait TryMul: Sized {
+pub trait TryMul: Sized + Copy {
     fn try_mul(self, rhs: Self) -> Result<Self, ProgramError>;
-    fn try_mul_assign(&mut self, rhs: Self) -> ProgramResult;
+    fn try_mul_assign(&mut self, rhs: Self) -> ProgramResult {
+        *self = self.try_mul(rhs)?;
+        Ok(())
+    }
 }
 
-pub trait TryPow: Sized {
+pub trait TryPow: Sized + Copy {
     fn try_pow(self, rhs: u32) -> Result<Self, ProgramError>;
-    fn try_pow_assign(&mut self, rhs: u32) -> ProgramResult;
+    fn try_pow_assign(&mut self, rhs: u32) -> ProgramResult {
+        *self = self.try_pow(rhs)?;
+        Ok(())
+    }
 }
 
-pub trait TrySqrt: Sized {
+pub trait TrySqrt: Sized + Copy {
     fn try_sqrt(self) -> Result<Self, ProgramError>;
-    fn try_sqrt_assign(&mut self) -> ProgramResult;
+    fn try_sqrt_assign(&mut self) -> ProgramResult {
+        *self = self.try_sqrt()?;
+        Ok(())
+    }
 }
 
-pub trait TryRem: Sized {
+pub trait TryRem: Sized + Copy {
     fn try_rem(self, rhs: Self) -> Result<Self, ProgramError>;
 }
 
-pub trait TryCast<Into>: Sized {
+pub trait TryCast<Into>: Sized + Copy {
     fn try_cast(self) -> Result<Into, ProgramError>;
 }
+
+// pub trait TrySum: Sized + Copy + TryAdd {
+//     fn sum<I: Iterator<Item = Self>>(iter: I) -> Result<Self, ProgramError> {
+//         iter.reduce(|a, b| {
+//             a.try_add(b)
+//                 .unwrap_or_else(|| return Err(ErrorCode::ArithmeticError).into())
+//         })
+//         .ok_or(ErrorCode::ArithmeticError.into())
+//     }
+// }
 
 // --------------------------------------- impl
 
@@ -100,10 +94,6 @@ macro_rules! try_math {
                 self.checked_sub(rhs)
                     .ok_or(ErrorCode::ArithmeticError.into())
             }
-            fn try_sub_assign(&mut self, rhs: Self) -> ProgramResult {
-                *self = self.try_sub(rhs)?;
-                Ok(())
-            }
         }
 
         impl TryAdd for $our_type {
@@ -111,20 +101,12 @@ macro_rules! try_math {
                 self.checked_add(rhs)
                     .ok_or(ErrorCode::ArithmeticError.into())
             }
-            fn try_add_assign(&mut self, rhs: Self) -> ProgramResult {
-                *self = self.try_add(rhs)?;
-                Ok(())
-            }
         }
 
         impl TryDiv for $our_type {
             fn try_floor_div(self, rhs: Self) -> Result<Self, ProgramError> {
                 self.checked_div(rhs)
                     .ok_or(ErrorCode::ArithmeticError.into())
-            }
-            fn try_floor_div_assign(&mut self, rhs: Self) -> ProgramResult {
-                *self = self.try_floor_div(rhs)?;
-                Ok(())
             }
             fn try_ceil_div(self, rhs: Self) -> Result<Self, ProgramError> {
                 let reduced_by_one = self
@@ -139,10 +121,6 @@ macro_rules! try_math {
                     .checked_add(divided)
                     .ok_or(ErrorCode::ArithmeticError.into())
             }
-            fn try_ceil_div_assign(&mut self, rhs: Self) -> ProgramResult {
-                *self = self.try_ceil_div(rhs)?;
-                Ok(())
-            }
             fn try_rounded_div(self, rhs: Self) -> Result<Self, ProgramError> {
                 let rounding = rhs
                     .checked_div(2)
@@ -156,10 +134,6 @@ macro_rules! try_math {
                     .checked_div(rhs)
                     .ok_or(ErrorCode::ArithmeticError.into())
             }
-            fn try_rounded_div_assign(&mut self, rhs: Self) -> ProgramResult {
-                *self = self.try_rounded_div(rhs)?;
-                Ok(())
-            }
         }
 
         impl TryMul for $our_type {
@@ -167,20 +141,12 @@ macro_rules! try_math {
                 self.checked_mul(rhs)
                     .ok_or(ErrorCode::ArithmeticError.into())
             }
-            fn try_mul_assign(&mut self, rhs: Self) -> ProgramResult {
-                *self = self.try_mul(rhs)?;
-                Ok(())
-            }
         }
 
         impl TryPow for $our_type {
             fn try_pow(self, rhs: u32) -> Result<Self, ProgramError> {
                 self.checked_pow(rhs)
                     .ok_or(ErrorCode::ArithmeticError.into())
-            }
-            fn try_pow_assign(&mut self, rhs: u32) -> ProgramResult {
-                *self = self.try_pow(rhs)?;
-                Ok(())
             }
         }
 
@@ -196,10 +162,6 @@ macro_rules! try_math {
         impl TrySqrt for $our_type {
             fn try_sqrt(self) -> Result<Self, ProgramError> {
                 sqrt(self).ok_or(ErrorCode::ArithmeticError.into())
-            }
-            fn try_sqrt_assign(&mut self) -> ProgramResult {
-                *self = self.try_sqrt()?;
-                Ok(())
             }
         }
     };
@@ -217,7 +179,6 @@ try_math! {u64}
 try_math! {i64}
 try_math! {u128}
 try_math! {i128}
-try_math! {Number}
 
 impl TryCast<u64> for u128 {
     fn try_cast(self) -> Result<u64, ProgramError> {
