@@ -1,6 +1,7 @@
 use std::convert::TryFrom;
 
 use anchor_lang::prelude::*;
+use spl_math::approximations::sqrt;
 
 use crate::errors::ErrorCode;
 
@@ -35,18 +36,18 @@ pub trait TryPow: Sized {
     fn try_pow_assign(&mut self, rhs: u32) -> ProgramResult;
 }
 
-// pub trait TrySqrt: Sized {
-//     fn try_sqrt(self) -> Result<Self, ProgramError>;
-//     fn try_sqrt_assign(&mut self, rhs: Self) -> ProgramResult;
-// }
+pub trait TrySqrt: Sized {
+    fn try_sqrt(self) -> Result<Self, ProgramError>;
+    fn try_sqrt_assign(&mut self) -> ProgramResult;
+}
 
 pub trait TryRem: Sized {
     fn try_rem(self, rhs: Self) -> Result<Self, ProgramError>;
 }
 
-// pub trait TryCast<Into>: Sized {
-//     fn try_cast(self) -> Result<Into, ProgramError>;
-// }
+pub trait TryCast<Into>: Sized {
+    fn try_cast(self) -> Result<Into, ProgramError>;
+}
 
 // --------------------------------------- impl
 
@@ -147,6 +148,18 @@ macro_rules! try_math {
                     .ok_or(ErrorCode::ArithmeticError.into())
             }
         }
+
+        // based on solana's spl math crate
+        // https://github.com/solana-labs/solana-program-library/blob/master/libraries/math/src/approximations.rs
+        impl TrySqrt for $our_type {
+            fn try_sqrt(self) -> Result<Self, ProgramError> {
+                sqrt(self).ok_or(ErrorCode::ArithmeticError.into())
+            }
+            fn try_sqrt_assign(&mut self) -> ProgramResult {
+                *self = self.try_sqrt()?;
+                Ok(())
+            }
+        }
     };
 }
 
@@ -163,9 +176,26 @@ try_math! {i64}
 try_math! {u128}
 try_math! {i128}
 
+impl TryCast<u64> for u128 {
+    fn try_cast(self) -> Result<u64, ProgramError> {
+        u64::try_from(self).map_err(|_| ErrorCode::ArithmeticError.into())
+    }
+}
+
+impl TryCast<u32> for u64 {
+    fn try_cast(self) -> Result<u32, ProgramError> {
+        u32::try_from(self).map_err(|_| ErrorCode::ArithmeticError.into())
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    fn type_of<T>(_: T) -> &'static str {
+        type_name::<T>()
+    }
+
     use super::*;
+    use std::any::type_name;
 
     // --------------------------------------- dividison types
 
@@ -306,5 +336,25 @@ mod tests {
         let y = 2;
         x.try_pow_assign(y).unwrap();
         assert_eq!(x, 100);
+    }
+
+    #[test]
+    fn test_sqrt_assign() {
+        let mut x = 16_u64;
+        x.try_sqrt_assign().unwrap();
+        assert_eq!(x, 4);
+
+        let mut x = 25_u64;
+        x.try_sqrt_assign().unwrap();
+        assert_eq!(x, 5);
+    }
+
+    // --------------------------------------- casts
+
+    #[test]
+    #[should_panic]
+    fn test_try_cast() {
+        let x = 0xffffffffffffffff_u64;
+        let y = x.try_cast().unwrap();
     }
 }
