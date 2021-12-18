@@ -15,7 +15,7 @@ use crate::state::*;
 pub struct FlashDeposit<'info> {
     // farm
     #[account(mut, has_one = farm_authority)]
-    pub farm: Account<'info, Farm>,
+    pub farm: Box<Account<'info, Farm>>,
     pub farm_authority: AccountInfo<'info>,
 
     // farmer
@@ -26,7 +26,7 @@ pub struct FlashDeposit<'info> {
             identity.key().as_ref(),
         ],
         bump = bump_farmer)]
-    pub farmer: Account<'info, Farmer>,
+    pub farmer: Box<Account<'info, Farmer>>,
     #[account(mut)]
     pub identity: Signer<'info>,
 

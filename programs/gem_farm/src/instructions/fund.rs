@@ -18,7 +18,7 @@ pub struct Fund<'info> {
             authorized_funder.key().as_ref(),
         ],
         bump = bump_proof)]
-    pub authorization_proof: Account<'info, AuthorizationProof>,
+    pub authorization_proof: Box<Account<'info, AuthorizationProof>>,
     #[account(mut)]
     pub authorized_funder: Signer<'info>,
     #[account(init_if_needed, seeds = [

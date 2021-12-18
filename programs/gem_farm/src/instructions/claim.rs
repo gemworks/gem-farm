@@ -12,7 +12,7 @@ use crate::state::*;
 pub struct Claim<'info> {
     // farm
     #[account(has_one = farm_authority)]
-    pub farm: Account<'info, Farm>,
+    pub farm: Box<Account<'info, Farm>>,
     #[account(seeds = [farm.key().as_ref()], bump = bump_auth)]
     pub farm_authority: AccountInfo<'info>,
 
@@ -23,7 +23,7 @@ pub struct Claim<'info> {
             identity.key().as_ref(),
         ],
         bump = bump_farmer)]
-    pub farmer: Account<'info, Farmer>,
+    pub farmer: Box<Account<'info, Farmer>>,
     #[account(mut)] //payer
     pub identity: Signer<'info>,
 

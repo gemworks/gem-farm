@@ -12,7 +12,7 @@ use crate::state::*;
 pub struct Defund<'info> {
     // farm
     #[account(mut, has_one = farm_authority)]
-    pub farm: Account<'info, Farm>,
+    pub farm: Box<Account<'info, Farm>>,
     pub farm_authority: AccountInfo<'info>,
 
     // funder
@@ -22,7 +22,7 @@ pub struct Defund<'info> {
             authorized_funder.key().as_ref(),
         ],
         bump = bump_proof)]
-    pub authorization_proof: Account<'info, AuthorizationProof>,
+    pub authorization_proof: Box<Account<'info, AuthorizationProof>>,
     #[account(mut)]
     pub authorized_funder: Signer<'info>,
     #[account(mut, seeds = [
@@ -83,6 +83,7 @@ pub fn handler(
     let receipt = &mut ctx.accounts.funding_receipt;
 
     let funder_withdrawable_amount = receipt.funder_withdrawable_amount()?;
+
     let to_defund = farm.defund_reward_by_mint(
         now_ts,
         funder_withdrawable_amount,

@@ -7,7 +7,7 @@ use crate::state::Farm;
 pub struct LockFunding<'info> {
     // farm
     #[account(mut, has_one = farm_manager)]
-    pub farm: Account<'info, Farm>,
+    pub farm: Box<Account<'info, Farm>>,
     #[account(mut)]
     pub farm_manager: Signer<'info>,
 

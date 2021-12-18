@@ -8,7 +8,7 @@ use crate::state::*;
 pub struct AuthorizeFunder<'info> {
     // farm
     #[account(mut, has_one = farm_manager)]
-    pub farm: Account<'info, Farm>,
+    pub farm: Box<Account<'info, Farm>>,
     #[account(mut)]
     pub farm_manager: Signer<'info>,
 
@@ -22,7 +22,7 @@ pub struct AuthorizeFunder<'info> {
         bump = bump,
         payer = farm_manager,
         space = 8 + std::mem::size_of::<AuthorizationProof>())]
-    authorization_proof: Account<'info, AuthorizationProof>,
+    authorization_proof: Box<Account<'info, AuthorizationProof>>,
 
     // misc
     system_program: Program<'info, System>,

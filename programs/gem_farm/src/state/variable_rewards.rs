@@ -93,7 +93,7 @@ impl VariableRateTracker {
     }
 
     fn calc_unaccrued_reward(&self, now_ts: u64, reward_end_ts: u64) -> Result<u64, ProgramError> {
-        // if reward end has passed, we can't defund any amount
+        // if reward end has passed, the entire amount has accrued and nothing is available for defunding
         if reward_end_ts <= now_ts {
             return Ok(0);
         }

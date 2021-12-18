@@ -14,7 +14,7 @@ use crate::state::*;
 pub struct Stake<'info> {
     // farm
     #[account(mut, has_one = farm_authority)]
-    pub farm: Account<'info, Farm>,
+    pub farm: Box<Account<'info, Farm>>,
     pub farm_authority: AccountInfo<'info>,
 
     // farmer
@@ -25,16 +25,16 @@ pub struct Stake<'info> {
             identity.key().as_ref(),
         ],
         bump = bump)]
-    pub farmer: Account<'info, Farmer>,
+    pub farmer: Box<Account<'info, Farmer>>,
     #[account(mut)]
     pub identity: Signer<'info>,
 
     // cpi
     // todo I don't think I need to re-do these checks here do I?
     #[account(constraint = bank.bank_manager == farm_authority.key())]
-    pub bank: Account<'info, Bank>,
+    pub bank: Box<Account<'info, Bank>>,
     #[account(mut, has_one = bank)]
-    pub vault: Account<'info, Vault>,
+    pub vault: Box<Account<'info, Vault>>,
     pub gem_bank: Program<'info, GemBank>,
 }
 

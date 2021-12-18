@@ -9,7 +9,7 @@ use crate::state::*;
 pub struct InitFarm<'info> {
     // farm
     #[account(init, payer = payer, space = 8 + std::mem::size_of::<Farm>())]
-    pub farm: Account<'info, Farm>,
+    pub farm: Box<Account<'info, Farm>>,
     pub farm_manager: Signer<'info>,
     #[account(mut, seeds = [farm.key().as_ref()], bump = bump_auth)]
     pub farm_authority: AccountInfo<'info>,

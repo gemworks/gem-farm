@@ -9,11 +9,10 @@ use crate::state::*;
 pub struct InitFarmer<'info> {
     // farm
     #[account(mut)]
-    pub farm: Account<'info, Farm>,
+    pub farm: Box<Account<'info, Farm>>,
 
     // farmer
-    #[account(init,
-        seeds = [
+    #[account(init, seeds = [
             b"farmer".as_ref(),
             farm.key().as_ref(),
             identity.key().as_ref(),
@@ -21,13 +20,13 @@ pub struct InitFarmer<'info> {
         bump = bump_farmer,
         payer = payer,
         space = 8 + std::mem::size_of::<Farmer>())]
-    pub farmer: Account<'info, Farmer>,
+    pub farmer: Box<Account<'info, Farmer>>,
     pub identity: Signer<'info>,
 
     // cpi
     // todo should it be less opinionated and simply take in a pre-made vault?
     #[account(mut)]
-    pub bank: Account<'info, Bank>,
+    pub bank: Box<Account<'info, Bank>>,
     #[account(mut)]
     pub vault: AccountInfo<'info>,
     pub gem_bank: Program<'info, GemBank>,

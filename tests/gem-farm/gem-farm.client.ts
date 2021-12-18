@@ -6,11 +6,9 @@ import { Connection } from '@metaplex/js';
 import { isKp } from '../utils/types';
 import { GemBankClient } from '../gem-bank/gem-bank.client';
 import {
-  AccountInfo,
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token';
-import { assert } from 'chai';
 
 //acts as an enum
 export const RewardType = {
@@ -22,6 +20,17 @@ export interface FarmConfig {
   minStakingPeriodSec: BN;
   cooldownPeriodSec: BN;
   unstakingFeeLamp: BN;
+}
+
+export interface PeriodConfig {
+  rate: BN;
+  duration: BN;
+}
+
+export interface FixedRateConfig {
+  period1: PeriodConfig;
+  period2: PeriodConfig | null;
+  period3: PeriodConfig | null;
 }
 
 export type OptionBN = BN | null;
@@ -410,6 +419,7 @@ export class GemFarmClient extends GemBankClient {
     amount: BN,
     defund = false,
     duration: OptionBN = null,
+    fixedRateConfig: FixedRateConfig | null = null,
     rewardSource?: PublicKey
   ) {
     const funderPk = isKp(funder)
@@ -463,6 +473,7 @@ export class GemFarmClient extends GemBankClient {
         potBump,
         amount,
         duration!,
+        fixedRateConfig as any,
         {
           accounts: {
             farm,
@@ -499,7 +510,8 @@ export class GemFarmClient extends GemBankClient {
     rewardSource: PublicKey,
     funder: PublicKey | Keypair,
     amount: BN,
-    duration: BN
+    duration: BN,
+    fixedRateConfig: FixedRateConfig | null = null
   ) {
     return this.fundCommon(
       farm,
@@ -508,6 +520,7 @@ export class GemFarmClient extends GemBankClient {
       amount,
       false,
       duration,
+      fixedRateConfig,
       rewardSource
     );
   }
