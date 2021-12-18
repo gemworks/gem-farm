@@ -282,6 +282,11 @@ describe('gem farm (0 min staking / cooldown)', () => {
       );
       const farmAcc = await gf.fetchFarmAcc(farm.publicKey);
       const farmerAcc = await gf.fetchFarmerAcc(farmer);
+
+      //todo turn into a more general invariant ran between stakes below
+      //since currently we have a single farmer depositing, make sure gems match
+      assert(farmAcc.gemsStaked.eq(farmerAcc.gemsStaked));
+
       const rewardPerGem =
         // @ts-ignore
         farmAcc.rewardA.variableRateTracker.accruedRewardPerGem;
@@ -335,12 +340,16 @@ describe('gem farm (0 min staking / cooldown)', () => {
       vaultAcc = await gf.fetchVaultAcc(vault);
       assert.isTrue(vaultAcc.locked);
 
-      //todo if done after 2nd unstaking, this non-deterministically fails - why?
       await assertRewardMatches(gemsStakedBeforeUnstaking);
 
       // ----------------- unstake second time to actually open up the vault for withdrawing
       await gf.unstake(farm.publicKey, farmerIdentity);
       await printStructs('UNSTAKED');
+
+      // todo this non-deterministically fails - why? only after 2nd unstaking, not 1st?
+      // the only way that can happen is if 1)farmer_gems_staked = 0, but 2)farm_gems_staked != 0
+      // seems 1 PDA is updated twice, the other one once?
+      // await assertRewardMatches(gemsStakedBeforeUnstaking);
 
       farmAcc = await gf.fetchFarmAcc(farm.publicKey);
       assert(farmAcc.stakedFarmerCount.eq(new BN(0)));
@@ -390,14 +399,16 @@ describe('gem farm (0 min staking / cooldown)', () => {
       const { farmer, vault } = await gf.stake(farm.publicKey, farmerIdentity);
 
       let vaultAcc = await gf.fetchVaultAcc(vault);
-      let oldGemsInVault = vaultAcc.gemCount;
+      const oldGemsInVault = vaultAcc.gemCount;
       assert.isTrue(vaultAcc.locked);
 
       let farmAcc = await gf.fetchFarmAcc(farm.publicKey);
-      let oldFarmerCount = farmAcc.stakedFarmerCount;
-      let oldGemsStaked = farmAcc.gemsStaked;
+      const oldFarmerCount = farmAcc.stakedFarmerCount;
+      const oldGemsStaked = farmAcc.gemsStaked;
 
       let farmerAcc = await gf.fetchFarmerAcc(farmer);
+      const oldBeginTs = farmerAcc.beginStakingTs;
+      const oldEndTs = farmerAcc.minStakingEndsTs;
       assert(farmerAcc.gemsStaked.eq(oldGemsInVault));
 
       //flash deposit after vault locked
@@ -416,6 +427,9 @@ describe('gem farm (0 min staking / cooldown)', () => {
 
       farmerAcc = await gf.fetchFarmerAcc(farmer);
       assert(farmerAcc.gemsStaked.eq(oldGemsInVault.add(flashDeposit)));
+      //flash deposits resets staking time
+      assert(farmerAcc.beginStakingTs.gt(oldBeginTs));
+      assert(farmerAcc.minStakingEndsTs.gt(oldEndTs));
     });
   });
 
