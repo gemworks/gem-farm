@@ -61,14 +61,25 @@ impl<'info> Fund<'info> {
     }
 }
 
-pub fn handler(ctx: Context<Fund>, amount: u64, duration_sec: u64) -> ProgramResult {
+pub fn handler(
+    ctx: Context<Fund>,
+    amount: u64,
+    duration_sec: u64,
+    fixed_rate_config: Option<FixedRateConfig>,
+) -> ProgramResult {
     // update existing rewards + record new ones
     let farm = &mut ctx.accounts.farm;
     let now_ts = now_ts()?;
 
     farm.update_rewards_for_all_mints(now_ts, None)?;
 
-    farm.fund_reward_by_mint(now_ts, amount, duration_sec, ctx.accounts.reward_mint.key())?;
+    farm.fund_reward_by_mint(
+        now_ts,
+        amount,
+        duration_sec,
+        ctx.accounts.reward_mint.key(),
+        fixed_rate_config,
+    )?;
 
     // create/update funding receipt
     let receipt = &mut ctx.accounts.funding_receipt;

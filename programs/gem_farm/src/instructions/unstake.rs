@@ -83,11 +83,12 @@ pub fn handler(ctx: Context<Unstake>) -> ProgramResult {
     // update accrued rewards BEFORE we decrement the stake
     let farm = &mut ctx.accounts.farm;
     let farmer = &mut ctx.accounts.farmer;
+    let now_ts = now_ts()?;
 
-    farm.update_rewards_for_all_mints(now_ts()?, Some(farmer))?;
+    farm.update_rewards_for_all_mints(now_ts, Some(farmer))?;
 
-    // try end staking
-    farmer.try_unstake(farm)?;
+    // end staking (will cycle through state on repeated calls)
+    farm.end_staking(now_ts, farmer)?;
 
     if farmer.status == FarmerStatus::Unstaked {
         // unlock the vault so the user can withdraw their gems

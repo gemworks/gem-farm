@@ -77,7 +77,7 @@ pub fn handler(ctx: Context<Stake>) -> ProgramResult {
     farm.update_rewards_for_all_mints(now_ts, Some(farmer))?;
 
     // begin staking
-    farmer.begin_staking(farm, now_ts, vault.gem_count)?;
+    farm.begin_staking(now_ts, vault.gem_count, farmer)?;
 
     msg!("{} gems staked by {}", farmer.gems_staked, farmer.key());
     Ok(())

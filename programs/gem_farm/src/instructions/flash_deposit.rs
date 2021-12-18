@@ -121,9 +121,9 @@ pub fn handler(
 
     farm.update_rewards_for_all_mints(now_ts, Some(farmer))?;
 
-    // update farmer
+    // stake extra gems
     ctx.accounts.vault.reload()?;
-    farmer.stake_extra_gems(farm, now_ts, ctx.accounts.vault.gem_count, amount)?;
+    farm.stake_extra_gems(now_ts, ctx.accounts.vault.gem_count, amount, farmer)?;
 
     msg!("{} extra gems staked for {}", amount, farmer.key());
     Ok(())

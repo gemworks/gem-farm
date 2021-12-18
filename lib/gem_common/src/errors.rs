@@ -86,8 +86,11 @@ pub enum ErrorCode {
     #[msg("can't unstake, cooldown period has not passed yet")]
     CooldownNotPassed,
 
-    Reserved44,
-    Reserved45,
+    #[msg("some gems havent been made whole yet")]
+    NotAllGemsWhole,
+
+    #[msg("reward has insufficient funding, please top up")]
+    RewardUnderfunded,
     Reserved46,
     Reserved47,
     Reserved48,

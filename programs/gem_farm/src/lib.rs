@@ -55,8 +55,9 @@ pub mod gem_farm {
         _bump_pot: u8,
         amount: u64,
         duration_sec: u64,
+        fixed_rate_config: Option<FixedRateConfig>,
     ) -> ProgramResult {
-        instructions::fund::handler(ctx, amount, duration_sec)
+        instructions::fund::handler(ctx, amount, duration_sec, fixed_rate_config)
     }
 
     pub fn defund(

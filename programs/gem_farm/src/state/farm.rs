@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use gem_common::{errors::ErrorCode, *};
 
-use crate::state::{Farmer, FarmerRewardTracker};
+use crate::state::{Farmer, FarmerRewardTracker, FarmerStatus};
 
 pub const LATEST_FARM_VERSION: u16 = 0;
 
@@ -42,10 +42,10 @@ pub struct Farm {
     // todo make sure all of the below count vars are incr'ed/decr'ed correctly
     // --------------------------------------- farmers
     // total count, including initialized but inactive farmers
-    pub farmer_count: u64,
+    pub farmer_count: u64, //todo what's the use besides analytics?
 
     // active only
-    pub staked_farmer_count: u64,
+    pub staked_farmer_count: u64, //todo what's the use besides analytics??
 
     pub gems_staked: u64,
 
@@ -82,16 +82,22 @@ impl Farm {
         }
     }
 
+    pub fn lock_funding_by_mint(&mut self, reward_mint: Pubkey) -> ProgramResult {
+        let reward = self.match_reward_by_mint(reward_mint)?;
+        reward.lock_reward()
+    }
+
     pub fn fund_reward_by_mint(
         &mut self,
         now_ts: u64,
         new_amount: u64,
         new_duration_sec: u64,
         reward_mint: Pubkey,
+        fixed_rate_config: Option<FixedRateConfig>,
     ) -> ProgramResult {
         let reward = self.match_reward_by_mint(reward_mint)?;
 
-        reward.fund_reward_by_type(now_ts, new_amount, new_duration_sec)?;
+        reward.fund_reward_by_type(now_ts, new_amount, new_duration_sec, fixed_rate_config)?;
 
         self.rewards_last_updated_ts = now_ts;
 
@@ -126,9 +132,13 @@ impl Farm {
         mut farmer: Option<&mut Account<Farmer>>,
     ) -> ProgramResult {
         // reward a
-        let (farmer_gems_staked, farmer_reward_a) = match farmer {
-            Some(ref mut farmer) => (Some(farmer.gems_staked), Some(&mut farmer.reward_a)),
-            None => (None, None),
+        let (farmer_gems_staked, farmer_begin_staking_ts, farmer_reward_a) = match farmer {
+            Some(ref mut farmer) => (
+                Some(farmer.gems_staked),
+                Some(farmer.begin_staking_ts),
+                Some(&mut farmer.reward_a),
+            ),
+            None => (None, None, None),
         };
 
         self.reward_a.update_accrued_reward_by_type(
@@ -136,6 +146,7 @@ impl Farm {
             self.rewards_last_updated_ts,
             self.gems_staked,
             farmer_gems_staked,
+            farmer_begin_staking_ts,
             farmer_reward_a,
         )?;
 
@@ -150,6 +161,7 @@ impl Farm {
             self.rewards_last_updated_ts,
             self.gems_staked,
             farmer_gems_staked,
+            farmer_begin_staking_ts,
             farmer_reward_b,
         )?;
 
@@ -158,17 +170,94 @@ impl Farm {
         Ok(())
     }
 
-    pub fn lock_funding_by_mint(&mut self, reward_mint: Pubkey) -> ProgramResult {
-        let reward = self.match_reward_by_mint(reward_mint)?;
-        reward.lock_reward();
+    pub fn begin_staking(
+        &mut self,
+        now_ts: u64,
+        gems_in_vault: u64,
+        farmer: &mut Account<Farmer>,
+    ) -> ProgramResult {
+        // update farmer
+        farmer.begin_staking(self.config.min_staking_period_sec, now_ts, gems_in_vault)?;
+
+        // update farm
+        self.staked_farmer_count.try_add_assign(1)?;
+        self.gems_staked.try_add_assign(gems_in_vault)?;
+
+        if self.reward_a.reward_type == RewardType::Fixed {
+            self.reward_a
+                .fixed_rate_tracker
+                .gems_participating
+                .try_add_assign(gems_in_vault)?;
+        }
+
+        if self.reward_b.reward_type == RewardType::Fixed {
+            self.reward_b
+                .fixed_rate_tracker
+                .gems_participating
+                .try_add_assign(gems_in_vault)?;
+        }
 
         Ok(())
     }
+
+    pub fn end_staking(&mut self, now_ts: u64, farmer: &mut Account<Farmer>) -> ProgramResult {
+        match farmer.status {
+            FarmerStatus::Unstaked => Ok(msg!("already unstaked!")),
+            FarmerStatus::Staked => {
+                // update farmer
+                let gems_unstaked =
+                    farmer.end_staking_begin_cooldown(now_ts, self.config.cooldown_period_sec)?;
+
+                // update farm
+                self.staked_farmer_count.try_sub_assign(1)?;
+                self.gems_staked.try_sub_assign(gems_unstaked)?;
+
+                // we will have updated the reward by now, so safe to mark whole
+                if self.reward_a.reward_type == RewardType::Fixed {
+                    farmer.reward_a.mark_whole();
+                    self.reward_a
+                        .fixed_rate_tracker
+                        .gems_made_whole
+                        .try_add_assign(gems_unstaked);
+                }
+
+                if self.reward_b.reward_type == RewardType::Fixed {
+                    farmer.reward_b.mark_whole();
+                    self.reward_b
+                        .fixed_rate_tracker
+                        .gems_made_whole
+                        .try_add_assign(gems_unstaked);
+                }
+
+                Ok(())
+            }
+            FarmerStatus::PendingCooldown => farmer.end_cooldown(now_ts),
+        }
+    }
+
+    pub fn stake_extra_gems(
+        &mut self,
+        now_ts: u64,
+        gems_in_vault: u64,
+        extra_gems: u64,
+        farmer: &mut Account<Farmer>,
+    ) -> ProgramResult {
+        // update farmer
+        farmer.stake_extra_gems(
+            now_ts,
+            gems_in_vault,
+            extra_gems,
+            self.config.min_staking_period_sec,
+        )?;
+
+        // update farm
+        self.gems_staked.try_add_assign(extra_gems)
+    }
 }
 
-// --------------------------------------- reward tracker
+// ============================================================================= reward tracker
 
-#[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
+#[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize, PartialEq)]
 pub enum RewardType {
     Variable,
     Fixed,
@@ -201,19 +290,26 @@ impl FarmRewardTracker {
     /// locking ensures that the promised reward cannot be withdrawn/changed by a malicious farm operator
     /// once locked, no funding / defunding of this account is possible until reward_end_ts
     /// (!) THIS OPERATION IS IRREVERSIBLE
-    pub fn lock_reward(&mut self) {
+    fn lock_reward(&mut self) -> ProgramResult {
+        if self.reward_type == RewardType::Fixed {
+            self.fixed_rate_tracker.assert_sufficient_funding()?;
+        }
+
         self.lock_end_ts = self.reward_end_ts;
+
+        Ok(())
     }
 
-    pub fn is_locked(&self, now_ts: u64) -> bool {
+    fn is_locked(&self, now_ts: u64) -> bool {
         now_ts < self.lock_end_ts
     }
 
-    pub fn fund_reward_by_type(
+    fn fund_reward_by_type(
         &mut self,
         now_ts: u64,
         new_amount: u64,
         new_duration_sec: u64,
+        fixed_rate_config: Option<FixedRateConfig>,
     ) -> ProgramResult {
         if self.is_locked(now_ts) {
             return Err(ErrorCode::RewardLocked.into());
@@ -226,7 +322,11 @@ impl FarmRewardTracker {
                 new_amount,
                 new_duration_sec,
             )?,
-            RewardType::Fixed => unimplemented!(),
+            RewardType::Fixed => self.fixed_rate_tracker.fund_reward(
+                new_amount,
+                new_duration_sec,
+                fixed_rate_config.unwrap(), //guaranteed to be passed for fixed
+            )?,
         }
 
         self.reward_duration_sec = new_duration_sec;
@@ -235,7 +335,7 @@ impl FarmRewardTracker {
         Ok(())
     }
 
-    pub fn defund_reward_by_type(
+    fn defund_reward_by_type(
         &mut self,
         now_ts: u64,
         desired_amount: u64,
@@ -255,7 +355,9 @@ impl FarmRewardTracker {
                 new_duration_sec,
                 funder_withdrawable_amount,
             )?,
-            RewardType::Fixed => unimplemented!(),
+            RewardType::Fixed => self
+                .fixed_rate_tracker
+                .defund_reward(desired_amount, funder_withdrawable_amount)?,
         };
 
         if let Some(new_duration_sec) = new_duration_sec {
@@ -272,25 +374,44 @@ impl FarmRewardTracker {
         rewards_last_updated_ts: u64,
         farm_gems_staked: u64,
         farmer_gems_staked: Option<u64>,
+        farmer_begin_staking_ts: Option<u64>,
         farmer_reward: Option<&mut FarmerRewardTracker>,
     ) -> ProgramResult {
+        let reward_upper_bound_ts = std::cmp::min(self.reward_end_ts, now_ts);
+
+        if reward_upper_bound_ts <= rewards_last_updated_ts {
+            msg!("this reward has ended and won't pay out anymore");
+            return Ok(());
+        }
+
         match self.reward_type {
             RewardType::Variable => self.variable_rate_tracker.update_accrued_reward(
-                now_ts,
-                self.reward_end_ts,
+                reward_upper_bound_ts,
                 rewards_last_updated_ts,
                 farm_gems_staked,
                 farmer_gems_staked,
                 farmer_reward,
-            )?,
-            RewardType::Fixed => unimplemented!(),
-        }
+            ),
+            RewardType::Fixed => {
+                // for fixed rewards we only update if Farmer has been passed
+                if farmer_reward.is_none() {
+                    return Ok(());
+                }
 
-        Ok(())
+                self.fixed_rate_tracker.update_accrued_reward(
+                    now_ts,
+                    self.reward_end_ts,
+                    reward_upper_bound_ts,
+                    farmer_gems_staked.unwrap(),      //assume passed too
+                    farmer_begin_staking_ts.unwrap(), //assume passed too
+                    farmer_reward.unwrap(),
+                )
+            }
+        }
     }
 }
 
-// --------------------------------------- variable rate
+// ============================================================================= variable rate
 
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct VariableRateTracker {
@@ -302,19 +423,19 @@ pub struct VariableRateTracker {
 }
 
 impl VariableRateTracker {
-    pub fn fund_reward(
+    fn fund_reward(
         &mut self,
         now_ts: u64,
-        reward_end_ts: u64,
+        current_reward_end_ts: u64,
         new_amount: u64,
         new_duration_sec: u64,
     ) -> ProgramResult {
         // if previous rewards have been exhausted
-        if now_ts > reward_end_ts {
+        if now_ts > current_reward_end_ts {
             self.reward_rate = new_amount.try_div(new_duration_sec)?;
         // else if previous rewards are still active (merge the two)
         } else {
-            let remaining_duration_sec = reward_end_ts.try_sub(now_ts)?;
+            let remaining_duration_sec = current_reward_end_ts.try_sub(now_ts)?;
             let remaining_amount = remaining_duration_sec.try_mul(self.reward_rate)?;
 
             self.reward_rate = new_amount
@@ -325,7 +446,7 @@ impl VariableRateTracker {
         Ok(())
     }
 
-    pub fn defund_reward(
+    fn defund_reward(
         &mut self,
         now_ts: u64,
         reward_end_ts: u64,
@@ -354,16 +475,13 @@ impl VariableRateTracker {
 
     fn update_accrued_reward(
         &mut self,
-        now_ts: u64,
-        reward_end_ts: u64,
+        reward_upper_bound_ts: u64,
         rewards_last_updated_ts: u64,
         farm_gems_staked: u64,
         farmer_gems_staked: Option<u64>,
         farmer_reward: Option<&mut FarmerRewardTracker>,
     ) -> ProgramResult {
-        let reward_upper_bound_ts = std::cmp::min(reward_end_ts, now_ts);
-
-        let newly_accrued_reward_per_gem = self.calc_newly_accrued_reward(
+        let newly_accrued_reward_per_gem = self.calc_newly_accrued_reward_per_gem(
             farm_gems_staked,
             reward_upper_bound_ts,
             rewards_last_updated_ts,
@@ -383,11 +501,7 @@ impl VariableRateTracker {
         Ok(())
     }
 
-    pub fn calc_unaccrued_reward(
-        &self,
-        now_ts: u64,
-        reward_end_ts: u64,
-    ) -> Result<u64, ProgramError> {
+    fn calc_unaccrued_reward(&self, now_ts: u64, reward_end_ts: u64) -> Result<u64, ProgramError> {
         // if reward end has passed, we can't defund any amount
         if reward_end_ts <= now_ts {
             return Ok(0);
@@ -396,7 +510,7 @@ impl VariableRateTracker {
         self.reward_rate.try_mul(reward_end_ts.try_sub(now_ts)?)
     }
 
-    pub fn calc_newly_accrued_reward(
+    fn calc_newly_accrued_reward_per_gem(
         &self,
         farm_gems_staked: u64,
         reward_upper_bound_ts: u64,
@@ -404,11 +518,6 @@ impl VariableRateTracker {
     ) -> Result<u64, ProgramError> {
         // if no gems staked, return existing accrued reward
         if farm_gems_staked == 0 {
-            return Ok(self.accrued_reward_per_gem);
-        }
-
-        // if no time has passed, return existing accrued reward
-        if reward_upper_bound_ts <= rewards_last_updated_ts {
             return Ok(self.accrued_reward_per_gem);
         }
 
@@ -420,19 +529,235 @@ impl VariableRateTracker {
     }
 }
 
-// --------------------------------------- fixed rate
+// ============================================================================= fixed rate
+
+#[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
+
+pub struct PeriodConfig {
+    // tokens / sec
+    rate: u64,
+
+    duration: u64,
+}
+
+#[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
+pub struct FixedRateConfig {
+    pub period_1: PeriodConfig,
+
+    pub period_2: Option<PeriodConfig>,
+
+    pub period_3: Option<PeriodConfig>,
+
+    pub gems_funded: u64,
+}
+
+impl FixedRateConfig {
+    // fn max_rate(&self) -> u64 {
+    //     let period_2_rate = self.period_2.rate.unwrap_or(0);
+    //     let period_3_rate = self.period_3.rate.unwrap_or(0);
+    //
+    //     let prev_max = std::cmp::max(self.period_1.rate, period_2_rate);
+    //     std::cmp::max(prev_max, period_3_rate)
+    // }
+
+    /// all periods must be SHORTER than reward duration
+    /// this is to make sure users get paid out what they're promised
+    fn assert_sufficient_duration(&self, reward_duration: u64) -> ProgramResult {
+        let period_1_duration = self.period_1.duration;
+        let period_2_duration = if let Some(config) = self.period_2 {
+            config.duration
+        } else {
+            0
+        };
+        let period_3_duration = if let Some(config) = self.period_3 {
+            config.duration
+        } else {
+            0
+        };
+
+        let total_period_duration = period_1_duration
+            .try_add(period_2_duration)?
+            .try_add(period_3_duration)?;
+
+        assert!(total_period_duration <= reward_duration);
+
+        Ok(())
+    }
+
+    fn funding_required(&self) -> Result<u64, ProgramError> {
+        let period_1_funding = self.period_1.rate.try_mul(self.period_1.duration)?;
+
+        let period_2_funding = if let Some(config) = self.period_2 {
+            config.rate.try_mul(config.duration)?
+        } else {
+            0
+        };
+
+        let period_3_funding = if let Some(config) = self.period_3 {
+            config.rate.try_mul(config.duration)?
+        } else {
+            0
+        };
+
+        let total_per_gem = period_1_funding
+            .try_add(period_2_funding)?
+            .try_add(period_3_funding)?;
+
+        self.gems_funded.try_mul(total_per_gem)
+    }
+}
 
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FixedRateTracker {
-    pub period_1_rate: u64,
+    config: FixedRateConfig,
 
-    pub period_1_end_ts: u64,
+    // funding - defunding
+    net_reward_funding: u64,
 
-    pub period_2_rate: u64,
+    // can only go up, never down
+    total_accrued_to_stakers: u64,
 
-    pub period_2_end_ts: u64,
+    // can only go up, never down - that's the difference with gems_staked
+    gems_participating: u64,
 
-    pub period_3_rate: u64,
+    // can only go up, never down
+    gems_made_whole: u64,
+}
 
-    pub period_3_end_ts: u64,
+impl FixedRateTracker {
+    fn assert_sufficient_funding(&self) -> ProgramResult {
+        assert!(self.config.funding_required()? <= self.net_reward_funding);
+
+        Ok(())
+    }
+
+    fn fund_reward(
+        &mut self,
+        new_amount: u64,
+        new_duration_sec: u64,
+        config: FixedRateConfig,
+    ) -> ProgramResult {
+        // verify + assign the new config
+        config.assert_sufficient_duration(new_duration_sec)?;
+        self.config = config;
+
+        // update reward
+        self.net_reward_funding.try_add_assign(new_amount)
+    }
+
+    fn defund_reward(
+        &mut self,
+        desired_amount: u64,
+        funder_withdrawable_amount: u64,
+    ) -> Result<u64, ProgramError> {
+        //can only be done once all participating gems are made whole
+        if self.gems_made_whole < self.gems_participating {
+            return Err(ErrorCode::NotAllGemsWhole.into());
+        }
+
+        // calc how much is actually available for defunding
+        let unaccrued_reward = self.calc_unaccrued_reward()?;
+
+        let mut to_defund = std::cmp::min(unaccrued_reward, desired_amount);
+        to_defund = std::cmp::min(to_defund, funder_withdrawable_amount);
+
+        // update reward
+        self.net_reward_funding.try_sub_assign(to_defund)?;
+
+        Ok(to_defund)
+    }
+
+    fn update_accrued_reward(
+        &mut self,
+        now_ts: u64,
+        reward_end_ts: u64,
+        reward_upper_bound_ts: u64,
+        farmer_gems_staked: u64,
+        farmer_begin_staking_ts: u64,
+        farmer_reward: &mut FarmerRewardTracker, // only ran when farmer present
+    ) -> ProgramResult {
+        if farmer_reward.is_whole() {
+            msg!("this farmer reward is already made whole, no further changes expected");
+            return Ok(());
+        }
+
+        // calc new, updated reward
+        let farmer_reward_per_gem =
+            self.calc_accrued_reward_per_gem(farmer_begin_staking_ts, reward_upper_bound_ts)?;
+        let recalculated_farmer_reward = farmer_reward_per_gem.try_mul(farmer_gems_staked)?;
+
+        // update farmer
+        let old_farmer_reward = farmer_reward.accrued_reward;
+        farmer_reward.accrued_reward = recalculated_farmer_reward;
+
+        // update farm
+        let difference = recalculated_farmer_reward.try_sub(old_farmer_reward)?;
+        self.total_accrued_to_stakers.try_add_assign(difference)?;
+
+        // after reward end passes, we won't owe any more money to the farmer than calculated now
+        if now_ts > reward_end_ts {
+            farmer_reward.mark_whole();
+            self.gems_made_whole.try_add_assign(farmer_gems_staked);
+        }
+
+        Ok(())
+    }
+
+    fn calc_unaccrued_reward(&self) -> Result<u64, ProgramError> {
+        if self.net_reward_funding < self.total_accrued_to_stakers {
+            return Err(ErrorCode::RewardUnderfunded.into());
+        }
+
+        self.net_reward_funding
+            .try_sub(self.total_accrued_to_stakers)
+    }
+
+    fn calc_accrued_reward_per_gem(
+        &self,
+        begin_staking_ts: u64,
+        end_staking_ts: u64,
+    ) -> Result<u64, ProgramError> {
+        //todo is this the right place? what other checks of this type are necessary?
+        if begin_staking_ts > end_staking_ts {
+            return Ok(0);
+        }
+
+        // period 1 alc
+        let p1_duration = std::cmp::min(
+            self.config.period_1.duration,
+            end_staking_ts.try_sub(begin_staking_ts)?,
+        );
+        let p1_reward = self.config.period_1.rate.try_mul(p1_duration)?;
+
+        // period 2 calc
+        let mut p2_duration = 0;
+        let mut p2_reward = 0;
+
+        if let Some(config) = self.config.period_2 {
+            p2_duration = std::cmp::min(
+                config.duration,
+                end_staking_ts
+                    .try_sub(begin_staking_ts)?
+                    .try_sub(p1_duration)?,
+            );
+            p2_reward = config.rate.try_mul(p2_duration)?;
+        }
+
+        // period 3 calc
+        let mut p3_duration = 0;
+        let mut p3_reward = 0;
+
+        if let Some(config) = self.config.period_3 {
+            p3_duration = std::cmp::min(
+                config.duration,
+                end_staking_ts
+                    .try_sub(begin_staking_ts)?
+                    .try_sub(p1_duration)?
+                    .try_sub(p2_duration)?,
+            );
+            p3_reward = config.rate.try_mul(p3_duration)?;
+        }
+
+        p1_reward.try_add(p2_reward)?.try_add(p3_reward)
+    }
 }
