@@ -608,6 +608,8 @@ export class GemFarmClient extends GemBankClient {
     return {
       farmAuth,
       farmAuthBump,
+      farmer,
+      farmerBump,
       potA,
       potABump,
       potB,
@@ -750,6 +752,29 @@ export class GemFarmClient extends GemBankClient {
       farmAuthBump,
       farmTreasury,
       farmTreasuryBump,
+      txSig,
+    };
+  }
+
+  async refreshFarmer(farm: PublicKey, farmerIdentity: PublicKey | Keypair) {
+    const identityPk = isKp(farmerIdentity)
+      ? (<Keypair>farmerIdentity).publicKey
+      : <PublicKey>farmerIdentity;
+
+    const [farmer, farmerBump] = await this.findFarmerPDA(farm, identityPk);
+
+    const txSig = await this.farmProgram.rpc.refreshFarmer(farmerBump, {
+      accounts: {
+        farm,
+        farmer,
+        identity: identityPk,
+      },
+      signers: [],
+    });
+
+    return {
+      farmer,
+      farmerBump,
       txSig,
     };
   }

@@ -102,4 +102,8 @@ pub mod gem_farm {
     ) -> ProgramResult {
         instructions::treasury_payout::handler(ctx, bump, lamports)
     }
+
+    pub fn refresh_farmer(ctx: Context<RefreshFarmer>, _bump: u8) -> ProgramResult {
+        instructions::refresh_farmer::handler(ctx)
+    }
 }

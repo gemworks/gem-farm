@@ -352,7 +352,6 @@ impl FarmRewardTracker {
                 now_ts,
                 self.reward_end_ts,
                 desired_amount,
-                self.reward_duration_sec,
                 new_duration_sec,
                 funder_withdrawable_amount,
             )?,

@@ -42,7 +42,6 @@ impl VariableRateTracker {
         now_ts: u64,
         reward_end_ts: u64,
         desired_amount: u64,
-        existing_duration_sec: u64,
         new_duration_sec: Option<u64>,
         funder_withdrawable_amount: u64,
     ) -> Result<u64, ProgramError> {
@@ -58,7 +57,7 @@ impl VariableRateTracker {
         if let Some(new_duration_sec) = new_duration_sec {
             self.reward_rate = remaining_reward.try_div(new_duration_sec)?;
         } else {
-            self.reward_rate = remaining_reward.try_div(existing_duration_sec)?;
+            self.reward_rate = remaining_reward.try_div(reward_end_ts.try_sub(now_ts)?)?;
         }
 
         Ok(to_defund)
