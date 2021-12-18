@@ -27,6 +27,8 @@ pub struct Farmer {
     // total number of gems at the time when the vault is locked
     pub gems_staked: u64,
 
+    pub begin_staking_ts: u64,
+
     pub min_staking_ends_ts: u64,
 
     pub cooldown_ends_ts: u64,
@@ -41,6 +43,7 @@ impl Farmer {
     pub fn stake_extra_gems(
         &mut self,
         farm: &mut Account<Farm>,
+        now_ts: u64,
         gems_in_vault: u64,
         extra_gems: u64,
     ) -> ProgramResult {
@@ -54,18 +57,25 @@ impl Farmer {
         self.gems_staked = gems_in_vault;
 
         // (!) IMPORTANT - we're resetting the min staking here
-        self.min_staking_ends_ts = now_ts()?.try_add(farm.config.min_staking_period_sec)?;
+        self.begin_staking_ts = now_ts;
+        self.min_staking_ends_ts = now_ts.try_add(farm.config.min_staking_period_sec)?;
         self.cooldown_ends_ts = 0; //zero it out in case it was set before
 
         // farm
         farm.gems_staked.try_add_assign(extra_gems)
     }
 
-    pub fn begin_staking(&mut self, farm: &mut Account<Farm>, gems_in_vault: u64) -> ProgramResult {
+    pub fn begin_staking(
+        &mut self,
+        farm: &mut Account<Farm>,
+        now_ts: u64,
+        gems_in_vault: u64,
+    ) -> ProgramResult {
         // farmer
         self.status = FarmerStatus::Staked;
         self.gems_staked = gems_in_vault;
-        self.min_staking_ends_ts = now_ts()?.try_add(farm.config.min_staking_period_sec)?;
+        self.begin_staking_ts = now_ts;
+        self.min_staking_ends_ts = now_ts.try_add(farm.config.min_staking_period_sec)?;
         self.cooldown_ends_ts = 0; //zero it out in case it was set before
 
         // farm
@@ -104,6 +114,7 @@ impl Farmer {
         self.status = FarmerStatus::Unstaked;
         // zero everything out
         self.gems_staked = 0;
+        self.begin_staking_ts = 0;
         self.min_staking_ends_ts = 0;
         self.cooldown_ends_ts = 0;
 

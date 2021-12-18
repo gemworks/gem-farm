@@ -117,12 +117,13 @@ pub fn handler(
     // update accrued rewards BEFORE we increment the stake
     let farm = &mut ctx.accounts.farm;
     let farmer = &mut ctx.accounts.farmer;
+    let now_ts = now_ts()?;
 
-    farm.update_rewards_for_all_mints(now_ts()?, Some(farmer))?;
+    farm.update_rewards_for_all_mints(now_ts, Some(farmer))?;
 
     // update farmer
     ctx.accounts.vault.reload()?;
-    farmer.stake_extra_gems(farm, ctx.accounts.vault.gem_count, amount)?;
+    farmer.stake_extra_gems(farm, now_ts, ctx.accounts.vault.gem_count, amount)?;
 
     msg!("{} extra gems staked for {}", amount, farmer.key());
     Ok(())

@@ -72,11 +72,12 @@ pub fn handler(ctx: Context<Stake>) -> ProgramResult {
     let farm = &mut ctx.accounts.farm;
     let farmer = &mut ctx.accounts.farmer;
     let vault = &ctx.accounts.vault;
+    let now_ts = now_ts()?;
 
-    farm.update_rewards_for_all_mints(now_ts()?, Some(farmer))?;
+    farm.update_rewards_for_all_mints(now_ts, Some(farmer))?;
 
     // begin staking
-    farmer.begin_staking(farm, vault.gem_count)?;
+    farmer.begin_staking(farm, now_ts, vault.gem_count)?;
 
     msg!("{} gems staked by {}", farmer.gems_staked, farmer.key());
     Ok(())
