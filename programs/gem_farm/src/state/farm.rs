@@ -323,7 +323,7 @@ impl FarmRewardTracker {
                 //guaranteed to be passed for fixed
                 let config = fixed_rate_config.unwrap();
 
-                self.reward_duration_sec = config.calc_total_duration()?;
+                self.reward_duration_sec = config.calc_max_duration()?;
                 self.fixed_rate_tracker.fund_reward(config)?
             }
         }

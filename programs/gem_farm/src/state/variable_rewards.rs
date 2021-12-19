@@ -1,5 +1,4 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::accessor::amount;
 
 use gem_common::*;
 

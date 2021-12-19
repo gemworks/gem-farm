@@ -69,7 +69,7 @@ pub fn handler(
     let amount = if let Some(config) = variable_rate_config {
         config.amount
     } else {
-        fixed_rate_config.unwrap().calc_total_funding()?
+        fixed_rate_config.unwrap().calc_required_funding()?
     };
 
     // update existing rewards + record new ones

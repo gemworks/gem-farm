@@ -25,7 +25,7 @@ pub struct FixedRateConfig {
 }
 
 impl FixedRateConfig {
-    pub fn calc_total_duration(&self) -> Result<u64, ProgramError> {
+    pub fn calc_max_duration(&self) -> Result<u64, ProgramError> {
         let period_1_duration = self.period_1.duration_sec;
         let period_2_duration = if let Some(config) = self.period_2 {
             config.duration_sec
@@ -43,26 +43,26 @@ impl FixedRateConfig {
             .try_add(period_3_duration)
     }
 
-    pub fn calc_total_funding(&self) -> Result<u64, ProgramError> {
-        let period_1_funding = self.period_1.rate.try_mul(self.period_1.duration_sec)?;
+    pub fn calc_max_reward_per_gem(&self) -> Result<u64, ProgramError> {
+        let p1_reward = self.period_1.rate.try_mul(self.period_1.duration_sec)?;
 
-        let period_2_funding = if let Some(config) = self.period_2 {
+        let p2_reward = if let Some(config) = self.period_2 {
             config.rate.try_mul(config.duration_sec)?
         } else {
             0
         };
 
-        let period_3_funding = if let Some(config) = self.period_3 {
+        let p3_reward = if let Some(config) = self.period_3 {
             config.rate.try_mul(config.duration_sec)?
         } else {
             0
         };
 
-        let total_per_gem = period_1_funding
-            .try_add(period_2_funding)?
-            .try_add(period_3_funding)?;
+        p1_reward.try_add(p2_reward)?.try_add(p3_reward)
+    }
 
-        self.gems_funded.try_mul(total_per_gem)
+    pub fn calc_required_funding(&self) -> Result<u64, ProgramError> {
+        self.gems_funded.try_mul(self.calc_max_reward_per_gem()?)
     }
 }
 
@@ -86,7 +86,7 @@ pub struct FixedRateTracker {
 impl FixedRateTracker {
     // fixme this is critical to get right. also rename locking to activation
     pub fn assert_sufficient_funding(&self) -> ProgramResult {
-        assert!(self.config.calc_total_funding()? <= self.net_reward_funding);
+        assert!(self.config.calc_required_funding()? <= self.net_reward_funding);
 
         Ok(())
     }
@@ -97,7 +97,7 @@ impl FixedRateTracker {
 
         // update total funding
         self.net_reward_funding
-            .try_add_assign(config.calc_total_funding()?)
+            .try_add_assign(config.calc_required_funding()?)
     }
 
     pub fn defund_reward(
@@ -177,41 +177,48 @@ impl FixedRateTracker {
             return Ok(0);
         }
 
+        let staking_duration = end_staking_ts.try_sub(begin_staking_ts)?;
+
         // period 1 alc
-        let p1_duration = std::cmp::min(
-            self.config.period_1.duration_sec,
-            end_staking_ts.try_sub(begin_staking_ts)?,
-        );
+        let p1_duration = std::cmp::min(self.config.period_1.duration_sec, staking_duration);
         let p1_reward = self.config.period_1.rate.try_mul(p1_duration)?;
+
+        msg!("p1 dur/rew {} {}", p1_duration, p1_reward);
 
         // period 2 calc
         let mut p2_duration = 0;
         let mut p2_reward = 0;
 
         if let Some(config) = self.config.period_2 {
-            p2_duration = std::cmp::min(
-                config.duration_sec,
-                end_staking_ts
-                    .try_sub(begin_staking_ts)?
-                    .try_sub(p1_duration)?,
-            );
+            p2_duration =
+                std::cmp::min(config.duration_sec, staking_duration.try_sub(p1_duration)?);
             p2_reward = config.rate.try_mul(p2_duration)?;
         }
 
+        msg!("p2 dur/rew {} {}", p2_duration, p2_reward);
+
         // period 3 calc
+        let mut p3_duration = 0;
         let mut p3_reward = 0;
 
         if let Some(config) = self.config.period_3 {
-            let p3_duration = std::cmp::min(
+            p3_duration = std::cmp::min(
                 config.duration_sec,
-                end_staking_ts
-                    .try_sub(begin_staking_ts)?
+                staking_duration
                     .try_sub(p1_duration)?
                     .try_sub(p2_duration)?,
             );
             p3_reward = config.rate.try_mul(p3_duration)?;
         }
 
-        p1_reward.try_add(p2_reward)?.try_add(p3_reward)
+        msg!("p3 dur/rew {} {}", p3_duration, p3_reward);
+
+        let accrued_duration = p1_duration.try_add(p2_duration)?.try_add(p3_duration)?;
+        let accrued_reward_per_gem = p1_reward.try_add(p2_reward)?.try_add(p3_reward)?;
+
+        assert!(accrued_duration <= self.config.calc_max_duration()?);
+        assert!(accrued_reward_per_gem <= self.config.calc_max_reward_per_gem()?);
+
+        Ok(accrued_reward_per_gem)
     }
 }
