@@ -63,10 +63,15 @@ impl<'info> Fund<'info> {
 
 pub fn handler(
     ctx: Context<Fund>,
-    amount: u64,
-    duration_sec: u64,
+    variable_rate_config: Option<VariableRateConfig>,
     fixed_rate_config: Option<FixedRateConfig>,
 ) -> ProgramResult {
+    let amount = if let Some(config) = variable_rate_config {
+        config.amount
+    } else {
+        fixed_rate_config.unwrap().calc_total_funding()?
+    };
+
     // update existing rewards + record new ones
     let farm = &mut ctx.accounts.farm;
     let now_ts = now_ts()?;
@@ -75,9 +80,8 @@ pub fn handler(
 
     farm.fund_reward_by_mint(
         now_ts,
-        amount,
-        duration_sec,
         ctx.accounts.reward_mint.key(),
+        variable_rate_config,
         fixed_rate_config,
     )?;
 

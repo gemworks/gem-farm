@@ -10,7 +10,7 @@ pub struct PeriodConfig {
     // tokens / sec
     pub rate: u64,
 
-    pub duration: u64,
+    pub duration_sec: u64,
 }
 
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
@@ -25,41 +25,35 @@ pub struct FixedRateConfig {
 }
 
 impl FixedRateConfig {
-    /// all periods must be SHORTER than reward duration
-    /// this is to make sure users get paid out what they're promised
-    fn assert_sufficient_duration(&self, reward_duration: u64) -> ProgramResult {
-        let period_1_duration = self.period_1.duration;
+    pub fn calc_total_duration(&self) -> Result<u64, ProgramError> {
+        let period_1_duration = self.period_1.duration_sec;
         let period_2_duration = if let Some(config) = self.period_2 {
-            config.duration
+            config.duration_sec
         } else {
             0
         };
         let period_3_duration = if let Some(config) = self.period_3 {
-            config.duration
+            config.duration_sec
         } else {
             0
         };
 
-        let total_period_duration = period_1_duration
+        period_1_duration
             .try_add(period_2_duration)?
-            .try_add(period_3_duration)?;
-
-        assert!(total_period_duration <= reward_duration);
-
-        Ok(())
+            .try_add(period_3_duration)
     }
 
-    fn funding_required(&self) -> Result<u64, ProgramError> {
-        let period_1_funding = self.period_1.rate.try_mul(self.period_1.duration)?;
+    pub fn calc_total_funding(&self) -> Result<u64, ProgramError> {
+        let period_1_funding = self.period_1.rate.try_mul(self.period_1.duration_sec)?;
 
         let period_2_funding = if let Some(config) = self.period_2 {
-            config.rate.try_mul(config.duration)?
+            config.rate.try_mul(config.duration_sec)?
         } else {
             0
         };
 
         let period_3_funding = if let Some(config) = self.period_3 {
-            config.rate.try_mul(config.duration)?
+            config.rate.try_mul(config.duration_sec)?
         } else {
             0
         };
@@ -90,24 +84,20 @@ pub struct FixedRateTracker {
 }
 
 impl FixedRateTracker {
+    // fixme this is critical to get right. also rename locking to activation
     pub fn assert_sufficient_funding(&self) -> ProgramResult {
-        assert!(self.config.funding_required()? <= self.net_reward_funding);
+        assert!(self.config.calc_total_funding()? <= self.net_reward_funding);
 
         Ok(())
     }
 
-    pub fn fund_reward(
-        &mut self,
-        new_amount: u64,
-        new_duration_sec: u64,
-        config: FixedRateConfig,
-    ) -> ProgramResult {
-        // verify + assign the new config
-        config.assert_sufficient_duration(new_duration_sec)?;
+    pub fn fund_reward(&mut self, config: FixedRateConfig) -> ProgramResult {
+        // update config
         self.config = config;
 
-        // update reward
-        self.net_reward_funding.try_add_assign(new_amount)
+        // update total funding
+        self.net_reward_funding
+            .try_add_assign(config.calc_total_funding()?)
     }
 
     pub fn defund_reward(
@@ -189,7 +179,7 @@ impl FixedRateTracker {
 
         // period 1 alc
         let p1_duration = std::cmp::min(
-            self.config.period_1.duration,
+            self.config.period_1.duration_sec,
             end_staking_ts.try_sub(begin_staking_ts)?,
         );
         let p1_reward = self.config.period_1.rate.try_mul(p1_duration)?;
@@ -200,7 +190,7 @@ impl FixedRateTracker {
 
         if let Some(config) = self.config.period_2 {
             p2_duration = std::cmp::min(
-                config.duration,
+                config.duration_sec,
                 end_staking_ts
                     .try_sub(begin_staking_ts)?
                     .try_sub(p1_duration)?,
@@ -213,7 +203,7 @@ impl FixedRateTracker {
 
         if let Some(config) = self.config.period_3 {
             let p3_duration = std::cmp::min(
-                config.duration,
+                config.duration_sec,
                 end_staking_ts
                     .try_sub(begin_staking_ts)?
                     .try_sub(p1_duration)?

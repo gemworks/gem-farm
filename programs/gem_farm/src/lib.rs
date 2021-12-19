@@ -53,11 +53,10 @@ pub mod gem_farm {
         _bump_proof: u8,
         _bump_fr: u8,
         _bump_pot: u8,
-        amount: u64,
-        duration_sec: u64,
+        variable_rate_config: Option<VariableRateConfig>,
         fixed_rate_config: Option<FixedRateConfig>,
     ) -> ProgramResult {
-        instructions::fund::handler(ctx, amount, duration_sec, fixed_rate_config)
+        instructions::fund::handler(ctx, variable_rate_config, fixed_rate_config)
     }
 
     pub fn defund(

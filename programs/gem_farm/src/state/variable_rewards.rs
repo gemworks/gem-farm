@@ -1,8 +1,18 @@
 use anchor_lang::prelude::*;
+use anchor_spl::token::accessor::amount;
 
 use gem_common::*;
 
 use crate::state::*;
+
+#[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
+pub struct VariableRateConfig {
+    // total amount of rewards
+    pub amount: u64,
+
+    // over which period it's active
+    pub duration_sec: u64,
+}
 
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct VariableRateTracker {
@@ -18,20 +28,22 @@ impl VariableRateTracker {
         &mut self,
         now_ts: u64,
         current_reward_end_ts: u64,
-        new_amount: u64,
-        new_duration_sec: u64,
+        variable_rate_config: VariableRateConfig,
     ) -> ProgramResult {
+        let VariableRateConfig {
+            amount,
+            duration_sec,
+        } = variable_rate_config;
+
         // if previous rewards have been exhausted
         if now_ts > current_reward_end_ts {
-            self.reward_rate = new_amount.try_div(new_duration_sec)?;
+            self.reward_rate = amount.try_div(duration_sec)?;
         // else if previous rewards are still active (merge the two)
         } else {
             let remaining_duration_sec = current_reward_end_ts.try_sub(now_ts)?;
             let remaining_amount = remaining_duration_sec.try_mul(self.reward_rate)?;
 
-            self.reward_rate = new_amount
-                .try_add(remaining_amount)?
-                .try_div(new_duration_sec)?;
+            self.reward_rate = amount.try_add(remaining_amount)?.try_div(duration_sec)?;
         }
 
         Ok(())

@@ -91,14 +91,13 @@ impl Farm {
     pub fn fund_reward_by_mint(
         &mut self,
         now_ts: u64,
-        new_amount: u64,
-        new_duration_sec: u64,
         reward_mint: Pubkey,
+        variable_rate_config: Option<VariableRateConfig>,
         fixed_rate_config: Option<FixedRateConfig>,
     ) -> ProgramResult {
         let reward = self.match_reward_by_mint(reward_mint)?;
 
-        reward.fund_reward_by_type(now_ts, new_amount, new_duration_sec, fixed_rate_config)?;
+        reward.fund_reward_by_type(now_ts, variable_rate_config, fixed_rate_config)?;
 
         self.rewards_last_updated_ts = now_ts;
 
@@ -278,16 +277,12 @@ pub struct FarmRewardTracker {
 
     pub reward_duration_sec: u64,
 
-    pub reward_end_ts: u64,
+    pub reward_end_ts: u64, //used to set lock end ts, so can't be pushed to variable tracker
 
     pub lock_end_ts: u64,
 }
 
 impl FarmRewardTracker {
-    pub fn calc_reward_start_ts(&self) -> Result<u64, ProgramError> {
-        self.reward_end_ts.try_sub(self.reward_duration_sec)
-    }
-
     /// locking ensures that the promised reward cannot be withdrawn/changed by a malicious farm operator
     /// once locked, no funding / defunding of this account is possible until reward_end_ts
     /// (!) THIS OPERATION IS IRREVERSIBLE
@@ -308,9 +303,7 @@ impl FarmRewardTracker {
     fn fund_reward_by_type(
         &mut self,
         now_ts: u64,
-        new_amount: u64,
-        new_duration_sec: u64,
-        // variable_rate_config: Option<>
+        variable_rate_config: Option<VariableRateConfig>,
         fixed_rate_config: Option<FixedRateConfig>,
     ) -> ProgramResult {
         if self.is_locked(now_ts) {
@@ -318,21 +311,24 @@ impl FarmRewardTracker {
         }
 
         match self.reward_type {
-            RewardType::Variable => self.variable_rate_tracker.fund_reward(
-                now_ts,
-                self.reward_end_ts,
-                new_amount,
-                new_duration_sec,
-            )?,
-            RewardType::Fixed => self.fixed_rate_tracker.fund_reward(
-                new_amount,
-                new_duration_sec,
-                fixed_rate_config.unwrap(), //guaranteed to be passed for fixed
-            )?,
+            RewardType::Variable => {
+                //guaranteed to be passed for variable
+                let config = variable_rate_config.unwrap();
+
+                self.reward_duration_sec = config.duration_sec;
+                self.variable_rate_tracker
+                    .fund_reward(now_ts, self.reward_end_ts, config)?
+            }
+            RewardType::Fixed => {
+                //guaranteed to be passed for fixed
+                let config = fixed_rate_config.unwrap();
+
+                self.reward_duration_sec = config.calc_total_duration()?;
+                self.fixed_rate_tracker.fund_reward(config)?
+            }
         }
 
-        self.reward_duration_sec = new_duration_sec;
-        self.reward_end_ts = now_ts.try_add(new_duration_sec)?;
+        self.reward_end_ts = now_ts.try_add(self.reward_duration_sec)?;
 
         Ok(())
     }
@@ -341,7 +337,7 @@ impl FarmRewardTracker {
         &mut self,
         now_ts: u64,
         desired_amount: u64,
-        new_duration_sec: Option<u64>,
+        new_duration_sec: Option<u64>, //relevant for variable only
         funder_withdrawable_amount: u64,
     ) -> Result<u64, ProgramError> {
         if self.is_locked(now_ts) {
