@@ -11,10 +11,10 @@ import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import chai, { assert, expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { Token } from '@solana/spl-token';
-import { pause, stringifyPubkeysAndBNsInObject } from '../utils/types';
+import { pause } from '../utils/types';
 import { prepGem } from '../utils/gem-common';
 import { ITokenData } from '../utils/account';
-import { printStructsGeneric } from './gem-farm.variable_rewards.spec';
+import { printStructsGeneric } from './gem-farm.common';
 
 chai.use(chaiAsPromised);
 
@@ -88,8 +88,21 @@ describe('gem farm (fixed rewards)', () => {
   let rewardBSource: PublicKey;
   let funder = gf.wallet.payer;
 
+  //gem 1 used by farmer 1
+  let gem1Amount: anchor.BN;
+  let gem1: ITokenData;
+  //gem 2 used by farmer 2
+  let gem2Amount: anchor.BN;
+  let gem2: ITokenData;
+
   async function printStructs(state: string) {
-    await printStructsGeneric(state, farm, farmer1Identity, farmer2Identity);
+    await printStructsGeneric(
+      gf,
+      state,
+      farm,
+      farmer1Identity,
+      farmer2Identity
+    );
   }
 
   async function prepFarmer(identity: Keypair) {
@@ -113,7 +126,7 @@ describe('gem farm (fixed rewards)', () => {
     );
   }
 
-  before('configures accounts', async () => {
+  beforeEach('configures accounts', async () => {
     farmManager = await gf.createWallet(100 * LAMPORTS_PER_SOL);
     farmer1Identity = await gf.createWallet(100 * LAMPORTS_PER_SOL);
     farmer2Identity = await gf.createWallet(100 * LAMPORTS_PER_SOL);
@@ -147,175 +160,170 @@ describe('gem farm (fixed rewards)', () => {
     //farmers
     ({ vault: farmer1Vault } = await prepFarmer(farmer1Identity));
     ({ vault: farmer2Vault } = await prepFarmer(farmer2Identity));
-  });
 
-  it('funds the farm', async () => {
+    //funds the farm
     await prepAuthorization();
     await prepFunding(rewardA.publicKey);
     await prepFunding(rewardB.publicKey);
 
     const farmAcc = await gf.fetchFarmAcc(farm.publicKey);
     assert(
+      // @ts-ignore
       farmAcc.rewardA.fixedRateTracker.netRewardFunding.eq(totalRewardsAmount())
     );
+    // @ts-ignore
     assert(farmAcc.rewardA.rewardDurationSec.eq(totalDuration()));
+    // @ts-ignore
     assert(farmAcc.rewardA.rewardEndTs.gt(totalDuration()));
 
     assert(
+      // @ts-ignore
       farmAcc.rewardB.fixedRateTracker.netRewardFunding.eq(totalRewardsAmount())
     );
+    // @ts-ignore
     assert(farmAcc.rewardB.rewardDurationSec.eq(totalDuration()));
+    // @ts-ignore
     assert(farmAcc.rewardB.rewardEndTs.gt(totalDuration()));
+
+    //creates gems
+    ({ gemAmount: gem1Amount, gem: gem1 } = await prepGem(gf, farmer1Identity));
+    ({ gemAmount: gem2Amount, gem: gem2 } = await prepGem(gf, farmer2Identity));
   });
+
+  async function prepDeposit(gems: BN, identity: Keypair) {
+    const isFarmer1 =
+      identity.publicKey.toBase58() === farmer1Identity.publicKey.toBase58();
+
+    return gf.depositGem(
+      bank.publicKey,
+      isFarmer1 ? farmer1Vault : farmer2Vault,
+      identity,
+      gems,
+      isFarmer1 ? gem1.tokenMint : gem2.tokenMint,
+      isFarmer1 ? gem1.tokenAcc : gem2.tokenAcc
+    );
+  }
+
+  async function prepRefreshFarmer(identity: Keypair) {
+    return gf.refreshFarmer(farm.publicKey, identity);
+  }
+
+  async function depositAndStake(gems: BN, identity: Keypair) {
+    //deposit some gems into the vault
+    await prepDeposit(gems, identity);
+
+    const { farmer, vault } = await gf.stake(farm.publicKey, identity);
+
+    let vaultAcc = await gf.fetchVaultAcc(vault);
+    assert.isTrue(vaultAcc.locked);
+
+    let farmerAcc = await gf.fetchFarmerAcc(farmer);
+    assert(farmerAcc.gemsStaked.eq(gems));
+  }
+
+  async function unstakeOnce(gems: BN, identity: Keypair) {
+    const { vault } = await gf.unstake(farm.publicKey, identity);
+
+    const vaultAcc = await gf.fetchVaultAcc(vault);
+    assert.isTrue(vaultAcc.locked);
+  }
+
+  async function unstakeTwice(gems: BN, identity: Keypair) {
+    const { farmer, vault } = await gf.unstake(farm.publicKey, identity);
+
+    const vaultAcc = await gf.fetchVaultAcc(vault);
+    assert.isFalse(vaultAcc.locked);
+
+    const farmerAcc = await gf.fetchFarmerAcc(farmer);
+    assert(farmerAcc.gemsStaked.eq(new BN(0)));
+  }
+
+  it('stakes / unstakes gems (multi farmer)', async () => {
+    // ----------------- deposit + stake both farmers
+    await depositAndStake(gem1Amount, farmer1Identity);
+    await depositAndStake(gem2Amount, farmer2Identity);
+    await printStructs('STAKED');
+
+    let farmAcc = await gf.fetchFarmAcc(farm.publicKey);
+    assert(farmAcc.stakedFarmerCount.eq(new BN(2)));
+    assert(farmAcc.gemsStaked.eq(gem1Amount.add(gem2Amount)));
+
+    // ----------------- wait till the end of reward schedule (to accrue full rewards)
+    await pause(13000); //1s longer than the schedule
+
+    const { farmer: farmer1 } = await prepRefreshFarmer(farmer1Identity);
+    const { farmer: farmer2 } = await prepRefreshFarmer(farmer2Identity);
+    await printStructs('WAITED');
+
+    farmAcc = await gf.fetchFarmAcc(farm.publicKey);
+
+    //verify farmer count adds up
+    assert(farmAcc.stakedFarmerCount.eq(new BN(2)));
+
+    //verify gem count adds up
+    assert(farmAcc.gemsStaked.eq(gem1Amount.add(gem2Amount)));
+    assert(
+      // @ts-ignore
+      farmAcc.gemsStaked.eq(farmAcc.rewardA.fixedRateTracker.gemsParticipating)
+    );
+    assert(
+      // @ts-ignore
+      farmAcc.gemsStaked.eq(farmAcc.rewardB.fixedRateTracker.gemsParticipating)
+    );
+
+    //verify accrued rewards add up
+    const totalAccruedToStakers =
+      // @ts-ignore
+      farmAcc.rewardA.fixedRateTracker.totalAccruedToStakers;
+
+    const farmer1Acc = await gf.fetchFarmerAcc(farmer1);
+    // @ts-ignore
+    const accruedFarmer1 = farmer1Acc.rewardA.accruedReward;
+
+    const farmer2Acc = await gf.fetchFarmerAcc(farmer2);
+    // @ts-ignore
+    const accruedFarmer2 = farmer2Acc.rewardA.accruedReward;
+
+    assert(totalAccruedToStakers.eq(accruedFarmer1.add(accruedFarmer2)));
+
+    //verify reward rate * gems staked = total accrued
+    assert(
+      totalAccruedToStakers.eq(farmAcc.gemsStaked.mul(totalRewardsPerGem()))
+    );
+
+    //verify gems made whole
+    assert(
+      // @ts-ignore
+      farmAcc.rewardA.fixedRateTracker.gemsParticipating.eq(
+        // @ts-ignore
+        farmAcc.rewardA.fixedRateTracker.gemsMadeWhole
+      )
+    );
+    assert(
+      // @ts-ignore
+      farmAcc.rewardB.fixedRateTracker.gemsParticipating.eq(
+        // @ts-ignore
+        farmAcc.rewardB.fixedRateTracker.gemsMadeWhole
+      )
+    );
+
+    // ----------------- unstake once to move into cooldown
+    await unstakeOnce(gem1Amount, farmer1Identity);
+    await unstakeOnce(gem1Amount, farmer2Identity);
+
+    // ----------------- unstake second time to actually open up the vault for withdrawing
+    await unstakeTwice(gem1Amount, farmer1Identity);
+    await unstakeTwice(gem1Amount, farmer2Identity);
+    // await printStructs('UNSTAKED');
+
+    farmAcc = await gf.fetchFarmAcc(farm.publicKey);
+    assert(farmAcc.stakedFarmerCount.eq(new BN(0)));
+    assert(farmAcc.gemsStaked.eq(new BN(0)));
+  });
+
   //todo test can't unfund for too much
   //todo test double funding
   //todo test locking, which should check the funding balance
 
-  // --------------------------------------- gem ops: deposit, stake & claim
-
-  describe('gem operations', () => {
-    //gem 1 used by farmer 1
-    let gem1Amount: anchor.BN;
-    let gem1: ITokenData;
-    //gem 2 used by farmer 2
-    let gem2Amount: anchor.BN;
-    let gem2: ITokenData;
-
-    beforeEach('creates a fresh gem', async () => {
-      ({ gemAmount: gem1Amount, gem: gem1 } = await prepGem(
-        gf,
-        farmer1Identity
-      ));
-      ({ gemAmount: gem2Amount, gem: gem2 } = await prepGem(
-        gf,
-        farmer2Identity
-      ));
-    });
-
-    async function prepDeposit(gems: BN, identity: Keypair) {
-      const isFarmer1 =
-        identity.publicKey.toBase58() === farmer1Identity.publicKey.toBase58();
-
-      return gf.depositGem(
-        bank.publicKey,
-        isFarmer1 ? farmer1Vault : farmer2Vault,
-        identity,
-        gems,
-        isFarmer1 ? gem1.tokenMint : gem2.tokenMint,
-        isFarmer1 ? gem1.tokenAcc : gem2.tokenAcc
-      );
-    }
-
-    async function prepRefreshFarmer(identity: Keypair) {
-      return gf.refreshFarmer(farm.publicKey, identity);
-    }
-
-    async function depositAndStake(gems: BN, identity: Keypair) {
-      //deposit some gems into the vault
-      await prepDeposit(gems, identity);
-
-      const { farmer, vault } = await gf.stake(farm.publicKey, identity);
-
-      let vaultAcc = await gf.fetchVaultAcc(vault);
-      assert.isTrue(vaultAcc.locked);
-
-      let farmerAcc = await gf.fetchFarmerAcc(farmer);
-      assert(farmerAcc.gemsStaked.eq(gems));
-    }
-
-    async function unstakeOnce(gems: BN, identity: Keypair) {
-      const { vault } = await gf.unstake(farm.publicKey, identity);
-
-      const vaultAcc = await gf.fetchVaultAcc(vault);
-      assert.isTrue(vaultAcc.locked);
-    }
-
-    async function unstakeTwice(gems: BN, identity: Keypair) {
-      const { farmer, vault } = await gf.unstake(farm.publicKey, identity);
-
-      const vaultAcc = await gf.fetchVaultAcc(vault);
-      assert.isFalse(vaultAcc.locked);
-
-      const farmerAcc = await gf.fetchFarmerAcc(farmer);
-      assert(farmerAcc.gemsStaked.eq(new BN(0)));
-    }
-
-    it('stakes / unstakes gems (multi farmer)', async () => {
-      // ----------------- deposit + stake both farmers
-      await depositAndStake(gem1Amount, farmer1Identity);
-      await depositAndStake(gem2Amount, farmer2Identity);
-      await printStructs('STAKED');
-
-      let farmAcc = await gf.fetchFarmAcc(farm.publicKey);
-      assert(farmAcc.stakedFarmerCount.eq(new BN(2)));
-      assert(farmAcc.gemsStaked.eq(gem1Amount.add(gem2Amount)));
-
-      // ----------------- wait till the end of reward schedule (to accrue full rewards)
-      await pause(13000); //1s longer than the schedule
-
-      const { farmer: farmer1 } = await prepRefreshFarmer(farmer1Identity);
-      const { farmer: farmer2 } = await prepRefreshFarmer(farmer2Identity);
-      await printStructs('WAITED');
-
-      farmAcc = await gf.fetchFarmAcc(farm.publicKey);
-
-      //verify farmer count adds up
-      assert(farmAcc.stakedFarmerCount.eq(new BN(2)));
-
-      //verify gem count adds up
-      assert(farmAcc.gemsStaked.eq(gem1Amount.add(gem2Amount)));
-      assert(
-        farmAcc.gemsStaked.eq(
-          farmAcc.rewardA.fixedRateTracker.gemsParticipating
-        )
-      );
-      assert(
-        farmAcc.gemsStaked.eq(
-          farmAcc.rewardB.fixedRateTracker.gemsParticipating
-        )
-      );
-
-      //verify accrued rewards add up
-      const totalAccruedToStakers =
-        farmAcc.rewardA.fixedRateTracker.totalAccruedToStakers;
-
-      const farmer1Acc = await gf.fetchFarmerAcc(farmer1);
-      const accruedFarmer1 = farmer1Acc.rewardA.accruedReward;
-
-      const farmer2Acc = await gf.fetchFarmerAcc(farmer2);
-      const accruedFarmer2 = farmer2Acc.rewardA.accruedReward;
-
-      assert(totalAccruedToStakers.eq(accruedFarmer1.add(accruedFarmer2)));
-
-      //verify reward rate * gems staked = total accrued
-      assert(
-        totalAccruedToStakers.eq(farmAcc.gemsStaked.mul(totalRewardsPerGem()))
-      );
-
-      //verify gems made whole
-      assert(
-        farmAcc.rewardA.fixedRateTracker.gemsParticipating.eq(
-          farmAcc.rewardA.fixedRateTracker.gemsMadeWhole
-        )
-      );
-      assert(
-        farmAcc.rewardB.fixedRateTracker.gemsParticipating.eq(
-          farmAcc.rewardB.fixedRateTracker.gemsMadeWhole
-        )
-      );
-
-      // ----------------- unstake once to move into cooldown
-      await unstakeOnce(gem1Amount, farmer1Identity);
-      await unstakeOnce(gem1Amount, farmer2Identity);
-
-      // ----------------- unstake second time to actually open up the vault for withdrawing
-      await unstakeTwice(gem1Amount, farmer1Identity);
-      await unstakeTwice(gem1Amount, farmer2Identity);
-      // await printStructs('UNSTAKED');
-
-      farmAcc = await gf.fetchFarmAcc(farm.publicKey);
-      assert(farmAcc.stakedFarmerCount.eq(new BN(0)));
-      assert(farmAcc.gemsStaked.eq(new BN(0)));
-    });
-  });
+  // it('defunds the farm', async () => {});
 });
