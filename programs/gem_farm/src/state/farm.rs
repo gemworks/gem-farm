@@ -310,6 +310,7 @@ impl FarmRewardTracker {
         now_ts: u64,
         new_amount: u64,
         new_duration_sec: u64,
+        // variable_rate_config: Option<>
         fixed_rate_config: Option<FixedRateConfig>,
     ) -> ProgramResult {
         if self.is_locked(now_ts) {
@@ -378,11 +379,6 @@ impl FarmRewardTracker {
         farmer_reward: Option<&mut FarmerRewardTracker>,
     ) -> ProgramResult {
         let reward_upper_bound_ts = std::cmp::min(self.reward_end_ts, now_ts);
-
-        if reward_upper_bound_ts <= rewards_last_updated_ts {
-            msg!("this reward has ended and won't pay out anymore");
-            return Ok(());
-        }
 
         match self.reward_type {
             RewardType::Variable => self.variable_rate_tracker.update_accrued_reward(

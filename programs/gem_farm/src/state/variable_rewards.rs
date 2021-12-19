@@ -71,6 +71,12 @@ impl VariableRateTracker {
         farmer_gems_staked: Option<u64>,
         farmer_reward: Option<&mut FarmerRewardTracker>,
     ) -> ProgramResult {
+        // applies to variable rewards ONLY, do not move up
+        if reward_upper_bound_ts <= rewards_last_updated_ts {
+            msg!("this reward has ended OR not enough time passed since last update");
+            return Ok(());
+        }
+
         let newly_accrued_reward_per_gem = self.calc_newly_accrued_reward_per_gem(
             farm_gems_staked,
             reward_upper_bound_ts,
