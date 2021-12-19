@@ -106,9 +106,9 @@ impl VariableRateTracker {
         reward_upper_bound_ts: u64,
         rewards_last_updated_ts: u64,
     ) -> Result<u64, ProgramError> {
-        // if no gems staked, return existing accrued reward
+        // if no gems staked, no new reward accrues, hence return 0
         if farm_gems_staked == 0 {
-            return Ok(self.accrued_reward_per_gem);
+            return Ok(0);
         }
 
         let time_since_last_calc_sec = reward_upper_bound_ts.try_sub(rewards_last_updated_ts)?;

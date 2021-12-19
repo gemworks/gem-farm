@@ -763,6 +763,7 @@ export class GemFarmClient extends GemBankClient {
 
     const [farmer, farmerBump] = await this.findFarmerPDA(farm, identityPk);
 
+    console.log('refreshing farmer', identityPk.toBase58());
     const txSig = await this.farmProgram.rpc.refreshFarmer(farmerBump, {
       accounts: {
         farm,
