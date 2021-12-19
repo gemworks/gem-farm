@@ -6,6 +6,7 @@ use crate::state::*;
 
 pub const LATEST_FARM_VERSION: u16 = 0;
 
+#[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FarmConfig {
     // min time the NFT has to be staked
@@ -257,12 +258,14 @@ impl Farm {
 
 // --------------------------------------- reward tracker
 
+#[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize, PartialEq)]
 pub enum RewardType {
     Variable,
     Fixed,
 }
 
+#[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FarmRewardTracker {
     pub reward_mint: Pubkey,

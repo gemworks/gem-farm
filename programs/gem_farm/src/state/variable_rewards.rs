@@ -4,6 +4,7 @@ use gem_common::*;
 
 use crate::state::*;
 
+#[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct VariableRateConfig {
     // total amount of rewards
@@ -13,6 +14,7 @@ pub struct VariableRateConfig {
     pub duration_sec: u64,
 }
 
+#[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct VariableRateTracker {
     // in tokens/s, = total reward pot at initialization / reward duration

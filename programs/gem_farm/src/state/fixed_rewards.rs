@@ -5,6 +5,7 @@ use gem_common::*;
 
 use crate::state::*;
 
+#[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct PeriodConfig {
     // tokens / sec
@@ -13,6 +14,7 @@ pub struct PeriodConfig {
     pub duration_sec: u64,
 }
 
+#[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FixedRateConfig {
     pub period_1: PeriodConfig,
@@ -66,6 +68,7 @@ impl FixedRateConfig {
     }
 }
 
+#[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FixedRateTracker {
     pub config: FixedRateConfig,

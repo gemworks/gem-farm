@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
 use gem_common::{errors::ErrorCode, *};
 
+#[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize, PartialEq)]
 pub enum FarmerStatus {
     Unstaked,
@@ -125,6 +126,7 @@ impl Farmer {
     }
 }
 
+#[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FarmerRewardTracker {
     // total, not per gem
