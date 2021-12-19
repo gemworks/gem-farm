@@ -24,13 +24,19 @@ export interface FarmConfig {
 
 export interface PeriodConfig {
   rate: BN;
-  duration: BN;
+  durationSec: BN;
 }
 
 export interface FixedRateConfig {
   period1: PeriodConfig;
   period2: PeriodConfig | null;
   period3: PeriodConfig | null;
+  gemsFunded: BN;
+}
+
+export interface VariableRateConfig {
+  amount: BN;
+  durationSec: BN;
 }
 
 export type OptionBN = BN | null;
@@ -416,9 +422,12 @@ export class GemFarmClient extends GemBankClient {
     farm: PublicKey,
     rewardMint: PublicKey,
     funder: PublicKey | Keypair,
-    amount: BN,
     defund = false,
-    duration: OptionBN = null,
+    //defund
+    defundAmount: BN | null = null,
+    defundNewDuration: BN | null = null,
+    //fund
+    variableRateConfig: VariableRateConfig | null = null,
     fixedRateConfig: FixedRateConfig | null = null,
     rewardSource?: PublicKey
   ) {
@@ -445,8 +454,8 @@ export class GemFarmClient extends GemBankClient {
         authorizationProofBump,
         fundingReceiptBump,
         potBump,
-        amount,
-        duration,
+        defundAmount,
+        defundNewDuration,
         {
           accounts: {
             farm,
@@ -471,8 +480,7 @@ export class GemFarmClient extends GemBankClient {
         authorizationProofBump,
         fundingReceiptBump,
         potBump,
-        amount,
-        duration!,
+        variableRateConfig as any,
         fixedRateConfig as any,
         {
           accounts: {
@@ -509,17 +517,17 @@ export class GemFarmClient extends GemBankClient {
     rewardMint: PublicKey,
     rewardSource: PublicKey,
     funder: PublicKey | Keypair,
-    amount: BN,
-    duration: BN,
+    variableRateConfig: VariableRateConfig | null = null,
     fixedRateConfig: FixedRateConfig | null = null
   ) {
     return this.fundCommon(
       farm,
       rewardMint,
       funder,
-      amount,
       false,
-      duration,
+      null,
+      null,
+      variableRateConfig,
       fixedRateConfig,
       rewardSource
     );
@@ -532,7 +540,7 @@ export class GemFarmClient extends GemBankClient {
     amount: BN,
     newDuration: OptionBN = null
   ) {
-    return this.fundCommon(farm, rewardMint, funder, amount, true, newDuration);
+    return this.fundCommon(farm, rewardMint, funder, true, amount, newDuration);
   }
 
   async lockFunding(
