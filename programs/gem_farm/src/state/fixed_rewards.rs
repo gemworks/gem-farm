@@ -84,9 +84,10 @@ pub struct FixedRateTracker {
 }
 
 impl FixedRateTracker {
-    // fixme this is critical to get right. also rename locking to activation
     pub fn assert_sufficient_funding(&self) -> ProgramResult {
-        assert!(self.config.calc_required_funding()? <= self.net_reward_funding);
+        if self.config.calc_required_funding()? > self.net_reward_funding {
+            return Err(ErrorCode::RewardUnderfunded.into());
+        }
 
         Ok(())
     }

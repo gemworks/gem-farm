@@ -13,7 +13,11 @@
 // import { pause } from '../utils/types';
 // import { prepGem } from '../utils/gem-common';
 // import { ITokenData } from '../utils/account';
-// import { printStructsGeneric } from './gem-farm.common';
+// import {
+//   mintFromNameGeneric,
+//   nameFromMintGeneric,
+//   printStructsGeneric,
+// } from './gem-farm.common';
 //
 // chai.use(chaiAsPromised);
 //
@@ -53,17 +57,21 @@
 //   let funder = gf.wallet.payer;
 //
 //   async function printStructs(state: string) {
-//     await printStructsGeneric(gf, state, farm, farmer1Identity, farmer2Identity);
+//     await printStructsGeneric(
+//       gf,
+//       state,
+//       farm,
+//       farmer1Identity,
+//       farmer2Identity
+//     );
 //   }
 //
-//   function rewardNameFromMint(rewardMint: PublicKey) {
-//     if (rewardMint.toBase58() === rewardA.publicKey.toBase58()) {
-//       return 'rewardA';
-//     } else if (rewardMint.toBase58() === rewardB.publicKey.toBase58()) {
-//       return 'rewardB';
-//     } else {
-//       throw new Error('reward mint not recognized');
-//     }
+//   function nameFromMint(rewardMint: PublicKey) {
+//     return nameFromMintGeneric(rewardMint, rewardA, rewardB);
+//   }
+//
+//   function mintFromName(rewardName: string) {
+//     return mintFromNameGeneric(rewardName, rewardA, rewardB);
 //   }
 //
 //   before('configures accounts', async () => {
@@ -199,7 +207,7 @@
 //     const farmAcc = await gf.fetchFarmAcc(farm.publicKey);
 //     assert(!farmAcc.rewardsLastUpdatedTs.eq(new BN(0)));
 //
-//     const reward = rewardNameFromMint(rewardMint);
+//     const reward = nameFromMint(rewardMint);
 //
 //     // @ts-ignore
 //     assert(farmAcc[reward].rewardDurationSec.eq(config.durationSec));
@@ -347,7 +355,7 @@
 //       identity: Keypair,
 //       gems?: BN //sometimes we want to pass custom gem number, eg after unstaking
 //     ) {
-//       const reward = rewardNameFromMint(rewardMint);
+//       const reward = nameFromMint(rewardMint);
 //
 //       //farm
 //       const farmAcc = await gf.fetchFarmAcc(farm.publicKey);
@@ -505,7 +513,7 @@
 //       rewardMint: PublicKey,
 //       rewardDest: PublicKey
 //     ) {
-//       const reward = rewardNameFromMint(rewardMint);
+//       const reward = nameFromMint(rewardMint);
 //       const [farmer] = await gf.findFarmerPDA(
 //         farm.publicKey,
 //         identity.publicKey

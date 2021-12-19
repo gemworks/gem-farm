@@ -1,5 +1,6 @@
-import { Keypair } from '@solana/web3.js';
+import { Keypair, PublicKey } from '@solana/web3.js';
 import { stringifyPubkeysAndBNsInObject } from '../utils/types';
+import { Token } from '@solana/spl-token';
 
 export async function printStructsGeneric(
   gf: any,
@@ -28,4 +29,32 @@ export async function printStructsGeneric(
   const farmer2Acc = await gf.fetchFarmerAcc(farmer2);
   console.log('// --------------------------------------- farmer 2');
   console.log(stringifyPubkeysAndBNsInObject(farmer2Acc));
+}
+
+export function nameFromMintGeneric(
+  rewardMint: PublicKey,
+  rewardAMint: Token,
+  rewardBMint: Token
+) {
+  if (rewardMint.toBase58() === rewardAMint.publicKey.toBase58()) {
+    return 'rewardA';
+  } else if (rewardMint.toBase58() === rewardBMint.publicKey.toBase58()) {
+    return 'rewardB';
+  } else {
+    throw new Error('reward mint not recognized');
+  }
+}
+
+export function mintFromNameGeneric(
+  rewardName: string,
+  rewardAMint: Token,
+  rewardBMint: Token
+) {
+  if (rewardName === 'rewardA') {
+    return rewardAMint.publicKey.toBase58();
+  } else if (rewardName === 'rewardB') {
+    return rewardBMint.publicKey.toBase58();
+  } else {
+    throw new Error('reward name not recognized');
+  }
 }
