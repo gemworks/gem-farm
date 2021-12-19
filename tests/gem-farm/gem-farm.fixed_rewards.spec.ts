@@ -64,12 +64,6 @@
 //   return config.gemsFunded.mul(totalRewardsPerGem());
 // }
 //
-// const farmConfig = <FarmConfig>{
-//   minStakingPeriodSec: new BN(0),
-//   cooldownPeriodSec: new BN(0),
-//   unstakingFeeLamp: new BN(LAMPORTS_PER_SOL),
-// };
-//
 // describe('gem farm (fixed rewards)', () => {
 //   //farm + bank
 //   let bank: Keypair;
@@ -129,8 +123,8 @@
 //   beforeEach('configures accounts', async () => {
 //     farm = Keypair.generate();
 //     bank = Keypair.generate();
-//
 //     farmManager = await gf.createWallet(100 * LAMPORTS_PER_SOL);
+//
 //     farmer1Identity = await gf.createWallet(100 * LAMPORTS_PER_SOL);
 //     farmer2Identity = await gf.createWallet(100 * LAMPORTS_PER_SOL);
 //
@@ -143,6 +137,12 @@
 //     rewardSecondMint = await gf.createToken(0, funder.publicKey);
 //
 //     //init the farm
+//     const farmConfig = <FarmConfig>{
+//       minStakingPeriodSec: new BN(0),
+//       cooldownPeriodSec: new BN(0),
+//       unstakingFeeLamp: new BN(LAMPORTS_PER_SOL),
+//     };
+//
 //     await gf.initFarm(
 //       farm,
 //       farmManager,
