@@ -68,8 +68,6 @@ impl FixedRateConfig {
         let p1_duration = std::cmp::min(self.period_1.duration_sec, duration);
         let p1_reward = self.period_1.rate.try_mul(p1_duration)?;
 
-        msg!("p1 dur/rew {} {}", p1_duration, p1_reward);
-
         // period 2 calc
         let mut p2_duration = 0;
         let mut p2_reward = 0;
@@ -78,8 +76,6 @@ impl FixedRateConfig {
             p2_duration = std::cmp::min(config.duration_sec, duration.try_sub(p1_duration)?);
             p2_reward = config.rate.try_mul(p2_duration)?;
         }
-
-        msg!("p2 dur/rew {} {}", p2_duration, p2_reward);
 
         // period 3 calc
         let mut p3_duration = 0;
@@ -92,8 +88,6 @@ impl FixedRateConfig {
             );
             p3_reward = config.rate.try_mul(p3_duration)?;
         }
-
-        msg!("p3 dur/rew {} {}", p3_duration, p3_reward);
 
         let accrued_duration = p1_duration.try_add(p2_duration)?.try_add(p3_duration)?;
         let accrued_reward_per_gem = p1_reward.try_add(p2_reward)?.try_add(p3_reward)?;
@@ -232,5 +226,238 @@ impl FixedRateReward {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_full_config() {
+        let c = FixedRateConfig {
+            period_1: PeriodConfig {
+                rate: 3,
+                duration_sec: 3,
+            },
+            period_2: Some(PeriodConfig {
+                rate: 4,
+                duration_sec: 4,
+            }),
+            period_3: Some(PeriodConfig {
+                rate: 5,
+                duration_sec: 5,
+            }),
+            gems_funded: 100,
+        };
+
+        // test max_duration
+        let total_duration = 3 + 4 + 5;
+        assert_eq!(total_duration, c.max_duration().unwrap());
+
+        // test max_reward_per_gem
+        let total_rewards = (3 * 3) + (4 * 4) + (5 * 5);
+        assert_eq!(total_rewards, c.max_reward_per_gem().unwrap());
+
+        //test required_funding
+        assert_eq!(total_rewards * 100, c.required_funding().unwrap());
+
+        // test accrued_reward_per_gem
+        let duration_p1 = 2;
+        let reward_p1 = 2 * 3;
+        assert_eq!(reward_p1, c.accrued_reward_per_gem(duration_p1).unwrap());
+
+        let duration_p2 = 5;
+        let reward_p2 = (3 * 3) + 2 * 4;
+        assert_eq!(reward_p2, c.accrued_reward_per_gem(duration_p2).unwrap());
+
+        let duration_p3 = 9;
+        let reward_p3 = (3 * 3) + (4 * 4) + 2 * 5;
+        assert_eq!(reward_p3, c.accrued_reward_per_gem(duration_p3).unwrap());
+
+        let duration_too_long = 100;
+        assert_eq!(
+            total_rewards,
+            c.accrued_reward_per_gem(duration_too_long).unwrap()
+        );
+
+        // test remaining_reward_per_gem
+        assert_eq!(
+            total_rewards - reward_p1,
+            c.remaining_reward_per_gem(duration_p1).unwrap()
+        );
+        assert_eq!(
+            total_rewards - reward_p2,
+            c.remaining_reward_per_gem(duration_p2).unwrap()
+        );
+        assert_eq!(
+            total_rewards - reward_p3,
+            c.remaining_reward_per_gem(duration_p3).unwrap()
+        );
+        assert_eq!(0, c.remaining_reward_per_gem(duration_too_long).unwrap());
+
+        // test remaining_required_funding
+        assert_eq!(
+            100 * (total_rewards - reward_p1),
+            c.remaining_required_funding(duration_p1).unwrap()
+        );
+        assert_eq!(
+            100 * (total_rewards - reward_p2),
+            c.remaining_required_funding(duration_p2).unwrap()
+        );
+        assert_eq!(
+            100 * (total_rewards - reward_p3),
+            c.remaining_required_funding(duration_p3).unwrap()
+        );
+        assert_eq!(0, c.remaining_required_funding(duration_too_long).unwrap());
+    }
+
+    #[test]
+    fn test_p2_config() {
+        let c = FixedRateConfig {
+            period_1: PeriodConfig {
+                rate: 3,
+                duration_sec: 3,
+            },
+            period_2: Some(PeriodConfig {
+                rate: 4,
+                duration_sec: 4,
+            }),
+            period_3: None,
+            gems_funded: 100,
+        };
+
+        // test max_duration
+        let total_duration = 3 + 4;
+        assert_eq!(total_duration, c.max_duration().unwrap());
+
+        // test max_reward_per_gem
+        let total_rewards = (3 * 3) + (4 * 4);
+        assert_eq!(total_rewards, c.max_reward_per_gem().unwrap());
+
+        //test required_funding
+        assert_eq!(total_rewards * 100, c.required_funding().unwrap());
+
+        // test accrued_reward_per_gem
+        let duration_p1 = 2;
+        let reward_p1 = 2 * 3;
+        assert_eq!(reward_p1, c.accrued_reward_per_gem(duration_p1).unwrap());
+
+        let duration_p2 = 5;
+        let reward_p2 = (3 * 3) + 2 * 4;
+        assert_eq!(reward_p2, c.accrued_reward_per_gem(duration_p2).unwrap());
+
+        let duration_p3 = 9;
+        let reward_p3 = (3 * 3) + (4 * 4);
+        assert_eq!(reward_p3, c.accrued_reward_per_gem(duration_p3).unwrap());
+
+        let duration_too_long = 100;
+        assert_eq!(
+            total_rewards,
+            c.accrued_reward_per_gem(duration_too_long).unwrap()
+        );
+
+        // test remaining_reward_per_gem
+        assert_eq!(
+            total_rewards - reward_p1,
+            c.remaining_reward_per_gem(duration_p1).unwrap()
+        );
+        assert_eq!(
+            total_rewards - reward_p2,
+            c.remaining_reward_per_gem(duration_p2).unwrap()
+        );
+        assert_eq!(
+            total_rewards - reward_p3,
+            c.remaining_reward_per_gem(duration_p3).unwrap()
+        );
+        assert_eq!(0, c.remaining_reward_per_gem(duration_too_long).unwrap());
+
+        // test remaining_required_funding
+        assert_eq!(
+            100 * (total_rewards - reward_p1),
+            c.remaining_required_funding(duration_p1).unwrap()
+        );
+        assert_eq!(
+            100 * (total_rewards - reward_p2),
+            c.remaining_required_funding(duration_p2).unwrap()
+        );
+        assert_eq!(
+            100 * (total_rewards - reward_p3),
+            c.remaining_required_funding(duration_p3).unwrap()
+        );
+        assert_eq!(0, c.remaining_required_funding(duration_too_long).unwrap());
+    }
+
+    #[test]
+    fn test_p1_config() {
+        let c = FixedRateConfig {
+            period_1: PeriodConfig {
+                rate: 3,
+                duration_sec: 3,
+            },
+            period_2: None,
+            period_3: None,
+            gems_funded: 100,
+        };
+
+        // test max_duration
+        let total_duration = 3;
+        assert_eq!(total_duration, c.max_duration().unwrap());
+
+        // test max_reward_per_gem
+        let total_rewards = 3 * 3;
+        assert_eq!(total_rewards, c.max_reward_per_gem().unwrap());
+
+        //test required_funding
+        assert_eq!(total_rewards * 100, c.required_funding().unwrap());
+
+        // test accrued_reward_per_gem
+        let duration_p1 = 2;
+        let reward_p1 = 2 * 3;
+        assert_eq!(reward_p1, c.accrued_reward_per_gem(duration_p1).unwrap());
+
+        let duration_p2 = 5;
+        let reward_p2 = 3 * 3;
+        assert_eq!(reward_p2, c.accrued_reward_per_gem(duration_p2).unwrap());
+
+        let duration_p3 = 9;
+        let reward_p3 = 3 * 3;
+        assert_eq!(reward_p3, c.accrued_reward_per_gem(duration_p3).unwrap());
+
+        let duration_too_long = 100;
+        assert_eq!(
+            total_rewards,
+            c.accrued_reward_per_gem(duration_too_long).unwrap()
+        );
+
+        // test remaining_reward_per_gem
+        assert_eq!(
+            total_rewards - reward_p1,
+            c.remaining_reward_per_gem(duration_p1).unwrap()
+        );
+        assert_eq!(
+            total_rewards - reward_p2,
+            c.remaining_reward_per_gem(duration_p2).unwrap()
+        );
+        assert_eq!(
+            total_rewards - reward_p3,
+            c.remaining_reward_per_gem(duration_p3).unwrap()
+        );
+        assert_eq!(0, c.remaining_reward_per_gem(duration_too_long).unwrap());
+
+        // test remaining_required_funding
+        assert_eq!(
+            100 * (total_rewards - reward_p1),
+            c.remaining_required_funding(duration_p1).unwrap()
+        );
+        assert_eq!(
+            100 * (total_rewards - reward_p2),
+            c.remaining_required_funding(duration_p2).unwrap()
+        );
+        assert_eq!(
+            100 * (total_rewards - reward_p3),
+            c.remaining_required_funding(duration_p3).unwrap()
+        );
+        assert_eq!(0, c.remaining_required_funding(duration_too_long).unwrap());
     }
 }

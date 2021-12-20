@@ -406,3 +406,33 @@ impl FarmReward {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_time_tracker() {
+        let times = TimeTracker {
+            duration_sec: 100,
+            reward_end_ts: 200,
+            lock_end_ts: 0,
+        };
+
+        assert_eq!(70, times.remaining_duration(130).unwrap());
+        assert_eq!(30, times.passed_duration(130).unwrap());
+        assert_eq!(199, times.upper_bound(199));
+        assert_eq!(200, times.upper_bound(201));
+    }
+
+    #[test]
+    fn test_funds_tracker() {
+        let funds = FundsTracker {
+            total_funded: 100,
+            total_refunded: 50,
+            total_accrued_to_stakers: 30,
+        };
+
+        assert_eq!(20, funds.pending_amount().unwrap());
+    }
+}
