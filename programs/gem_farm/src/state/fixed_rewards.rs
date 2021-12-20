@@ -75,8 +75,7 @@ impl FixedRateConfig {
         let mut p2_reward = 0;
 
         if let Some(config) = self.period_2 {
-            p2_duration =
-                std::cmp::min(config.duration_sec, duration.try_sub(p1_duration)?);
+            p2_duration = std::cmp::min(config.duration_sec, duration.try_sub(p1_duration)?);
             p2_reward = config.rate.try_mul(p2_duration)?;
         }
 
@@ -89,9 +88,7 @@ impl FixedRateConfig {
         if let Some(config) = self.period_3 {
             p3_duration = std::cmp::min(
                 config.duration_sec,
-                duration
-                    .try_sub(p1_duration)?
-                    .try_sub(p2_duration)?,
+                duration.try_sub(p1_duration)?.try_sub(p2_duration)?,
             );
             p3_reward = config.rate.try_mul(p3_duration)?;
         }
@@ -108,17 +105,19 @@ impl FixedRateConfig {
     }
 
     pub fn remaining_reward_per_gem(&self, passed_duration: u64) -> Result<u64, ProgramError> {
-        self.max_reward_per_gem()?.try_sub(self.accrued_reward_per_gem(passed_duration)?)
+        self.max_reward_per_gem()?
+            .try_sub(self.accrued_reward_per_gem(passed_duration)?)
     }
 
     pub fn required_remaining_funding(&self, passed_duration: u64) -> Result<u64, ProgramError> {
-        self.remaining_reward_per_gem(passed_duration)?.try_mul(self.gems_funded)
+        self.remaining_reward_per_gem(passed_duration)?
+            .try_mul(self.gems_funded)
     }
 }
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
-pub struct FixedRateCalculator {
+pub struct FixedRateReward {
     // configured on funding
     pub config: FixedRateConfig,
 
@@ -129,20 +128,20 @@ pub struct FixedRateCalculator {
     pub gems_made_whole: u64,
 }
 
-impl FixedRateCalculator {
+impl FixedRateReward {
     pub fn lock_reward(
         &self,
-        now_ts: u64
-        time_tracker: &mut TimeTracker,
-        funds_tracker: &mut FundsTracker,
+        now_ts: u64,
+        times: &mut TimeTracker,
+        funds: &mut FundsTracker,
     ) -> ProgramResult {
-        let passed_duration = time_tracker.passed_duration(now_ts)?;
+        let passed_duration = times.passed_duration(now_ts)?;
 
-        if funds_tracker.pending_amount()? < self.config.required_remaining_funding(passed_duration)? {
+        if funds.pending_amount()? < self.config.required_remaining_funding(passed_duration)? {
             return Err(ErrorCode::RewardUnderfunded.into());
         }
 
-        time_tracker.lock_end_ts = time_tracker.reward_end_ts;
+        times.lock_end_ts = times.reward_end_ts;
 
         Ok(())
     }
@@ -150,14 +149,14 @@ impl FixedRateCalculator {
     pub fn fund_reward(
         &mut self,
         now_ts: u64,
-        time_tracker: &mut TimeTracker,
-        funds_tracker: &mut FundsTracker,
+        times: &mut TimeTracker,
+        funds: &mut FundsTracker,
         new_config: FixedRateConfig,
     ) -> ProgramResult {
-        time_tracker.duration_sec = new_config.max_duration()?;
-        time_tracker.reward_end_ts = now_ts.try_add(new_config.max_duration()?)?;
+        times.duration_sec = new_config.max_duration()?;
+        times.reward_end_ts = now_ts.try_add(new_config.max_duration()?)?;
 
-        funds_tracker
+        funds
             .total_funded
             .try_add_assign(new_config.calc_required_funding()?);
 
@@ -169,8 +168,8 @@ impl FixedRateCalculator {
     pub fn cancel_reward(
         &mut self,
         now_ts: u64,
-        time_tracker: &mut TimeTracker,
-        funds_tracker: &mut FundsTracker,
+        times: &mut TimeTracker,
+        funds: &mut FundsTracker,
     ) -> Result<u64, ProgramError> {
         // this is specific to fixed rate
         // in var. rate we know exactly how much we spent total over N time because overall amount is fixed
@@ -184,10 +183,10 @@ impl FixedRateCalculator {
             return Err(ErrorCode::NotAllGemsWhole.into());
         }
 
-        time_tracker.end_reward(now_ts)?;
+        times.end_reward(now_ts)?;
 
-        let refund_amount = funds_tracker.pending_amount()?;
-        funds_tracker.total_refunded.try_add_assign(refund_amount)?;
+        let refund_amount = funds.pending_amount()?;
+        funds.total_refunded.try_add_assign(refund_amount)?;
 
         Ok(refund_amount)
     }
@@ -195,9 +194,8 @@ impl FixedRateCalculator {
     pub fn update_accrued_reward(
         &mut self,
         now_ts: u64,
-        reward_upper_bound_ts: u64,
-        funds_tracker: &mut FundsTracker,
-        time_tracker: &TimeTracker,
+        funds: &mut FundsTracker,
+        times: &TimeTracker,
         farmer_gems_staked: u64,
         farmer_begin_staking_ts: u64,
         farmer_reward: &mut FarmerRewardTracker, // only ran when farmer present
@@ -208,12 +206,12 @@ impl FixedRateCalculator {
         }
 
         //todo is this the right place? what other checks of this type are necessary?
-        if farmer_begin_staking_ts > reward_upper_bound_ts {
+        if farmer_begin_staking_ts > times.upper_bound(now_ts) {
             return Ok(());
         }
 
         // calc new, updated reward
-        let staking_duration = reward_upper_bound_ts.try_sub(farmer_begin_staking_ts)?;
+        let staking_duration = times.upper_bound(now_ts).try_sub(farmer_begin_staking_ts)?;
         let farmer_reward_per_gem = self.config.accrued_reward_per_gem(staking_duration)?;
         let total_farmer_reward = farmer_reward_per_gem.try_mul(farmer_gems_staked)?;
 
@@ -223,12 +221,10 @@ impl FixedRateCalculator {
 
         // update farm
         let difference = total_farmer_reward.try_sub(old_farmer_reward)?;
-        funds_tracker
-            .total_accrued_to_stakers
-            .try_add_assign(difference)?;
+        funds.total_accrued_to_stakers.try_add_assign(difference)?;
 
         // after reward end passes, we won't owe any more money to the farmer than calculated now
-        if now_ts > time_tracker.reward_end_ts {
+        if now_ts > times.reward_end_ts {
             farmer_reward.mark_whole();
             self.gems_made_whole.try_add_assign(farmer_gems_staked)?;
         }

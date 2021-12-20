@@ -15,14 +15,11 @@ pub struct VariableRateConfig {
     pub duration_sec: u64,
 }
 
-impl VariableRateConfig {
-
-}
-
+impl VariableRateConfig {}
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
-pub struct VariableRateCalculator {
+pub struct VariableRateReward {
     // configured on funding
     config: VariableRateConfig,
 
@@ -32,24 +29,24 @@ pub struct VariableRateCalculator {
     pub reward_last_updated_ts: u64,
 }
 
-impl VariableRateCalculator {
+impl VariableRateReward {
     pub fn required_remaining_funding(&self, remaining_duration: u64) -> Result<u64, ProgramError> {
         remaining_duration.try_mul(self.reward_rate)
     }
 
     pub fn lock_reward(
         &self,
-        now_ts: u64
-        time_tracker: &mut TimeTracker,
-        funds_tracker: &mut FundsTracker,
+        now_ts: u64,
+        times: &mut TimeTracker,
+        funds: &mut FundsTracker,
     ) -> ProgramResult {
-        let remaining_duration = time_tracker.remaining_duration(now_ts)?;
+        let remaining_duration = times.remaining_duration(now_ts)?;
 
-        if funds_tracker.pending_amount()? < self.required_remaining_funding(remaining_duration)? {
+        if funds.pending_amount()? < self.required_remaining_funding(remaining_duration)? {
             return Err(ErrorCode::RewardUnderfunded.into());
         }
 
-        time_tracker.lock_end_ts = time_tracker.reward_end_ts;
+        times.lock_end_ts = times.reward_end_ts;
 
         Ok(())
     }
@@ -57,8 +54,8 @@ impl VariableRateCalculator {
     pub fn fund_reward(
         &mut self,
         now_ts: u64,
-        time_tracker: &mut TimeTracker,
-        funds_tracker: &mut FundsTracker,
+        times: &mut TimeTracker,
+        funds: &mut FundsTracker,
         new_config: VariableRateConfig,
     ) -> ProgramResult {
         let VariableRateConfig {
@@ -67,19 +64,19 @@ impl VariableRateCalculator {
         } = new_config;
 
         // if previous rewards have been exhausted
-        if now_ts > time_tracker.reward_end_ts {
+        if now_ts > times.reward_end_ts {
             self.reward_rate = amount.try_div(duration_sec)?;
         // else if previous rewards are still active (merge the two)
         } else {
             self.reward_rate = amount
-                .try_add(funds_tracker.pending_amount()?)?
+                .try_add(funds.pending_amount()?)?
                 .try_div(duration_sec)?;
         }
 
-        time_tracker.duration_sec = duration_sec;
-        time_tracker.reward_end_ts = now_ts.try_add(duration_sec)?;
+        times.duration_sec = duration_sec;
+        times.reward_end_ts = now_ts.try_add(duration_sec)?;
 
-        funds_tracker.total_funded.try_add_assign(amount);
+        funds.total_funded.try_add_assign(amount);
 
         self.config = new_config;
         self.reward_last_updated_ts = now_ts;
@@ -90,13 +87,13 @@ impl VariableRateCalculator {
     pub fn cancel_reward(
         &mut self,
         now_ts: u64,
-        time_tracker: &mut TimeTracker,
-        funds_tracker: &mut FundsTracker,
+        times: &mut TimeTracker,
+        funds: &mut FundsTracker,
     ) -> Result<u64, ProgramError> {
-        time_tracker.end_reward(now_ts)?;
+        times.end_reward(now_ts)?;
 
-        let refund_amount = funds_tracker.pending_amount()?;
-        funds_tracker.total_refunded.try_add_assign(refund_amount)?;
+        let refund_amount = funds.pending_amount()?;
+        funds.total_refunded.try_add_assign(refund_amount)?;
 
         self.reward_rate = 0;
         self.reward_last_updated_ts = now_ts;
@@ -107,22 +104,22 @@ impl VariableRateCalculator {
     pub fn update_accrued_reward(
         &mut self,
         now_ts: u64,
-        reward_upper_bound_ts: u64,
-        funds_tracker: &mut FundsTracker,
+        funds: &mut FundsTracker,
+        times: &TimeTracker,
         farm_gems_staked: u64,
         farmer_gems_staked: Option<u64>,
         farmer_reward: Option<&mut FarmerRewardTracker>,
     ) -> ProgramResult {
         // applies to variable rewards ONLY, do not move up
-        if reward_upper_bound_ts <= self.reward_last_updated_ts {
+        if times.upper_bound(now_ts) <= self.reward_last_updated_ts {
             msg!("this reward has ended OR not enough time passed since last update");
             return Ok(());
         }
 
         let newly_accrued_reward =
-            self.calc_newly_accrued_reward(farm_gems_staked, reward_upper_bound_ts)?;
+            self.calc_newly_accrued_reward(farm_gems_staked, times.upper_bound(now_ts))?;
 
-        funds_tracker
+        funds
             .total_accrued_to_stakers
             .try_add_assign(newly_accrued_reward)?;
 
