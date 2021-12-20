@@ -76,7 +76,7 @@ impl VariableRateReward {
         times.duration_sec = duration_sec;
         times.reward_end_ts = now_ts.try_add(duration_sec)?;
 
-        funds.total_funded.try_add_assign(amount);
+        funds.total_funded.try_add_assign(amount)?;
 
         self.config = new_config;
         self.reward_last_updated_ts = now_ts;

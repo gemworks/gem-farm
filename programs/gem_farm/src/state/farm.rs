@@ -82,9 +82,9 @@ impl Farm {
         }
     }
 
-    pub fn lock_reward_by_mint(&mut self, reward_mint: Pubkey) -> ProgramResult {
+    pub fn lock_reward_by_mint(&mut self, now_ts: u64, reward_mint: Pubkey) -> ProgramResult {
         let reward = self.match_reward_by_mint(reward_mint)?;
-        reward.lock_reward_by_type()
+        reward.lock_reward_by_type(now_ts)
     }
 
     pub fn fund_reward_by_mint(
@@ -280,7 +280,7 @@ impl TimeTracker {
     pub fn end_reward(&mut self, now_ts: u64) -> ProgramResult {
         self.reward_end_ts = now_ts;
         self.duration_sec
-            .try_self_sub(self.remaining_duration(now_ts)?)
+            .try_sub_assign(self.remaining_duration(now_ts)?)
     }
 
     pub fn upper_bound(&self, now_ts: u64) -> u64 {

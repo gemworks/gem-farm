@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::Mint;
+use gem_common::now_ts;
 
 use crate::state::Farm;
 
@@ -17,8 +18,9 @@ pub struct LockReward<'info> {
 
 pub fn handler(ctx: Context<LockReward>) -> ProgramResult {
     let farm = &mut ctx.accounts.farm;
+    let now_ts = now_ts()?;
 
-    farm.lock_reward_by_mint(ctx.accounts.reward_mint.key())?;
+    farm.lock_reward_by_mint(now_ts, ctx.accounts.reward_mint.key())?;
 
     Ok(())
 }

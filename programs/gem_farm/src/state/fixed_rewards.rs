@@ -27,7 +27,7 @@ pub struct FixedRateConfig {
 }
 
 impl FixedRateConfig {
-    pub fn max_duration(&self) -> Result<u64, ProgramError> {
+    fn max_duration(&self) -> Result<u64, ProgramError> {
         let period_1_duration = self.period_1.duration_sec;
         let period_2_duration = if let Some(config) = self.period_2 {
             config.duration_sec
@@ -45,7 +45,7 @@ impl FixedRateConfig {
             .try_add(period_3_duration)
     }
 
-    pub fn max_reward_per_gem(&self) -> Result<u64, ProgramError> {
+    fn max_reward_per_gem(&self) -> Result<u64, ProgramError> {
         let p1_reward = self.period_1.rate.try_mul(self.period_1.duration_sec)?;
 
         let p2_reward = if let Some(config) = self.period_2 {
@@ -104,14 +104,18 @@ impl FixedRateConfig {
         Ok(accrued_reward_per_gem)
     }
 
-    pub fn remaining_reward_per_gem(&self, passed_duration: u64) -> Result<u64, ProgramError> {
+    fn remaining_reward_per_gem(&self, passed_duration: u64) -> Result<u64, ProgramError> {
         self.max_reward_per_gem()?
             .try_sub(self.accrued_reward_per_gem(passed_duration)?)
     }
 
-    pub fn required_remaining_funding(&self, passed_duration: u64) -> Result<u64, ProgramError> {
+    fn remaining_required_funding(&self, passed_duration: u64) -> Result<u64, ProgramError> {
         self.remaining_reward_per_gem(passed_duration)?
             .try_mul(self.gems_funded)
+    }
+
+    pub fn required_funding(&self) -> Result<u64, ProgramError> {
+        self.max_reward_per_gem()?.try_mul(self.gems_funded)
     }
 }
 
@@ -124,7 +128,13 @@ pub struct FixedRateReward {
     // can only go up, never down - that's the difference with gems_staked
     pub gems_participating: u64,
 
-    // can only go up, never down
+    /// this solves a fixed rate-specific issue.
+    /// in var. rate we know exactly how much total unaccrued funding is left,
+    ///  because the accrual rate for the reward as a whole is constant
+    /// in fixed rate we don't. This makes cancelling the reward / refunding hard,
+    ///  because how do we know we're not pulling out too much
+    /// the solution is to mark certain gems that we know won't accrue anymore rewards as "whole"
+    /// only when ALL participating gems are whole, can the reward be cancelled / funding withdrawn  
     pub gems_made_whole: u64,
 }
 
@@ -137,7 +147,7 @@ impl FixedRateReward {
     ) -> ProgramResult {
         let passed_duration = times.passed_duration(now_ts)?;
 
-        if funds.pending_amount()? < self.config.required_remaining_funding(passed_duration)? {
+        if funds.pending_amount()? < self.config.remaining_required_funding(passed_duration)? {
             return Err(ErrorCode::RewardUnderfunded.into());
         }
 
@@ -158,7 +168,7 @@ impl FixedRateReward {
 
         funds
             .total_funded
-            .try_add_assign(new_config.calc_required_funding()?);
+            .try_add_assign(new_config.required_funding()?)?;
 
         self.config = new_config;
 
@@ -171,14 +181,6 @@ impl FixedRateReward {
         times: &mut TimeTracker,
         funds: &mut FundsTracker,
     ) -> Result<u64, ProgramError> {
-        // this is specific to fixed rate
-        // in var. rate we know exactly how much we spent total over N time because overall amount is fixed
-        // in fixed rate we don't know how much we spent total over N time because we're promising a fixed amount of rewards per gem,
-        // and we don't know ahead of time how many gems will be staked / for how long
-        // hence we need to wait until each gem is accounted for or "made whole"
-        // that simply means refreshing the farmer and seeing if they are eligible for extra rewards in the future
-        // if not - we can set aside the amount we need for them and mark them whole
-        // only then can we cancel the reward
         if self.gems_made_whole < self.gems_participating {
             return Err(ErrorCode::NotAllGemsWhole.into());
         }
