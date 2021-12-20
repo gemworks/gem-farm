@@ -13,7 +13,7 @@ use anchor_lang::prelude::*;
 pub enum ErrorCode {
     // --------------------------------------- generic (0 - 19)
     #[msg("failed to perform some math operation safely")]
-    ArithmeticError, //12C
+    ArithmeticError, //0x12C
 
     #[msg("unknown instruction called")]
     UnknownInstruction,

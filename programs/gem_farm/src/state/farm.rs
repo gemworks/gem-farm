@@ -248,22 +248,26 @@ pub struct FarmRewardTracker {
 
     pub reward_type: RewardType,
 
+    // only one of the two will actually be used
     pub fixed_rate_tracker: FixedRateTracker,
 
     pub variable_rate_tracker: VariableRateTracker,
 
     pub reward_duration_sec: u64,
 
-    pub reward_end_ts: u64, //used to set lock end ts, so can't be pushed to variable tracker
+    //used to set lock end ts
+    pub reward_end_ts: u64,
 
     pub lock_end_ts: u64,
 }
 
 impl FarmRewardTracker {
-    /// locking ensures that the promised reward cannot be withdrawn/changed by a malicious farm operator
-    /// once locked, funding / cancellation ixs become non executable
     /// (!) THIS OPERATION IS IRREVERSIBLE
+    /// locking ensures the committed reward cannot be withdrawn/changed by a malicious farm operator
+    /// once locked, any funding / cancellation ixs become non executable until reward_ned_ts is reached
     fn lock_reward(&mut self) -> ProgramResult {
+        // todo ideally this should not be here, and funding should always ensure suff funds
+        //  locking should be dumb, funding/cancellation should be smart
         if self.reward_type == RewardType::Fixed {
             self.fixed_rate_tracker.assert_sufficient_funding()?;
         }
@@ -292,16 +296,16 @@ impl FarmRewardTracker {
                 //guaranteed to be passed for variable
                 let config = variable_rate_config.unwrap();
 
-                self.reward_duration_sec = config.duration_sec;
                 self.variable_rate_tracker
-                    .fund_reward(now_ts, self.reward_end_ts, config)?
+                    .fund_reward(now_ts, self.reward_end_ts, config)?;
+                self.reward_duration_sec = config.duration_sec;
             }
             RewardType::Fixed => {
                 //guaranteed to be passed for fixed
                 let config = fixed_rate_config.unwrap();
 
+                self.fixed_rate_tracker.fund_reward(config)?;
                 self.reward_duration_sec = config.calc_max_duration()?;
-                self.fixed_rate_tracker.fund_reward(config)?
             }
         }
 

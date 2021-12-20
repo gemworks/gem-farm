@@ -34,14 +34,12 @@ impl VariableRateTracker {
         &mut self,
         now_ts: u64,
         current_reward_end_ts: u64,
-        variable_rate_config: VariableRateConfig,
+        new_config: VariableRateConfig,
     ) -> ProgramResult {
-        self.config = variable_rate_config;
-
         let VariableRateConfig {
             amount,
             duration_sec,
-        } = self.config;
+        } = new_config;
 
         // if previous rewards have been exhausted
         if now_ts > current_reward_end_ts {
@@ -54,6 +52,7 @@ impl VariableRateTracker {
             self.reward_rate = amount.try_add(remaining_amount)?.try_div(duration_sec)?;
         }
 
+        self.config = new_config;
         self.reward_last_updated_ts = now_ts;
 
         Ok(())

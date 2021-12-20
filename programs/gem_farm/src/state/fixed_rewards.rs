@@ -97,13 +97,13 @@ impl FixedRateTracker {
         Ok(())
     }
 
-    pub fn fund_reward(&mut self, config: FixedRateConfig) -> ProgramResult {
+    pub fn fund_reward(&mut self, new_config: FixedRateConfig) -> ProgramResult {
         // update config
-        self.config = config;
+        self.config = new_config;
 
         // update total funding
         self.net_reward_funding
-            .try_add_assign(config.calc_required_funding()?)
+            .try_add_assign(new_config.calc_required_funding()?)
     }
 
     pub fn cancel_reward(&mut self) -> Result<u64, ProgramError> {
