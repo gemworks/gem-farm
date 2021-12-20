@@ -5,8 +5,8 @@ use gem_common::*;
 use crate::state::*;
 
 #[derive(Accounts)]
-#[instruction(bump_proof: u8, bump_fr: u8, bump_pot: u8)]
-pub struct Fund<'info> {
+#[instruction(bump_proof: u8, bump_pot: u8)]
+pub struct FundReward<'info> {
     // farm
     #[account(mut)]
     pub farm: Account<'info, Farm>,
@@ -21,15 +21,6 @@ pub struct Fund<'info> {
     pub authorization_proof: Box<Account<'info, AuthorizationProof>>,
     #[account(mut)]
     pub authorized_funder: Signer<'info>,
-    #[account(init_if_needed, seeds = [
-            b"funding_receipt".as_ref(),
-            authorized_funder.key().as_ref(),
-            reward_mint.key().as_ref(),
-        ],
-        bump = bump_fr,
-        payer = authorized_funder,
-        space = 8 + std::mem::size_of::<FundingReceipt>())]
-    pub funding_receipt: Box<Account<'info, FundingReceipt>>,
 
     // reward
     #[account(mut, seeds = [
@@ -48,7 +39,7 @@ pub struct Fund<'info> {
     pub system_program: Program<'info, System>,
 }
 
-impl<'info> Fund<'info> {
+impl<'info> FundReward<'info> {
     fn transfer_ctx(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
         CpiContext::new(
             self.token_program.to_account_info(),
@@ -62,7 +53,7 @@ impl<'info> Fund<'info> {
 }
 
 pub fn handler(
-    ctx: Context<Fund>,
+    ctx: Context<FundReward>,
     variable_rate_config: Option<VariableRateConfig>,
     fixed_rate_config: Option<FixedRateConfig>,
 ) -> ProgramResult {
@@ -84,14 +75,6 @@ pub fn handler(
         variable_rate_config,
         fixed_rate_config,
     )?;
-
-    // create/update funding receipt
-    let receipt = &mut ctx.accounts.funding_receipt;
-    receipt.funder = ctx.accounts.authorized_funder.key();
-    receipt.reward_mint = ctx.accounts.reward_mint.key();
-    receipt.total_deposited_amount.try_add_assign(amount)?;
-    receipt.deposit_count.try_add_assign(1)?;
-    receipt.last_deposit_ts = now_ts;
 
     // do the transfer
     token::transfer(

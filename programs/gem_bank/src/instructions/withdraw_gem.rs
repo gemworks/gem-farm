@@ -18,6 +18,7 @@ pub struct WithdrawGem<'info> {
     pub vault: Account<'info, Vault>,
     #[account(mut)]
     pub owner: Signer<'info>,
+    // todo verify pda
     pub authority: AccountInfo<'info>,
 
     // gem

@@ -84,7 +84,7 @@ impl Farm {
         }
     }
 
-    pub fn lock_funding_by_mint(&mut self, reward_mint: Pubkey) -> ProgramResult {
+    pub fn lock_reward_by_mint(&mut self, reward_mint: Pubkey) -> ProgramResult {
         let reward = self.match_reward_by_mint(reward_mint)?;
         reward.lock_reward()
     }
@@ -105,26 +105,18 @@ impl Farm {
         Ok(())
     }
 
-    pub fn defund_reward_by_mint(
+    pub fn cancel_reward_by_mint(
         &mut self,
         now_ts: u64,
-        funder_withdrawable_amount: u64,
-        desired_amount: u64,
-        new_duration_sec: Option<u64>,
         reward_mint: Pubkey,
     ) -> Result<u64, ProgramError> {
         let reward = self.match_reward_by_mint(reward_mint)?;
 
-        let to_defund = reward.defund_reward_by_type(
-            now_ts,
-            desired_amount,
-            new_duration_sec,
-            funder_withdrawable_amount,
-        )?;
+        let cancel_amount = reward.cancel_reward_by_type(now_ts)?;
 
         self.rewards_last_updated_ts = now_ts;
 
-        Ok(to_defund)
+        Ok(cancel_amount)
     }
 
     pub fn update_rewards_for_all_mints(
@@ -202,9 +194,9 @@ impl Farm {
     }
 
     pub fn end_staking(&mut self, now_ts: u64, farmer: &mut Account<Farmer>) -> ProgramResult {
-        match farmer.status {
-            FarmerStatus::Unstaked => Ok(msg!("already unstaked!")),
-            FarmerStatus::Staked => {
+        match farmer.state {
+            FarmerState::Unstaked => Ok(msg!("already unstaked!")),
+            FarmerState::Staked => {
                 // update farmer
                 let gems_unstaked =
                     farmer.end_staking_begin_cooldown(now_ts, self.config.cooldown_period_sec)?;
@@ -232,7 +224,7 @@ impl Farm {
 
                 Ok(())
             }
-            FarmerStatus::PendingCooldown => farmer.end_cooldown(now_ts),
+            FarmerState::PendingCooldown => farmer.end_cooldown(now_ts),
         }
     }
 
@@ -287,7 +279,7 @@ pub struct FarmRewardTracker {
 
 impl FarmRewardTracker {
     /// locking ensures that the promised reward cannot be withdrawn/changed by a malicious farm operator
-    /// once locked, no funding / defunding of this account is possible until reward_end_ts
+    /// once locked, funding / cancellation ixs become non executable
     /// (!) THIS OPERATION IS IRREVERSIBLE
     fn lock_reward(&mut self) -> ProgramResult {
         if self.reward_type == RewardType::Fixed {
@@ -336,36 +328,17 @@ impl FarmRewardTracker {
         Ok(())
     }
 
-    fn defund_reward_by_type(
-        &mut self,
-        now_ts: u64,
-        desired_amount: u64,
-        new_duration_sec: Option<u64>, //relevant for variable only
-        funder_withdrawable_amount: u64,
-    ) -> Result<u64, ProgramError> {
+    fn cancel_reward_by_type(&mut self, now_ts: u64) -> Result<u64, ProgramError> {
         if self.is_locked(now_ts) {
             return Err(ErrorCode::RewardLocked.into());
         }
 
-        let to_defund = match self.reward_type {
-            RewardType::Variable => self.variable_rate_tracker.defund_reward(
-                now_ts,
-                self.reward_end_ts,
-                desired_amount,
-                new_duration_sec,
-                funder_withdrawable_amount,
-            )?,
-            RewardType::Fixed => self
-                .fixed_rate_tracker
-                .defund_reward(desired_amount, funder_withdrawable_amount)?,
-        };
-
-        if let Some(new_duration_sec) = new_duration_sec {
-            self.reward_duration_sec = new_duration_sec;
-            self.reward_end_ts = now_ts.try_add(new_duration_sec)?;
+        match self.reward_type {
+            RewardType::Variable => self
+                .variable_rate_tracker
+                .cancel_reward(now_ts, self.reward_end_ts),
+            RewardType::Fixed => self.fixed_rate_tracker.cancel_reward(),
         }
-
-        Ok(to_defund)
     }
 
     fn update_accrued_reward_by_type(

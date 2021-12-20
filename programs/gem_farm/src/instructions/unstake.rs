@@ -76,7 +76,7 @@ pub fn handler(ctx: Context<Unstake>) -> ProgramResult {
     // collect any unstaking fee
     let farm = &ctx.accounts.farm;
 
-    if ctx.accounts.farmer.status == FarmerStatus::Staked && farm.config.unstaking_fee_lamp > 0 {
+    if ctx.accounts.farmer.state == FarmerState::Staked && farm.config.unstaking_fee_lamp > 0 {
         ctx.accounts.pay_treasury(farm.config.unstaking_fee_lamp)?
     }
 
@@ -90,7 +90,7 @@ pub fn handler(ctx: Context<Unstake>) -> ProgramResult {
     // end staking (will cycle through state on repeated calls)
     farm.end_staking(now_ts, farmer)?;
 
-    if farmer.status == FarmerStatus::Unstaked {
+    if farmer.state == FarmerState::Unstaked {
         // unlock the vault so the user can withdraw their gems
         gem_bank::cpi::set_vault_lock(
             ctx.accounts

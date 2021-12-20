@@ -50,30 +50,15 @@ impl VariableRateTracker {
         Ok(())
     }
 
-    pub fn defund_reward(
-        &mut self,
-        now_ts: u64,
-        reward_end_ts: u64,
-        desired_amount: u64,
-        new_duration_sec: Option<u64>,
-        funder_withdrawable_amount: u64,
-    ) -> Result<u64, ProgramError> {
-        // calc how much is actually available for defunding
+    pub fn cancel_reward(&mut self, now_ts: u64, reward_end_ts: u64) -> Result<u64, ProgramError> {
+        // calc how much can be refunded
         let unaccrued_reward = self.calc_unaccrued_reward(now_ts, reward_end_ts)?;
 
-        let mut to_defund = std::cmp::min(unaccrued_reward, desired_amount);
-        to_defund = std::cmp::min(to_defund, funder_withdrawable_amount);
+        // zero out the rest of the reward
+        // todo should we also zero out other fields?
+        self.reward_rate = 0;
 
-        // update reward
-        let remaining_reward = unaccrued_reward.try_sub(to_defund)?;
-
-        if let Some(new_duration_sec) = new_duration_sec {
-            self.reward_rate = remaining_reward.try_div(new_duration_sec)?;
-        } else {
-            self.reward_rate = remaining_reward.try_div(reward_end_ts.try_sub(now_ts)?)?;
-        }
-
-        Ok(to_defund)
+        Ok(unaccrued_reward)
     }
 
     pub fn update_accrued_reward(

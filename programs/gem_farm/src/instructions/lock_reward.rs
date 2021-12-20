@@ -4,7 +4,7 @@ use anchor_spl::token::Mint;
 use crate::state::Farm;
 
 #[derive(Accounts)]
-pub struct LockFunding<'info> {
+pub struct LockReward<'info> {
     // farm
     #[account(mut, has_one = farm_manager)]
     pub farm: Box<Account<'info, Farm>>,
@@ -15,9 +15,9 @@ pub struct LockFunding<'info> {
     pub reward_mint: Box<Account<'info, Mint>>,
 }
 
-pub fn handler(ctx: Context<LockFunding>) -> ProgramResult {
+pub fn handler(ctx: Context<LockReward>) -> ProgramResult {
     let farm = &mut ctx.accounts.farm;
-    farm.lock_funding_by_mint(ctx.accounts.reward_mint.key())?;
+    farm.lock_reward_by_mint(ctx.accounts.reward_mint.key())?;
 
     Ok(())
 }

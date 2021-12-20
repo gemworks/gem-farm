@@ -77,7 +77,7 @@ pub enum ErrorCode {
     #[msg("passed in reward mint is not available for this farm")]
     UnknownRewardMint, //0x154
 
-    #[msg("the reward is locked and cannot be defunded")]
+    #[msg("the reward is locked and cannot be cancelled")]
     RewardLocked,
 
     #[msg("can't unstake, minimum staking period has not passed yet")]

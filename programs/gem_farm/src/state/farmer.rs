@@ -3,7 +3,7 @@ use gem_common::{errors::ErrorCode, *};
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize, PartialEq)]
-pub enum FarmerStatus {
+pub enum FarmerState {
     Unstaked,
     Staked,
     PendingCooldown,
@@ -21,7 +21,7 @@ pub struct Farmer {
     // vault storing all of the farmer's gems
     pub vault: Pubkey,
 
-    pub status: FarmerStatus,
+    pub state: FarmerState,
 
     // total number of gems at the time when the vault is locked
     pub gems_staked: u64,
@@ -50,7 +50,7 @@ impl Farmer {
             return Err(ErrorCode::AmountMismatch.into());
         }
 
-        self.status = FarmerStatus::Staked;
+        self.state = FarmerState::Staked;
         self.gems_staked = gems_in_vault;
 
         // (!) IMPORTANT - we're resetting the min staking here
@@ -67,7 +67,7 @@ impl Farmer {
         now_ts: u64,
         gems_in_vault: u64,
     ) -> ProgramResult {
-        self.status = FarmerStatus::Staked;
+        self.state = FarmerState::Staked;
         self.gems_staked = gems_in_vault;
         self.begin_staking_ts = now_ts;
         self.min_staking_ends_ts = now_ts.try_add(min_staking_period_sec)?;
@@ -85,7 +85,7 @@ impl Farmer {
             return Err(ErrorCode::MinStakingNotPassed.into());
         }
 
-        self.status = FarmerStatus::PendingCooldown;
+        self.state = FarmerState::PendingCooldown;
         let gems_unstaked = self.gems_staked;
         self.gems_staked = 0; //no rewards will accrue during cooldown period
         self.cooldown_ends_ts = now_ts.try_add(cooldown_period_sec)?;
@@ -103,7 +103,7 @@ impl Farmer {
             return Err(ErrorCode::CooldownNotPassed.into());
         }
 
-        self.status = FarmerStatus::Unstaked;
+        self.state = FarmerState::Unstaked;
         // zero everything out
         self.gems_staked = 0;
         self.begin_staking_ts = 0;

@@ -104,26 +104,23 @@ impl FixedRateTracker {
             .try_add_assign(config.calc_required_funding()?)
     }
 
-    pub fn defund_reward(
-        &mut self,
-        desired_amount: u64,
-        funder_withdrawable_amount: u64,
-    ) -> Result<u64, ProgramError> {
+    pub fn cancel_reward(&mut self) -> Result<u64, ProgramError> {
         //can only be done once all participating gems are made whole
         if self.gems_made_whole < self.gems_participating {
             return Err(ErrorCode::NotAllGemsWhole.into());
         }
 
-        // calc how much is actually available for defunding
+        // calc how much can be refunded
         let unaccrued_reward = self.calc_unaccrued_reward()?;
 
-        let mut to_defund = std::cmp::min(unaccrued_reward, desired_amount);
-        to_defund = std::cmp::min(to_defund, funder_withdrawable_amount);
+        // decrement net funding
 
-        // update reward
-        self.net_reward_funding.try_sub_assign(to_defund)?;
+        // todo does this still make sense?
+        self.net_reward_funding.try_sub_assign(unaccrued_reward)?;
 
-        Ok(to_defund)
+        // todo should we also zero out the reward config?
+
+        Ok(unaccrued_reward)
     }
 
     pub fn update_accrued_reward(
