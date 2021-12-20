@@ -11,7 +11,7 @@ use crate::state::*;
 #[instruction(bump_auth: u8, bump_farmer: u8, bump_pot_a: u8, bump_pot_b: u8)]
 pub struct Claim<'info> {
     // farm
-    #[account(has_one = farm_authority)]
+    #[account(mut, has_one = farm_authority)]
     pub farm: Box<Account<'info, Farm>>,
     #[account(seeds = [farm.key().as_ref()], bump = bump_auth)]
     pub farm_authority: AccountInfo<'info>,

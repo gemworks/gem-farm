@@ -15,8 +15,6 @@ pub struct VariableRateConfig {
     pub duration_sec: u64,
 }
 
-impl VariableRateConfig {}
-
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct VariableRateReward {
@@ -30,7 +28,7 @@ pub struct VariableRateReward {
 }
 
 impl VariableRateReward {
-    pub fn required_remaining_funding(&self, remaining_duration: u64) -> Result<u64, ProgramError> {
+    fn required_remaining_funding(&self, remaining_duration: u64) -> Result<u64, ProgramError> {
         remaining_duration.try_mul(self.reward_rate)
     }
 
@@ -110,14 +108,21 @@ impl VariableRateReward {
         farmer_gems_staked: Option<u64>,
         farmer_reward: Option<&mut FarmerRewardTracker>,
     ) -> ProgramResult {
-        // applies to variable rewards ONLY, do not move up
-        if times.upper_bound(now_ts) <= self.reward_last_updated_ts {
-            msg!("this reward has ended OR not enough time passed since last update");
+        let upper_bound = times.upper_bound(now_ts);
+
+        if upper_bound <= self.reward_last_updated_ts {
+            msg!("this reward has ended - OR - not enough time passed since last update");
+            self.reward_last_updated_ts = now_ts;
             return Ok(());
         }
 
-        let newly_accrued_reward =
-            self.calc_newly_accrued_reward(farm_gems_staked, times.upper_bound(now_ts))?;
+        if farm_gems_staked == 0 {
+            msg!("this farm has no staked gems yet");
+            self.reward_last_updated_ts = now_ts;
+            return Ok(());
+        }
+
+        let newly_accrued_reward = self.calc_newly_accrued_reward(upper_bound)?;
 
         funds
             .total_accrued_to_stakers
@@ -137,17 +142,9 @@ impl VariableRateReward {
         Ok(())
     }
 
-    fn calc_newly_accrued_reward(
-        &self,
-        farm_gems_staked: u64,
-        reward_upper_bound_ts: u64,
-    ) -> Result<u64, ProgramError> {
-        // if no gems staked, no new reward accrues, hence return 0
-        if farm_gems_staked == 0 {
-            return Ok(0);
-        }
+    fn calc_newly_accrued_reward(&self, reward_upper_bound_ts: u64) -> Result<u64, ProgramError> {
+        let time_passed = reward_upper_bound_ts.try_sub(self.reward_last_updated_ts)?;
 
-        self.reward_rate
-            .try_mul(reward_upper_bound_ts.try_sub(self.reward_last_updated_ts)?)
+        self.reward_rate.try_mul(time_passed)
     }
 }

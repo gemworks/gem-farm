@@ -88,7 +88,7 @@ export class GemFarmTester extends GemFarmClient {
   farmer2Vault!: PublicKey;
 
   //rewards + funder
-  reward = 'rewardA';
+  reward = 'rewardA'; //todo switch
   rewardMint!: Token;
   rewardSource!: PublicKey;
   rewardSecondMint!: Token;
@@ -144,11 +144,11 @@ export class GemFarmTester extends GemFarmClient {
 
   // --------------------------------------- getters
 
-  async fetchFarmAcc2() {
+  async fetchFarm() {
     return this.fetchFarmAcc(this.farm.publicKey);
   }
 
-  async fetchTreasuryBalance2() {
+  async fetchTreasuryBal() {
     return this.fetchTreasuryBalance(this.farm.publicKey);
   }
 
@@ -298,7 +298,7 @@ export class GemFarmTester extends GemFarmClient {
 
   // --------------------------------------- extras
 
-  async printStructs(gf: any, state: string) {
+  async printStructs(state: string) {
     const farmAcc = await this.fetchFarmAcc(this.farm.publicKey);
     console.log(`// --------------------------------------- ${state}`);
     console.log('// --------------------------------------- farm');
