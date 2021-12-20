@@ -17,6 +17,7 @@ pub struct LockReward<'info> {
 
 pub fn handler(ctx: Context<LockReward>) -> ProgramResult {
     let farm = &mut ctx.accounts.farm;
+
     farm.lock_reward_by_mint(ctx.accounts.reward_mint.key())?;
 
     Ok(())

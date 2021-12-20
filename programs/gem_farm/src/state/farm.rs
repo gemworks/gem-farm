@@ -55,8 +55,6 @@ pub struct Farm {
     pub authorized_funder_count: u64,
 
     // --------------------------------------- rewards
-    pub rewards_last_updated_ts: u64,
-
     pub reward_a: FarmRewardTracker,
 
     pub reward_b: FarmRewardTracker,
@@ -97,12 +95,7 @@ impl Farm {
         fixed_rate_config: Option<FixedRateConfig>,
     ) -> ProgramResult {
         let reward = self.match_reward_by_mint(reward_mint)?;
-
-        reward.fund_reward_by_type(now_ts, variable_rate_config, fixed_rate_config)?;
-
-        self.rewards_last_updated_ts = now_ts;
-
-        Ok(())
+        reward.fund_reward_by_type(now_ts, variable_rate_config, fixed_rate_config)
     }
 
     pub fn cancel_reward_by_mint(
@@ -111,12 +104,7 @@ impl Farm {
         reward_mint: Pubkey,
     ) -> Result<u64, ProgramError> {
         let reward = self.match_reward_by_mint(reward_mint)?;
-
-        let cancel_amount = reward.cancel_reward_by_type(now_ts)?;
-
-        self.rewards_last_updated_ts = now_ts;
-
-        Ok(cancel_amount)
+        reward.cancel_reward_by_type(now_ts)
     }
 
     pub fn update_rewards_for_all_mints(
@@ -136,7 +124,6 @@ impl Farm {
 
         self.reward_a.update_accrued_reward_by_type(
             now_ts,
-            self.rewards_last_updated_ts,
             self.gems_staked,
             farmer_gems_staked,
             farmer_begin_staking_ts,
@@ -151,16 +138,11 @@ impl Farm {
 
         self.reward_b.update_accrued_reward_by_type(
             now_ts,
-            self.rewards_last_updated_ts,
             self.gems_staked,
             farmer_gems_staked,
             farmer_begin_staking_ts,
             farmer_reward_b,
-        )?;
-
-        self.rewards_last_updated_ts = now_ts;
-
-        Ok(())
+        )
     }
 
     pub fn begin_staking(
@@ -344,7 +326,6 @@ impl FarmRewardTracker {
     fn update_accrued_reward_by_type(
         &mut self,
         now_ts: u64,
-        rewards_last_updated_ts: u64,
         farm_gems_staked: u64,
         farmer_gems_staked: Option<u64>,
         farmer_begin_staking_ts: Option<u64>,
@@ -354,8 +335,8 @@ impl FarmRewardTracker {
 
         match self.reward_type {
             RewardType::Variable => self.variable_rate_tracker.update_accrued_reward(
+                now_ts,
                 reward_upper_bound_ts,
-                rewards_last_updated_ts,
                 farm_gems_staked,
                 farmer_gems_staked,
                 farmer_reward,

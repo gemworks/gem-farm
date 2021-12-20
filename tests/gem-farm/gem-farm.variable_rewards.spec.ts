@@ -198,22 +198,26 @@ describe('gem farm (variable rewards)', () => {
       const { pot } = await prepFundReward();
 
       const farmAcc = await gf.fetchFarmAcc(farm.publicKey);
-      assert(!farmAcc.rewardsLastUpdatedTs.eq(new BN(0)));
 
+      //reward tracker
       // @ts-ignore
       assert(farmAcc[reward].rewardDurationSec.eq(config.durationSec));
       // @ts-ignore - reward end should not be 0
       assert(!farmAcc[reward].rewardEndTs.eq(new BN(0)));
       // @ts-ignore - but lock should, it's not set yet
       assert(farmAcc[reward].lockEndTs.eq(new BN(0)));
+
+      //variable rate reward tracker
       // @ts-ignore
       assert(farmAcc[reward].variableRateTracker.rewardRate.eq(new BN(100)));
       assert(
         // @ts-ignore
         farmAcc[reward].variableRateTracker.accruedRewardPerGem.eq(new BN(0))
       );
-      // @ts-ignore
-      assert(farmAcc[reward].rewardDurationSec.eq(new BN(100)));
+      assert(
+        // @ts-ignore
+        !farmAcc[reward].variableRateTracker.rewardLastUpdatedTs.eq(new BN(0))
+      );
 
       const rewardsPotAcc = await gf.fetchRewardAcc(rewardMint.publicKey, pot);
       assert(rewardsPotAcc.amount.eq(config.amount));
@@ -228,13 +232,22 @@ describe('gem farm (variable rewards)', () => {
       assert(farmAcc.rewardA.variableRateTracker.rewardRate.eq(new BN(0)));
 
       //since some time will have passed, the pot won't be exactly zeroed out
-      const fivePercentLeft = config.amount.div(new BN(20));
+      const fivePercent = config.amount.div(new BN(20));
       const rewardsPotAcc = await gf.fetchRewardAcc(rewardMint.publicKey, pot);
-      assert(rewardsPotAcc.amount.lt(config.amount.sub(fivePercentLeft)));
+      assert(rewardsPotAcc.amount.lt(config.amount.sub(fivePercent)));
     });
 
     it('locks rewards in place', async () => {
-      // need to fund again
+      // mint a little extra, since some was left in the pot
+      const fivePercent = config.amount.div(new BN(20));
+      await rewardMint.mintTo(
+        rewardSource,
+        gf.wallet.payer,
+        [],
+        fivePercent.toNumber()
+      );
+
+      // fund again, before we lock
       await prepFundReward();
 
       await gf.lockReward(farm.publicKey, farmManager, rewardMint.publicKey);
@@ -244,7 +257,7 @@ describe('gem farm (variable rewards)', () => {
       // @ts-ignore - lock should now be set equal to duration
       assert(farmAcc.rewardA.lockEndTs.eq(farmAcc.rewardA.rewardEndTs));
 
-      //once locked, no more funding or defunding is possible
+      //once locked, no more funding or cancellation is possible
       await expect(prepFundReward()).to.be.rejectedWith('0x155');
       await expect(prepCancelReward()).to.be.rejectedWith('0x155');
     });

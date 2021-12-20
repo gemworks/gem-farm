@@ -71,9 +71,11 @@ impl FixedRateConfig {
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FixedRateTracker {
+    // configured on funding
     pub config: FixedRateConfig,
 
-    // funding - defunding
+    // funding less any cancellations
+    // can't simply use the token acc balance, coz this includes accrued but not yet withdrawn rewards
     pub net_reward_funding: u64,
 
     // can only go up, never down
@@ -114,11 +116,9 @@ impl FixedRateTracker {
         let unaccrued_reward = self.calc_unaccrued_reward()?;
 
         // decrement net funding
-
-        // todo does this still make sense?
         self.net_reward_funding.try_sub_assign(unaccrued_reward)?;
 
-        // todo should we also zero out the reward config?
+        // todo considered zeroing out the config, but right now don't see why
 
         Ok(unaccrued_reward)
     }
