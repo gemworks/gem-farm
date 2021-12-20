@@ -13,7 +13,7 @@ import { Token } from '@solana/spl-token';
 import { pause } from '../utils/types';
 import { prepGem } from '../utils/gem-common';
 import { ITokenData } from '../utils/account';
-import { printStructsGeneric } from './gem-farm.common';
+import { printStructsGeneric } from './gem-farm.tester';
 
 chai.use(chaiAsPromised);
 
