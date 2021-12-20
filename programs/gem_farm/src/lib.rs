@@ -76,7 +76,7 @@ pub mod gem_farm {
         instructions::refresh_farmer::handler(ctx)
     }
 
-    // --------------------------------------- funder management
+    // --------------------------------------- funder ops
 
     pub fn authorize_funder(ctx: Context<AuthorizeFunder>, _bump: u8) -> ProgramResult {
         instructions::authorize_funder::handler(ctx)
@@ -86,7 +86,7 @@ pub mod gem_farm {
         instructions::deauthorize_funder::handler(ctx)
     }
 
-    // --------------------------------------- reward management
+    // --------------------------------------- reward ops
 
     pub fn fund_reward(
         ctx: Context<FundReward>,

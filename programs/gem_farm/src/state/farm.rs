@@ -55,9 +55,9 @@ pub struct Farm {
     pub authorized_funder_count: u64,
 
     // --------------------------------------- rewards
-    pub reward_a: FarmRewardTracker,
+    pub reward_a: FarmReward,
 
-    pub reward_b: FarmRewardTracker,
+    pub reward_b: FarmReward,
 }
 
 impl Farm {
@@ -71,7 +71,7 @@ impl Farm {
     pub fn match_reward_by_mint(
         &mut self,
         reward_mint: Pubkey,
-    ) -> Result<&mut FarmRewardTracker, ProgramError> {
+    ) -> Result<&mut FarmReward, ProgramError> {
         let reward_a_mint = self.reward_a.reward_mint;
         let reward_b_mint = self.reward_b.reward_mint;
 
@@ -160,14 +160,14 @@ impl Farm {
 
         if self.reward_a.reward_type == RewardType::Fixed {
             self.reward_a
-                .fixed_rate_tracker
+                .fixed_rate_calculator
                 .gems_participating
                 .try_add_assign(gems_in_vault)?;
         }
 
         if self.reward_b.reward_type == RewardType::Fixed {
             self.reward_b
-                .fixed_rate_tracker
+                .fixed_rate_calculator
                 .gems_participating
                 .try_add_assign(gems_in_vault)?;
         }
@@ -191,7 +191,7 @@ impl Farm {
                 if self.reward_a.reward_type == RewardType::Fixed {
                     farmer.reward_a.mark_whole();
                     self.reward_a
-                        .fixed_rate_tracker
+                        .fixed_rate_calculator
                         .gems_made_whole
                         .try_add_assign(gems_unstaked)?;
                 }
@@ -199,7 +199,7 @@ impl Farm {
                 if self.reward_b.reward_type == RewardType::Fixed {
                     farmer.reward_b.mark_whole();
                     self.reward_b
-                        .fixed_rate_tracker
+                        .fixed_rate_calculator
                         .gems_made_whole
                         .try_add_assign(gems_unstaked)?;
                 }
@@ -239,9 +239,54 @@ pub enum RewardType {
     Fixed,
 }
 
+// these numbers should only ever go up
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
-pub struct FarmRewardTracker {
+pub struct FundsTracker {
+    pub total_funded: u64,
+
+    pub total_refunded: u64,
+
+    pub total_accrued_to_stakers: u64,
+}
+
+impl FundsTracker {
+    pub fn pending_amount(&self) -> Result<u64, ProgramError> {
+        self.total_funded
+            .try_sub(self.total_refunded)?
+            .try_sub(self.total_accrued_to_stakers)
+    }
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
+pub struct TimeTracker {
+    pub duration_sec: u64,
+
+    pub reward_end_ts: u64,
+
+    pub lock_end_ts: u64,
+}
+
+impl TimeTracker {
+    pub fn remaining_duration(&self, now_ts: u64) -> Result<u64, ProgramError> {
+        self.reward_end_ts.try_sub(now_ts)
+    }
+
+    pub fn passed_duration(&self, now_ts: u64) -> Result<u64, ProgramError> {
+        self.duration_sec.try_sub(self.remaining_duration(now_ts)?)
+    }
+
+    pub fn end_reward(&mut self, now_ts: u64) -> ProgramResult {
+        self.reward_end_ts = now_ts;
+        self.duration_sec
+            .try_self_sub(self.remaining_duration(now_ts)?)
+    }
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
+pub struct FarmReward {
     pub reward_mint: Pubkey,
 
     pub reward_pot: Pubkey,
@@ -249,32 +294,24 @@ pub struct FarmRewardTracker {
     pub reward_type: RewardType,
 
     // only one of the two will actually be used
-    pub fixed_rate_tracker: FixedRateTracker,
+    pub fixed_rate_calculator: FixedRateCalculator,
 
-    pub variable_rate_tracker: VariableRateTracker,
+    pub variable_rate_calculator: VariableRateCalculator,
 
-    pub reward_duration_sec: u64,
+    pub funds_tracker: FundsTracker,
 
-    //used to set lock end ts
-    pub reward_end_ts: u64,
-
-    pub lock_end_ts: u64,
+    pub time_tracker: TimeTracker,
 }
 
-impl FarmRewardTracker {
+impl FarmReward {
     /// (!) THIS OPERATION IS IRREVERSIBLE
     /// locking ensures the committed reward cannot be withdrawn/changed by a malicious farm operator
     /// once locked, any funding / cancellation ixs become non executable until reward_ned_ts is reached
-    fn lock_reward(&mut self) -> ProgramResult {
-        // todo ideally this should not be here, and funding should always ensure suff funds
-        //  locking should be dumb, funding/cancellation should be smart
-        if self.reward_type == RewardType::Fixed {
-            self.fixed_rate_tracker.assert_sufficient_funding()?;
+    fn lock_reward(&mut self, now_ts: u64) -> ProgramResult {
+        match self.reward_type {
+            RewardType::Variable => self.variable_rate_calculator.lock_reward(now_ts),
+            RewardType::Fixed => self.fixed_rate_calculator.lock_reward(now_ts),
         }
-
-        self.lock_end_ts = self.reward_end_ts;
-
-        Ok(())
     }
 
     fn is_locked(&self, now_ts: u64) -> bool {
@@ -296,7 +333,7 @@ impl FarmRewardTracker {
                 //guaranteed to be passed for variable
                 let config = variable_rate_config.unwrap();
 
-                self.variable_rate_tracker
+                self.variable_rate_calculator
                     .fund_reward(now_ts, self.reward_end_ts, config)?;
                 self.reward_duration_sec = config.duration_sec;
             }
@@ -304,8 +341,8 @@ impl FarmRewardTracker {
                 //guaranteed to be passed for fixed
                 let config = fixed_rate_config.unwrap();
 
-                self.fixed_rate_tracker.fund_reward(config)?;
-                self.reward_duration_sec = config.calc_max_duration()?;
+                self.fixed_rate_calculator.fund_reward(config)?;
+                self.reward_duration_sec = config.max_duration()?;
             }
         }
 
@@ -321,9 +358,9 @@ impl FarmRewardTracker {
 
         match self.reward_type {
             RewardType::Variable => self
-                .variable_rate_tracker
+                .variable_rate_calculator
                 .cancel_reward(now_ts, self.reward_end_ts),
-            RewardType::Fixed => self.fixed_rate_tracker.cancel_reward(),
+            RewardType::Fixed => self.fixed_rate_calculator.cancel_reward(),
         }
     }
 
@@ -338,7 +375,7 @@ impl FarmRewardTracker {
         let reward_upper_bound_ts = std::cmp::min(self.reward_end_ts, now_ts);
 
         match self.reward_type {
-            RewardType::Variable => self.variable_rate_tracker.update_accrued_reward(
+            RewardType::Variable => self.variable_rate_calculator.update_accrued_reward(
                 now_ts,
                 reward_upper_bound_ts,
                 farm_gems_staked,
@@ -351,7 +388,7 @@ impl FarmRewardTracker {
                     return Ok(());
                 }
 
-                self.fixed_rate_tracker.update_accrued_reward(
+                self.fixed_rate_calculator.update_accrued_reward(
                     now_ts,
                     self.reward_end_ts,
                     reward_upper_bound_ts,

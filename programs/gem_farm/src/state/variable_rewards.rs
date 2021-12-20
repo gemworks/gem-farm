@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 
+use gem_common::errors::ErrorCode;
 use gem_common::*;
 
 use crate::state::*;
@@ -14,26 +15,50 @@ pub struct VariableRateConfig {
     pub duration_sec: u64,
 }
 
+impl VariableRateConfig {
+
+}
+
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
-pub struct VariableRateTracker {
+pub struct VariableRateCalculator {
     // configured on funding
     config: VariableRateConfig,
 
     // in tokens/s, = total reward pot at initialization / reward duration
     pub reward_rate: u64,
 
-    // this is cumulative, since the beginning of time
-    pub accrued_reward_per_gem: u64,
-
     pub reward_last_updated_ts: u64,
 }
 
-impl VariableRateTracker {
+impl VariableRateCalculator {
+    pub fn required_remaining_funding(&self, remaining_duration: u64) -> Result<u64, ProgramError> {
+        remaining_duration.try_mul(self.reward_rate)
+    }
+
+    pub fn lock_reward(
+        &self,
+        now_ts: u64
+        time_tracker: &mut TimeTracker,
+        funds_tracker: &mut FundsTracker,
+    ) -> ProgramResult {
+        let remaining_duration = time_tracker.remaining_duration(now_ts)?;
+
+        if funds_tracker.pending_amount()? < self.required_remaining_funding(remaining_duration)? {
+            return Err(ErrorCode::RewardUnderfunded.into());
+        }
+
+        time_tracker.lock_end_ts = time_tracker.reward_end_ts;
+
+        Ok(())
+    }
+
     pub fn fund_reward(
         &mut self,
         now_ts: u64,
-        current_reward_end_ts: u64,
+        time_tracker: &mut TimeTracker,
+        funds_tracker: &mut FundsTracker,
         new_config: VariableRateConfig,
     ) -> ProgramResult {
         let VariableRateConfig {
@@ -42,15 +67,19 @@ impl VariableRateTracker {
         } = new_config;
 
         // if previous rewards have been exhausted
-        if now_ts > current_reward_end_ts {
+        if now_ts > time_tracker.reward_end_ts {
             self.reward_rate = amount.try_div(duration_sec)?;
         // else if previous rewards are still active (merge the two)
         } else {
-            let remaining_duration_sec = current_reward_end_ts.try_sub(now_ts)?;
-            let remaining_amount = remaining_duration_sec.try_mul(self.reward_rate)?;
-
-            self.reward_rate = amount.try_add(remaining_amount)?.try_div(duration_sec)?;
+            self.reward_rate = amount
+                .try_add(funds_tracker.pending_amount()?)?
+                .try_div(duration_sec)?;
         }
+
+        time_tracker.duration_sec = duration_sec;
+        time_tracker.reward_end_ts = now_ts.try_add(duration_sec)?;
+
+        funds_tracker.total_funded.try_add_assign(amount);
 
         self.config = new_config;
         self.reward_last_updated_ts = now_ts;
@@ -58,26 +87,28 @@ impl VariableRateTracker {
         Ok(())
     }
 
-    pub fn cancel_reward(&mut self, now_ts: u64, reward_end_ts: u64) -> Result<u64, ProgramError> {
-        // calc how much can be refunded
+    pub fn cancel_reward(
+        &mut self,
+        now_ts: u64,
+        time_tracker: &mut TimeTracker,
+        funds_tracker: &mut FundsTracker,
+    ) -> Result<u64, ProgramError> {
+        time_tracker.end_reward(now_ts)?;
 
-        // todo sec vulnerability with withdrawals here?
-        let unaccrued_reward = self.calc_unaccrued_reward(now_ts, reward_end_ts)?;
+        let refund_amount = funds_tracker.pending_amount()?;
+        funds_tracker.total_refunded.try_add_assign(refund_amount)?;
 
-        // rate becomes 0 going forward
         self.reward_rate = 0;
-
-        // todo considered zeroing out the config, but right now don't see why
-
         self.reward_last_updated_ts = now_ts;
 
-        Ok(unaccrued_reward)
+        Ok(refund_amount)
     }
 
     pub fn update_accrued_reward(
         &mut self,
         now_ts: u64,
         reward_upper_bound_ts: u64,
+        funds_tracker: &mut FundsTracker,
         farm_gems_staked: u64,
         farmer_gems_staked: Option<u64>,
         farmer_reward: Option<&mut FarmerRewardTracker>,
@@ -88,17 +119,19 @@ impl VariableRateTracker {
             return Ok(());
         }
 
-        let newly_accrued_reward_per_gem =
-            self.calc_newly_accrued_reward_per_gem(farm_gems_staked, reward_upper_bound_ts)?;
+        let newly_accrued_reward =
+            self.calc_newly_accrued_reward(farm_gems_staked, reward_upper_bound_ts)?;
 
-        // update farm
-        self.accrued_reward_per_gem
-            .try_add_assign(newly_accrued_reward_per_gem)?;
+        funds_tracker
+            .total_accrued_to_stakers
+            .try_add_assign(newly_accrued_reward)?;
 
         // update farmer, if one has been passed
         if let Some(farmer_reward) = farmer_reward {
             farmer_reward.accrued_reward.try_add_assign(
-                newly_accrued_reward_per_gem.try_mul(farmer_gems_staked.unwrap())?,
+                newly_accrued_reward
+                    .try_mul(farmer_gems_staked.unwrap())?
+                    .try_div(farm_gems_staked)?,
             )?;
         }
 
@@ -107,16 +140,7 @@ impl VariableRateTracker {
         Ok(())
     }
 
-    fn calc_unaccrued_reward(&self, now_ts: u64, reward_end_ts: u64) -> Result<u64, ProgramError> {
-        // if reward end has passed, the entire amount has accrued and nothing is available for refunding
-        if reward_end_ts <= now_ts {
-            return Ok(0);
-        }
-
-        self.reward_rate.try_mul(reward_end_ts.try_sub(now_ts)?)
-    }
-
-    fn calc_newly_accrued_reward_per_gem(
+    fn calc_newly_accrued_reward(
         &self,
         farm_gems_staked: u64,
         reward_upper_bound_ts: u64,
@@ -126,11 +150,7 @@ impl VariableRateTracker {
             return Ok(0);
         }
 
-        let time_since_last_calc_sec =
-            reward_upper_bound_ts.try_sub(self.reward_last_updated_ts)?;
-
-        time_since_last_calc_sec
-            .try_mul(self.reward_rate)?
-            .try_div(farm_gems_staked)
+        self.reward_rate
+            .try_mul(reward_upper_bound_ts.try_sub(self.reward_last_updated_ts)?)
     }
 }

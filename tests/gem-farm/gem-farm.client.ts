@@ -561,7 +561,7 @@ export class GemFarmClient extends GemBankClient {
     };
   }
 
-  // --------------------------------------- funder management ixs
+  // --------------------------------------- funder ops ixs
 
   async authorizeCommon(
     farm: PublicKey,
@@ -631,7 +631,7 @@ export class GemFarmClient extends GemBankClient {
     return this.authorizeCommon(farm, farmManager, funderToDeauthorize, true);
   }
 
-  // --------------------------------------- reward management ixs
+  // --------------------------------------- reward ops ixs
 
   async fundReward(
     farm: PublicKey,
