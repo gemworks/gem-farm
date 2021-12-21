@@ -89,6 +89,7 @@ impl VariableRateReward {
         funds: &mut FundsTracker,
     ) -> Result<u64, ProgramError> {
         times.end_reward(now_ts)?;
+        msg!("dur is {}", times.duration_sec);
 
         let refund_amount = funds.pending_amount()?;
         funds.total_refunded.try_add_assign(refund_amount)?;

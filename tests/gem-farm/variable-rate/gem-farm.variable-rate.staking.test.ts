@@ -32,13 +32,11 @@ describe('staking (variable rate)', () => {
   //   //farm
   //   const farmAcc = await gf.fetchFarm();
   //   const rewardPerGem =
-  //     // @ts-ignore
   //     farmAcc[gf.reward].variableRate.accruedRewardPerGem;
   //
   //   //farmer
   //   const [farmer] = await gf.findFarmerPDA(gf.farm.publicKey, identity.publicKey);
   //   const farmerAcc = await gf.fetchFarmerAcc(farmer);
-  //   // @ts-ignore
   //   const farmerAccrued = farmerAcc[gf.reward].accruedReward;
   //   const farmerGems = farmerAcc.gemsStaked;
   //
@@ -165,12 +163,10 @@ describe('staking (variable rate)', () => {
 
     //verify reward paid out == reward accrued
     assert(
-      // @ts-ignore
       farmerAcc[gf.reward].paidOutReward.eq(farmerAcc[gf.reward].accruedReward)
     );
 
     //verify reward paid out = what's actually in the wallet
-    // @ts-ignore
     assert(rewardDestAcc.amount.eq(farmerAcc[gf.reward].paidOutReward));
 
     return rewardDestAcc.amount;

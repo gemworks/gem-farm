@@ -241,21 +241,17 @@
 //     //verify gem count adds up
 //     assert(farmAcc.gemsStaked.eq(gem1Amount.add(gem2Amount)));
 //     assert(
-//       // @ts-ignore
 //       farmAcc.gemsStaked.eq(farmAcc[reward].fixedRateTracker.gemsParticipating)
 //     );
 //
 //     //verify accrued rewards add up
 //     const totalAccruedToStakers =
-//       // @ts-ignore
 //       farmAcc[reward].fixedRateTracker.totalAccruedToStakers;
 //
 //     const farmer1Acc = await gf.fetchFarmerAcc(farmer1);
-//     // @ts-ignore
 //     const accruedFarmer1 = farmer1Acc[reward].accruedReward;
 //
 //     const farmer2Acc = await gf.fetchFarmerAcc(farmer2);
-//     // @ts-ignore
 //     const accruedFarmer2 = farmer2Acc[reward].accruedReward;
 //
 //     assert(totalAccruedToStakers.eq(accruedFarmer1.add(accruedFarmer2)));
@@ -267,9 +263,7 @@
 //
 //     //verify gems made whole
 //     assert(
-//       // @ts-ignore
 //       farmAcc[reward].fixedRateTracker.gemsParticipating.eq(
-//         // @ts-ignore
 //         farmAcc[reward].fixedRateTracker.gemsMadeWhole
 //       )
 //     );
@@ -291,12 +285,9 @@
 //   async function verifyFunding(amount: BN) {
 //     const farmAcc = await gf.fetchFarmAcc(farm.publicKey);
 //     assert(
-//       // @ts-ignore
 //       farmAcc[reward].fixedRateTracker.netRewardFunding.eq(amount)
 //     );
-//     // @ts-ignore
 //     assert(farmAcc[reward].rewardDurationSec.eq(totalDuration()));
-//     // @ts-ignore
 //     assert(farmAcc[reward].rewardEndTs.gt(totalDuration()));
 //   }
 //
@@ -334,7 +325,6 @@
 //     await prepLockFunding();
 //
 //     const farmAcc = await gf.fetchFarmAcc(farm.publicKey);
-//     // @ts-ignore
 //     farmAcc[reward].lockEndTs.gt(new BN(0));
 //   });
 //
@@ -358,7 +348,6 @@
 //     await prepLockFunding();
 //
 //     const farmAcc = await gf.fetchFarmAcc(farm.publicKey);
-//     // @ts-ignore
 //     farmAcc[reward].lockEndTs.gt(new BN(0));
 //   });
 // });

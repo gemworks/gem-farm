@@ -316,9 +316,11 @@ export class GemFarmTester extends GemFarmClient {
       this.farm.publicKey,
       this.farmer2Identity.publicKey
     );
-    const farmer2Acc = await this.fetchFarmerAcc(farmer2);
-    console.log('// --------------------------------------- farmer 2');
-    console.log(stringifyPubkeysAndBNsInObject(farmer2Acc));
+    try {
+      const farmer2Acc = await this.fetchFarmerAcc(farmer2);
+      console.log('// --------------------------------------- farmer 2');
+      console.log(stringifyPubkeysAndBNsInObject(farmer2Acc));
+    } catch (e) {}
   }
 
   async mintMoreRewards(token: Token, amount: number) {

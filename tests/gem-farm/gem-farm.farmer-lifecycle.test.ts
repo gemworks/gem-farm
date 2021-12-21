@@ -2,7 +2,7 @@
 // import chai, { assert, expect } from 'chai';
 // import chaiAsPromised from 'chai-as-promised';
 // import { pause } from '../utils/types';
-// import { defaultVariableConfig, GemFarmTester } from './gem-farm.tester';
+// import { GemFarmTester } from './gem-farm.tester';
 // import { FarmConfig } from './gem-farm.client';
 // import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 //
@@ -21,8 +21,6 @@
 //     await gf.prepAccounts(new BN(10000));
 //     await gf.callInitFarm(farmConfig);
 //     await gf.callInitFarmer(gf.farmer1Identity);
-//     await gf.callAuthorize();
-//     await gf.callFundReward(defaultVariableConfig);
 //   });
 //
 //   it('moves through farmer lifecycle', async () => {
