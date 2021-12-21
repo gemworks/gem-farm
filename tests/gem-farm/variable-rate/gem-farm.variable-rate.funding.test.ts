@@ -26,98 +26,55 @@ describe('funding (variable rate)', () => {
   let gf = new GemFarmTester();
 
   beforeEach('preps accs', async () => {
-    await gf.prepAccounts(new BN(10000));
+    await gf.prepAccounts(10000);
     await gf.callInitFarm(defaultFarmConfig);
     await gf.callInitFarmer(gf.farmer1Identity);
     await gf.callAuthorize();
   });
 
-  // it('funds a new reward', async () => {
-  //   const { pot } = await gf.callFundReward(defaultVariableConfig);
-  //   await gf.printStructs('FUNDED');
+  it('funds a new reward', async () => {
+    const { pot } = await gf.callFundReward(defaultVariableConfig);
+    await gf.printStructs('FUNDED');
+
+    //funds
+    await gf.verifyFunds(10000, 0, 0);
+    await gf.assertFundsAddUp(10000);
+
+    //times
+    const times = await gf.verifyTimes(100);
+    assert(times.rewardEndTs.gt(new BN(0)));
+
+    //variable reward
+    const reward = await gf.verifyVariableReward(100);
+    assert(reward.rewardLastUpdatedTs.gt(new BN(0)));
+
+    //token accounts
+    await gf.assertFunderAccContains(0);
+    await gf.assertPotContains(pot, 10000);
+  });
+
+  // async function fundThenCancel(delay?: number, config?: VariableRateConfig) {
+  //   await gf.callFundReward(config ?? defaultVariableConfig);
   //
-  //   const farmAcc = (await gf.fetchFarm()) as any;
-  //
-  //   //time tracker
-  //   assert(
-  //     farmAcc[gf.reward].times.durationSec.eq(defaultVariableConfig.durationSec)
-  //   );
-  //   assert(!farmAcc[gf.reward].times.rewardEndTs.eq(new BN(0)));
-  //   assert(farmAcc[gf.reward].times.lockEndTs.eq(new BN(0)));
-  //
-  //   //funds tracker
-  //   assert(
-  //     farmAcc[gf.reward].funds.totalFunded.eq(defaultVariableConfig.amount)
-  //   );
-  //   assert(farmAcc[gf.reward].funds.totalRefunded.eq(new BN(0)));
-  //   assert(farmAcc[gf.reward].funds.totalAccruedToStakers.eq(new BN(0)));
-  //
-  //   //variable rate reward
+  //   let farmAcc = (await gf.fetchFarm()) as any;
   //   assert(farmAcc[gf.reward].variableRate.rewardRate.eq(new BN(100)));
-  //   assert(farmAcc[gf.reward].variableRate.rewardLastUpdatedTs.gt(new BN(0)));
+  //   assert(farmAcc[gf.reward].times.durationSec.eq(new BN(100)));
+  //   let oldEndTs = farmAcc[gf.reward].times.rewardEndTs;
   //
-  //   //verify the pot actually received the money
-  //   const rewardsPotAcc = await gf.fetchTokenAcc(gf.rewardMint.publicKey, pot);
-  //   assert(rewardsPotAcc.amount.eq(defaultVariableConfig.amount));
-  // });
+  //   if (delay) await pause(delay);
+  //
+  //   const { pot } = await gf.callCancelReward();
+  //   await gf.printStructs('CANCELLED');
+  //
+  //   farmAcc = await gf.fetchFarm();
+  //   assert(farmAcc[gf.reward].variableRate.rewardRate.eq(new BN(0))); //reward rate should go to 0
+  //   assert(farmAcc[gf.reward].times.durationSec.lt(new BN(100))); // expect to go down
+  //   assert(farmAcc[gf.reward].times.rewardEndTs.lt(oldEndTs)); // expect to go down
+  //
+  //   return { pot, farmAcc };
+  // }
 
-  async function fundThenCancel(delay?: number, config?: VariableRateConfig) {
-    await gf.callFundReward(config ?? defaultVariableConfig);
-
-    let farmAcc = (await gf.fetchFarm()) as any;
-    assert(farmAcc[gf.reward].variableRate.rewardRate.eq(new BN(100)));
-    assert(farmAcc[gf.reward].times.durationSec.eq(new BN(100)));
-    let oldEndTs = farmAcc[gf.reward].times.rewardEndTs;
-
-    if (delay) await pause(delay);
-
-    const { pot } = await gf.callCancelReward();
-    await gf.printStructs('CANCELLED');
-
-    farmAcc = await gf.fetchFarm();
-    assert(farmAcc[gf.reward].variableRate.rewardRate.eq(new BN(0))); //reward rate should go to 0
-    assert(farmAcc[gf.reward].times.durationSec.lt(new BN(100))); // expect to go down
-    assert(farmAcc[gf.reward].times.rewardEndTs.lt(oldEndTs)); // expect to go down
-
-    return { pot, farmAcc };
-  }
-
-  async function assertPotContains(pot: PublicKey, amount: BN, sign?: string) {
-    const rewardsPotAcc = await gf.fetchTokenAcc(gf.rewardMint.publicKey, pot);
-    switch (sign) {
-      case 'lt':
-        assert(rewardsPotAcc.amount.lt(amount));
-        break;
-      default:
-        assert(rewardsPotAcc.amount.eq(amount));
-    }
-  }
-
-  async function assertFunderAccContains(amount: BN, sign?: string) {
-    const sourceAcc = await gf.fetchTokenAcc(
-      gf.rewardMint.publicKey,
-      gf.rewardSource
-    );
-    switch (sign) {
-      case 'gt':
-        assert(sourceAcc.amount.gt(amount));
-        break;
-      default:
-        assert(sourceAcc.amount.eq(amount));
-    }
-  }
-
-  async function assertFundsMatchAfterRefund(farmAcc: any) {
-    assert(
-      farmAcc[gf.reward].funds.totalRefunded.eq(
-        farmAcc[gf.reward].funds.totalFunded.sub(
-          farmAcc[gf.reward].funds.totalAccruedToStakers
-        )
-      )
-    );
-  }
-
-  // it('cancels a reward (no stakers)', async () => {
+  // it('funds -> cancels (no stakers)', async () => {
   //   const { pot, farmAcc } = await fundThenCancel();
   //
   //   //since there were no stakers, the entire funding should be returned
@@ -131,7 +88,7 @@ describe('funding (variable rate)', () => {
   //   await assertFunderAccContains(defaultVariableConfig.amount);
   // });
 
-  // it('cancels a reward (with early stakers == fully accrues)', async () => {
+  // it('funds -> cancels (early stakers == fully accrues)', async () => {
   //   await gf.callDeposit(gf.gem1Amount, gf.farmer1Identity);
   //   await gf.callStake(gf.farmer1Identity);
   //
@@ -149,36 +106,36 @@ describe('funding (variable rate)', () => {
   //   );
   // });
 
-  it('cancels a reward (with late stakers == doesnt fully accrue)', async () => {
-    //launch a fast reward
-    const { pot } = await gf.callFundReward(fastConfig);
+  // it('funds -> cancels (late stakers == doesnt fully accrue)', async () => {
+  //   //launch a fast reward
+  //   const { pot } = await gf.callFundReward(fastConfig);
+  //
+  //   await pause(1000);
+  //
+  //   //this time we stake late
+  //   await gf.callDeposit(gf.gem1Amount, gf.farmer1Identity);
+  //   await gf.callStake(gf.farmer1Identity);
+  //
+  //   //wait for it to complete
+  //   await pause(2000);
+  //
+  //   await gf.callCancelReward();
+  //
+  //   const farmAcc = (await gf.fetchFarm()) as any;
+  //
+  //   assert(farmAcc[gf.reward].funds.totalFunded.eq(fastConfig.amount));
+  //   //should be < 10k
+  //   assert(
+  //     farmAcc[gf.reward].funds.totalAccruedToStakers.lt(fastConfig.amount)
+  //   );
+  //   assert(farmAcc[gf.reward].funds.totalRefunded.gt(new BN(0)));
+  //
+  //   await assertFundsMatchAfterRefund(farmAcc);
+  //   await assertPotContains(pot, fastConfig.amount, 'lt');
+  //   await assertFunderAccContains(new BN(0), 'gt');
+  // });
 
-    await pause(1000);
-
-    //this time we stake late
-    await gf.callDeposit(gf.gem1Amount, gf.farmer1Identity);
-    await gf.callStake(gf.farmer1Identity);
-
-    //wait for it to complete
-    await pause(2000);
-
-    await gf.callCancelReward();
-
-    const farmAcc = (await gf.fetchFarm()) as any;
-
-    assert(farmAcc[gf.reward].funds.totalFunded.eq(fastConfig.amount));
-    //should be < 10k
-    assert(
-      farmAcc[gf.reward].funds.totalAccruedToStakers.lt(fastConfig.amount)
-    );
-    assert(farmAcc[gf.reward].funds.totalRefunded.gt(new BN(0)));
-
-    await assertFundsMatchAfterRefund(farmAcc);
-    await assertPotContains(pot, fastConfig.amount, 'lt');
-    await assertFunderAccContains(new BN(0), 'gt');
-  });
-
-  // it('funds -> funds a 2nd time (merges)', async () => {
+  // it('funds -> funds again (merges 1st one exhausted)', async () => {
   //   //we'll need more tokens to be sent to the pool
   //   await gf.mintMoreRewards(10000);
   //
@@ -193,7 +150,9 @@ describe('funding (variable rate)', () => {
   //   assert(farmAcc[gf.reward].variableRate.rewardRate.eq(new BN(200)));
   // });
 
-  // it('funds -> exhausts -> funds again', async () => {
+  // it('funds -> cancels -> funds again', async () => {});
+  //
+  // async function fundAndExhaust() {
   //   //stake some gems, so accrual works
   //   await gf.callDeposit(gf.gem1Amount, gf.farmer1Identity);
   //   await gf.callStake(gf.farmer1Identity);
@@ -209,20 +168,29 @@ describe('funding (variable rate)', () => {
   //   let farmAcc = (await gf.fetchFarm()) as any;
   //   assert(farmAcc[gf.reward].funds.totalFunded.eq(new BN(10000)));
   //   assert(farmAcc[gf.reward].funds.totalAccruedToStakers.eq(new BN(10000)));
+  //   assert(farmAcc[gf.reward].funds.totalRefunded.eq(new BN(0)));
   //   assert(farmAcc[gf.reward].variableRate.rewardRate.eq(new BN(5000)));
   //
-  //   //we'll need more tokens to be sent to the pool
-  //   await gf.mintMoreRewards(50000);
+  //   return farmAcc;
+  // }
   //
-  //   //fund again
+  // it('funds -> exhausts -> funds again', async () => {
+  //   let farmAcc = await fundAndExhaust();
+  //   let oldRewardEnd = farmAcc[gf.reward].times.rewardEndTs;
+  //
+  //   //mint + fund
+  //   await gf.mintMoreRewards(50000);
   //   await gf.callFundReward(fastConfig2);
   //
   //   farmAcc = (await gf.fetchFarm()) as any;
   //   assert(farmAcc[gf.reward].funds.totalFunded.eq(new BN(60000)));
   //   assert(farmAcc[gf.reward].funds.totalAccruedToStakers.eq(new BN(10000)));
-  //   //most important - the reward rate should update to just the new one
+  //   assert(farmAcc[gf.reward].funds.totalRefunded.eq(new BN(0)));
+  //   //the reward rate should update to just the new one
   //   assert(farmAcc[gf.reward].variableRate.rewardRate.eq(new BN(25000)));
+  //   //end ts should have been updated
+  //   assert(farmAcc[gf.reward].times.rewardEndTs.gt(oldRewardEnd));
   // });
-
-  // it('funds -> accrues -> cancels -> funds again', async () => {});
+  //
+  // it('funds -> exhausts -> cancels -> funds again', async () => {});
 });

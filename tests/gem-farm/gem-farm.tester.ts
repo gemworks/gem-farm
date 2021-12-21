@@ -1,5 +1,9 @@
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
-import { stringifyPubkeysAndBNsInObject } from '../utils/types';
+import {
+  Numerical,
+  stringifyPubkeysAndBNsInObject,
+  toBN,
+} from '../utils/types';
 import * as anchor from '@project-serum/anchor';
 import {
   FarmConfig,
@@ -13,6 +17,7 @@ import { BN } from '@project-serum/anchor';
 import { Token } from '@solana/spl-token';
 import { ITokenData } from '../utils/account';
 import { prepGem } from '../utils/gem-common';
+import { assert } from 'chai';
 
 // --------------------------------------- configs
 
@@ -107,7 +112,7 @@ export class GemFarmTester extends GemFarmClient {
     );
   }
 
-  async prepAccounts(initialFundingAmount: BN, reward?: string) {
+  async prepAccounts(initialFundingAmount: Numerical, reward?: string) {
     this.bank = Keypair.generate();
     this.farm = Keypair.generate();
     this.farmManager = await this.createWallet(100 * LAMPORTS_PER_SOL);
@@ -128,7 +133,7 @@ export class GemFarmTester extends GemFarmClient {
     this.rewardSource = await this.createAndFundATA(
       this.rewardMint,
       this.funder,
-      initialFundingAmount
+      toBN(initialFundingAmount)
     );
     this.rewardSecondMint = await this.createToken(0, this.funder.publicKey);
 
@@ -169,12 +174,12 @@ export class GemFarmTester extends GemFarmClient {
     );
   }
 
-  async callPayout(destination: PublicKey, lamports: BN) {
+  async callPayout(destination: PublicKey, lamports: Numerical) {
     return this.payoutFromTreasury(
       this.farm.publicKey,
       this.farmManager,
       destination,
-      lamports
+      toBN(lamports)
     );
   }
 
@@ -192,7 +197,7 @@ export class GemFarmTester extends GemFarmClient {
     return this.unstake(this.farm.publicKey, identity);
   }
 
-  async callDeposit(gems: BN, identity: Keypair) {
+  async callDeposit(gems: Numerical, identity: Keypair) {
     const isFarmer1 =
       identity.publicKey.toBase58() ===
       this.farmer1Identity.publicKey.toBase58();
@@ -201,13 +206,13 @@ export class GemFarmTester extends GemFarmClient {
       this.bank.publicKey,
       isFarmer1 ? this.farmer1Vault : this.farmer2Vault,
       identity,
-      gems,
+      toBN(gems),
       isFarmer1 ? this.gem1.tokenMint : this.gem2.tokenMint,
       isFarmer1 ? this.gem1.tokenAcc : this.gem2.tokenAcc
     );
   }
 
-  async callWithdraw(gems: BN, identity: Keypair) {
+  async callWithdraw(gems: Numerical, identity: Keypair) {
     const isFarmer1 =
       identity.publicKey.toBase58() ===
       this.farmer1Identity.publicKey.toBase58();
@@ -216,7 +221,7 @@ export class GemFarmTester extends GemFarmClient {
       this.bank.publicKey,
       isFarmer1 ? this.farmer1Vault : this.farmer2Vault,
       identity,
-      gems,
+      toBN(gems),
       isFarmer1 ? this.gem1.tokenMint : this.gem2.tokenMint,
       identity.publicKey
     );
@@ -231,11 +236,11 @@ export class GemFarmTester extends GemFarmClient {
     );
   }
 
-  async callFlashDeposit(gemAmount: BN) {
+  async callFlashDeposit(gems: Numerical) {
     return this.flashDeposit(
       this.farm.publicKey,
       this.farmer1Identity,
-      gemAmount,
+      toBN(gems),
       this.gem1.tokenMint,
       this.gem1.tokenAcc
     );
@@ -294,6 +299,126 @@ export class GemFarmTester extends GemFarmClient {
       this.farmManager,
       this.rewardMint.publicKey
     );
+  }
+
+  // --------------------------------------- verifications & asserts
+
+  async verifyFunds(
+    funded?: Numerical,
+    refunded?: Numerical,
+    accrued?: Numerical
+  ) {
+    let farmAcc = (await this.fetchFarm()) as any;
+    let funds = farmAcc[this.reward].funds;
+
+    if (funded) {
+      assert(funds.totalFunded.eq(toBN(funded)));
+    }
+    if (refunded) {
+      assert(funds.totalRefunded.eq(toBN(refunded)));
+    }
+    if (accrued) {
+      assert(funds.totalAccruedToStakers.eq(toBN(accrued)));
+    }
+  }
+
+  async assertFundsAddUp(pendingAmount: Numerical) {
+    let farmAcc = (await this.fetchFarm()) as any;
+    let funds = farmAcc[this.reward].funds;
+
+    assert(
+      funds.totalFunded.eq(
+        funds.totalRefunded
+          .add(funds.totalAccruedToStakers)
+          .add(toBN(pendingAmount))
+      )
+    );
+
+    return funds;
+  }
+
+  async verifyTimes(
+    duration?: Numerical,
+    rewardEnd?: Numerical,
+    lockEnd?: Numerical
+  ) {
+    let farmAcc = (await this.fetchFarm()) as any;
+    let times = farmAcc[this.reward].times;
+
+    if (duration) {
+      assert(times.durationSec.eq(toBN(duration)));
+    }
+    if (rewardEnd) {
+      assert(times.rewardEndTs.eq(toBN(rewardEnd)));
+    }
+    if (lockEnd) {
+      assert(times.lockEndTs.eq(toBN(lockEnd)));
+    }
+
+    return times;
+  }
+
+  async verifyVariableReward(rewardRate?: Numerical, lastUpdated?: Numerical) {
+    let farmAcc = (await this.fetchFarm()) as any;
+    let reward = farmAcc[this.reward].variableRate;
+
+    if (rewardRate) {
+      assert(reward.rewardRate.eq(toBN(rewardRate)));
+    }
+    if (lastUpdated) {
+      assert(reward.rewardLastUpdatedTs.eq(toBN(lastUpdated)));
+    }
+
+    return reward;
+  }
+
+  async verifyFixedReward(
+    gemsParticipating?: Numerical,
+    gemsMadeWhole?: Numerical
+  ) {
+    let farmAcc = (await this.fetchFarm()) as any;
+    let reward = farmAcc[this.reward].fixedRate;
+
+    if (gemsParticipating) {
+      assert(reward.gemsParticipating.eq(toBN(gemsParticipating)));
+    }
+    if (gemsMadeWhole) {
+      assert(reward.gemsMadeWhole.eq(toBN(gemsMadeWhole)));
+    }
+
+    return reward;
+  }
+
+  async assertPotContains(pot: PublicKey, amount: Numerical, sign?: string) {
+    const rewardsPotAcc = await this.fetchTokenAcc(
+      this.rewardMint.publicKey,
+      pot
+    );
+    switch (sign) {
+      case 'lt':
+        assert(rewardsPotAcc.amount.lt(toBN(amount)));
+        break;
+      default:
+        assert(rewardsPotAcc.amount.eq(toBN(amount)));
+    }
+
+    return rewardsPotAcc;
+  }
+
+  async assertFunderAccContains(amount: Numerical, sign?: string) {
+    const sourceAcc = await this.fetchTokenAcc(
+      this.rewardMint.publicKey,
+      this.rewardSource
+    );
+    switch (sign) {
+      case 'gt':
+        assert(sourceAcc.amount.gt(toBN(amount)));
+        break;
+      default:
+        assert(sourceAcc.amount.eq(toBN(amount)));
+    }
+
+    return sourceAcc;
   }
 
   // --------------------------------------- extras

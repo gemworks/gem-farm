@@ -1,6 +1,8 @@
 import { BN } from '@project-serum/anchor';
 import { Keypair, PublicKey } from '@solana/web3.js';
 
+export type Numerical = BN | number;
+
 export interface ToBytes {
   toBytes(): Uint8Array;
 }
@@ -22,30 +24,14 @@ export interface HasPublicKey {
 export function toBN(obj: any): any {
   if (typeof obj == 'number') {
     return new BN(obj);
+  } else if (obj instanceof BN) {
+    return obj;
   } else if (typeof obj == 'object') {
     const bnObj = {};
 
     for (const field in obj) {
       // @ts-ignore
       bnObj[field] = toBN(obj[field]);
-    }
-
-    return bnObj;
-  }
-
-  return obj;
-}
-
-//todo haven't tested
-export function BNtoString(obj: any): any {
-  if (obj instanceof BN) {
-    return obj.toString();
-  } else if (typeof obj == 'object') {
-    const bnObj = {};
-
-    for (const field in obj) {
-      // @ts-ignore
-      bnObj[field] = BNtoString(obj[field]);
     }
 
     return bnObj;
