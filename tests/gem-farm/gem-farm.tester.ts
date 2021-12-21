@@ -16,24 +16,18 @@ import { prepGem } from '../utils/gem-common';
 
 // --------------------------------------- configs
 
-export const farmConfig = <FarmConfig>{
+export const defaultFarmConfig = <FarmConfig>{
   minStakingPeriodSec: new BN(0),
   cooldownPeriodSec: new BN(0),
   unstakingFeeLamp: new BN(LAMPORTS_PER_SOL),
 };
 
-export const farmConfigNotZero = <FarmConfig>{
-  minStakingPeriodSec: new BN(5),
-  cooldownPeriodSec: new BN(5),
-  unstakingFeeLamp: new BN(LAMPORTS_PER_SOL),
-};
-
-export const variableConfig = <VariableRateConfig>{
+export const defaultVariableConfig = <VariableRateConfig>{
   amount: new BN(10000), //10k
   durationSec: new BN(100), //at rate 100/s
 };
 
-export const fixedConfig = <FixedRateConfig>{
+export const defaultFixedConfig = <FixedRateConfig>{
   period1: <PeriodConfig>{
     //per gem per second
     rate: new BN(5),
@@ -53,24 +47,30 @@ export const fixedConfig = <FixedRateConfig>{
   gemsFunded: new BN(1000),
 };
 
-function totalRewardsPerGem() {
-  const p1 = fixedConfig.period1.rate.mul(fixedConfig.period1.durationSec);
-  const p2 = fixedConfig.period2!.rate.mul(fixedConfig.period2!.durationSec);
-  const p3 = fixedConfig.period3!.rate.mul(fixedConfig.period3!.durationSec);
+export function totalRewardsPerGem() {
+  const p1 = defaultFixedConfig.period1.rate.mul(
+    defaultFixedConfig.period1.durationSec
+  );
+  const p2 = defaultFixedConfig.period2!.rate.mul(
+    defaultFixedConfig.period2!.durationSec
+  );
+  const p3 = defaultFixedConfig.period3!.rate.mul(
+    defaultFixedConfig.period3!.durationSec
+  );
 
   return p1.add(p2).add(p3);
 }
 
-function totalDuration() {
-  const p1 = fixedConfig.period1.durationSec;
-  const p2 = fixedConfig.period2!.durationSec;
-  const p3 = fixedConfig.period3!.durationSec;
+export function totalDuration() {
+  const p1 = defaultFixedConfig.period1.durationSec;
+  const p2 = defaultFixedConfig.period2!.durationSec;
+  const p3 = defaultFixedConfig.period3!.durationSec;
 
   return p1.add(p2).add(p3);
 }
 
-function totalRewardsAmount() {
-  return fixedConfig.gemsFunded.mul(totalRewardsPerGem());
+export function totalRewardsAmount() {
+  return defaultFixedConfig.gemsFunded.mul(totalRewardsPerGem());
 }
 
 // --------------------------------------- tester class
@@ -169,11 +169,11 @@ export class GemFarmTester extends GemFarmClient {
     );
   }
 
-  async callPayout(lamports: BN) {
+  async callPayout(destination: PublicKey, lamports: BN) {
     return this.payoutFromTreasury(
       this.farm.publicKey,
       this.farmManager,
-      this.farmManager.publicKey,
+      destination,
       lamports
     );
   }
