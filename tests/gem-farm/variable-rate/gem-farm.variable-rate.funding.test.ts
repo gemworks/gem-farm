@@ -16,7 +16,7 @@ const fastConfig = <VariableRateConfig>{
   durationSec: new BN(2),
 };
 
-describe('funding (variable rate)', () => {
+describe.skip('funding (variable rate)', () => {
   let gf = new GemFarmTester();
 
   beforeEach('preps accs', async () => {
@@ -42,8 +42,8 @@ describe('funding (variable rate)', () => {
     assert(reward.rewardLastUpdatedTs.gt(new BN(0)));
 
     //token accounts
-    await gf.assertFunderAccContains(0);
-    await gf.assertPotContains(pot, 10000);
+    await gf.verifyFunderAccContains(0);
+    await gf.verifyPotContains(pot, 10000);
   });
 
   it('funds -> cancels (no stakers)', async () => {
@@ -66,8 +66,8 @@ describe('funding (variable rate)', () => {
     assert(reward.rewardLastUpdatedTs.gt(new BN(0)));
 
     //token accounts
-    await gf.assertFunderAccContains(10000);
-    await gf.assertPotContains(pot, 0);
+    await gf.verifyFunderAccContains(10000);
+    await gf.verifyPotContains(pot, 0);
   });
 
   it('funds -> cancels (early stakers = fully accrues)', async () => {
@@ -93,8 +93,8 @@ describe('funding (variable rate)', () => {
     await gf.verifyVariableReward(0); //after cancellation goes to 0
 
     //token accounts
-    await gf.assertFunderAccContains(0);
-    await gf.assertPotContains(pot, 10000);
+    await gf.verifyFunderAccContains(0);
+    await gf.verifyPotContains(pot, 10000);
   });
 
   it('funds -> cancels (late stakers = partially accrues)', async () => {
@@ -124,8 +124,8 @@ describe('funding (variable rate)', () => {
     await gf.verifyVariableReward(0); //after cancellation goes to 0
 
     //token accounts
-    await gf.assertFunderAccContains(4000, 'gt');
-    await gf.assertPotContains(pot, 6000, 'lt');
+    await gf.verifyFunderAccContains(4000, 'gt');
+    await gf.verifyPotContains(pot, 6000, 'lt');
   });
 
   it('funds -> immediately funds again (thus merging 2 rewards)', async () => {
@@ -153,8 +153,8 @@ describe('funding (variable rate)', () => {
     assert(reward.rewardLastUpdatedTs.gt(oldUpdateTs));
 
     //token accounts
-    await gf.assertFunderAccContains(0);
-    await gf.assertPotContains(pot, 20000);
+    await gf.verifyFunderAccContains(0);
+    await gf.verifyPotContains(pot, 20000);
   });
 
   it('funds -> exhausts -> funds again', async () => {
@@ -180,8 +180,8 @@ describe('funding (variable rate)', () => {
     await gf.verifyVariableReward(100); //100 from second reward only
 
     //token accounts
-    await gf.assertFunderAccContains(0);
-    await gf.assertPotContains(pot, 20000);
+    await gf.verifyFunderAccContains(0);
+    await gf.verifyPotContains(pot, 20000);
   });
 
   it('funds -> cancels -> funds again', async () => {
@@ -203,8 +203,8 @@ describe('funding (variable rate)', () => {
     await gf.verifyVariableReward(100); //back to 100 after going to 0 on cancellation
 
     //token accounts
-    await gf.assertFunderAccContains(10000);
-    await gf.assertPotContains(pot, 10000);
+    await gf.verifyFunderAccContains(10000);
+    await gf.verifyPotContains(pot, 10000);
   });
 
   it('funds -> exhausts -> cancels -> funds again', async () => {
@@ -232,7 +232,7 @@ describe('funding (variable rate)', () => {
     await gf.verifyVariableReward(100); //back to 100 after going to 0 on cancellation
 
     //token accounts
-    await gf.assertFunderAccContains(0);
-    await gf.assertPotContains(pot, 20000);
+    await gf.verifyFunderAccContains(0);
+    await gf.verifyPotContains(pot, 20000);
   });
 });

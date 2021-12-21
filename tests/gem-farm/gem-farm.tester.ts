@@ -301,7 +301,7 @@ export class GemFarmTester extends GemFarmClient {
     );
   }
 
-  // --------------------------------------- verifications & asserts
+  // --------------------------------------- verifications
 
   async verifyFunds(
     funded?: Numerical,
@@ -320,21 +320,6 @@ export class GemFarmTester extends GemFarmClient {
     if (accrued) {
       assert(funds.totalAccruedToStakers.eq(toBN(accrued)));
     }
-
-    return funds;
-  }
-
-  async assertFundsAddUp(pendingAmount: Numerical) {
-    let farmAcc = (await this.fetchFarm()) as any;
-    let funds = farmAcc[this.reward].funds;
-
-    assert(
-      funds.totalFunded.eq(
-        funds.totalRefunded
-          .add(funds.totalAccruedToStakers)
-          .add(toBN(pendingAmount))
-      )
-    );
 
     return funds;
   }
@@ -391,7 +376,7 @@ export class GemFarmTester extends GemFarmClient {
     return reward;
   }
 
-  async assertPotContains(pot: PublicKey, amount: Numerical, sign?: string) {
+  async verifyPotContains(pot: PublicKey, amount: Numerical, sign?: string) {
     const rewardsPotAcc = await this.fetchTokenAcc(
       this.rewardMint.publicKey,
       pot
@@ -407,7 +392,7 @@ export class GemFarmTester extends GemFarmClient {
     return rewardsPotAcc;
   }
 
-  async assertFunderAccContains(amount: Numerical, sign?: string) {
+  async verifyFunderAccContains(amount: Numerical, sign?: string) {
     const sourceAcc = await this.fetchTokenAcc(
       this.rewardMint.publicKey,
       this.rewardSource
