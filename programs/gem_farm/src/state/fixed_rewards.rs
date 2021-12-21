@@ -147,6 +147,7 @@ impl FixedRateReward {
 
         times.lock_end_ts = times.reward_end_ts;
 
+        msg!("locked reward up to {}", times.reward_end_ts);
         Ok(())
     }
 
@@ -157,15 +158,17 @@ impl FixedRateReward {
         funds: &mut FundsTracker,
         new_config: FixedRateConfig,
     ) -> ProgramResult {
-        times.duration_sec = new_config.max_duration()?;
-        times.reward_end_ts = now_ts.try_add(new_config.max_duration()?)?;
+        let new_duration = new_config.max_duration()?;
+        let new_amount = new_config.max_duration()?;
 
-        funds
-            .total_funded
-            .try_add_assign(new_config.required_funding()?)?;
+        times.duration_sec = new_duration;
+        times.reward_end_ts = now_ts.try_add(new_amount)?;
+
+        funds.total_funded.try_add_assign(new_amount)?;
 
         self.config = new_config;
 
+        msg!("recorded new funding of {}", new_amount);
         Ok(())
     }
 
@@ -184,6 +187,7 @@ impl FixedRateReward {
         let refund_amount = funds.pending_amount()?;
         funds.total_refunded.try_add_assign(refund_amount)?;
 
+        msg!("prepared a total refund of {}", refund_amount);
         Ok(refund_amount)
     }
 
@@ -203,21 +207,26 @@ impl FixedRateReward {
 
         //todo is this the right place? what other checks of this type are necessary?
         if farmer_begin_staking_ts > times.upper_bound(now_ts) {
+            msg!("this farmer started staking after the reward ended");
             return Ok(());
         }
 
-        // calc new, updated reward
+        // calc newly accrued reward
         let staking_duration = times.upper_bound(now_ts).try_sub(farmer_begin_staking_ts)?;
-        let farmer_reward_per_gem = self.config.accrued_reward_per_gem(staking_duration)?;
-        let total_farmer_reward = farmer_reward_per_gem.try_mul(farmer_gems_staked)?;
+        let reward_per_gem = self.config.accrued_reward_per_gem(staking_duration)?;
+        let newly_accured_reward = reward_per_gem
+            .try_mul(farmer_gems_staked)?
+            .try_sub(farmer_reward.accrued_reward)?;
 
         // update farmer
-        let old_farmer_reward = farmer_reward.accrued_reward;
-        farmer_reward.accrued_reward = total_farmer_reward;
+        farmer_reward
+            .accrued_reward
+            .try_add_assign(newly_accured_reward)?;
 
         // update farm
-        let difference = total_farmer_reward.try_sub(old_farmer_reward)?;
-        funds.total_accrued_to_stakers.try_add_assign(difference)?;
+        funds
+            .total_accrued_to_stakers
+            .try_add_assign(newly_accured_reward)?;
 
         // after reward end passes, we won't owe any more money to the farmer than calculated now
         if now_ts > times.reward_end_ts {
@@ -225,6 +234,7 @@ impl FixedRateReward {
             self.gems_made_whole.try_add_assign(farmer_gems_staked)?;
         }
 
+        msg!("updated reward as of {}", now_ts);
         Ok(())
     }
 }

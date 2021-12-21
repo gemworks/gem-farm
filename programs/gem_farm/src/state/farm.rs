@@ -270,6 +270,10 @@ pub struct TimeTracker {
 
 impl TimeTracker {
     pub fn remaining_duration(&self, now_ts: u64) -> Result<u64, ProgramError> {
+        if now_ts >= self.reward_end_ts {
+            return Ok(0);
+        }
+
         self.reward_end_ts.try_sub(now_ts)
     }
 
@@ -422,6 +426,7 @@ mod tests {
         };
 
         assert_eq!(70, times.remaining_duration(130).unwrap());
+        assert_eq!(0, times.remaining_duration(9999).unwrap());
         assert_eq!(30, times.passed_duration(130).unwrap());
         assert_eq!(199, times.upper_bound(199));
         assert_eq!(200, times.upper_bound(201));

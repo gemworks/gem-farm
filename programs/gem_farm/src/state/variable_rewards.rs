@@ -46,6 +46,7 @@ impl VariableRateReward {
 
         times.lock_end_ts = times.reward_end_ts;
 
+        msg!("locked reward up to {}", times.reward_end_ts);
         Ok(())
     }
 
@@ -79,6 +80,7 @@ impl VariableRateReward {
         self.config = new_config;
         self.reward_last_updated_ts = now_ts;
 
+        msg!("recorded new funding of {}", amount);
         Ok(())
     }
 
@@ -96,6 +98,7 @@ impl VariableRateReward {
         self.reward_rate = 0;
         self.reward_last_updated_ts = now_ts;
 
+        msg!("prepared a total refund of {}", refund_amount);
         Ok(refund_amount)
     }
 
@@ -139,6 +142,7 @@ impl VariableRateReward {
 
         self.reward_last_updated_ts = now_ts;
 
+        msg!("updated reward as of {}", now_ts);
         Ok(())
     }
 
