@@ -320,6 +320,8 @@ export class GemFarmTester extends GemFarmClient {
     if (accrued) {
       assert(funds.totalAccruedToStakers.eq(toBN(accrued)));
     }
+
+    return funds;
   }
 
   async assertFundsAddUp(pendingAmount: Numerical) {
@@ -423,7 +425,7 @@ export class GemFarmTester extends GemFarmClient {
 
   // --------------------------------------- extras
 
-  async printStructs(state: string) {
+  async printStructs(state?: string) {
     const farmAcc = await this.fetchFarmAcc(this.farm.publicKey);
     console.log(`// --------------------------------------- ${state}`);
     console.log('// --------------------------------------- farm');
