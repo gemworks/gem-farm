@@ -16,7 +16,6 @@ pub struct InitFarm<'info> {
     #[account(seeds = [b"treasury".as_ref(), farm.key().as_ref()], bump = bump_treasury)]
     pub farm_treasury: AccountInfo<'info>,
 
-    // todo need ixs to be able to update mints/pots/reward type
     // reward a
     #[account(init, seeds = [
             b"reward_pot".as_ref(),

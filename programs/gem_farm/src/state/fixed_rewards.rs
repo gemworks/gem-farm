@@ -198,7 +198,7 @@ impl FixedRateReward {
         times: &TimeTracker,
         farmer_gems_staked: u64,
         farmer_begin_staking_ts: u64,
-        farmer_reward: &mut FarmerRewardTracker, // only ran when farmer present
+        farmer_reward: &mut FarmerReward, // only ran when farmer present
     ) -> ProgramResult {
         if farmer_reward.is_whole() {
             msg!("this farmer reward is already made whole, no further changes expected");
@@ -206,13 +206,15 @@ impl FixedRateReward {
         }
 
         //todo is this the right place? what other checks of this type are necessary?
-        if farmer_begin_staking_ts > times.upper_bound(now_ts) {
+        if farmer_begin_staking_ts > times.reward_upper_bound(now_ts) {
             msg!("this farmer started staking after the reward ended");
             return Ok(());
         }
 
         // calc newly accrued reward
-        let staking_duration = times.upper_bound(now_ts).try_sub(farmer_begin_staking_ts)?;
+        let staking_duration = times
+            .reward_upper_bound(now_ts)
+            .try_sub(farmer_begin_staking_ts)?;
         let reward_per_gem = self.config.accrued_reward_per_gem(staking_duration)?;
         let newly_accured_reward = reward_per_gem
             .try_mul(farmer_gems_staked)?

@@ -25,6 +25,14 @@ pub struct VariableRateReward {
     pub reward_rate: u64,
 
     pub reward_last_updated_ts: u64,
+
+    // this is somewhat redundant with total_accrued_to_stakers in funds, but necessary
+    // think of it as a "flag in the ground" that gets moved forward as more rewards accrue to the pool
+    // when a farmer tries to figure out how much they're due from the pool, we:
+    // 1) compare their latest record of flag position, with actual flag position
+    // 2) multiply the difference by the amount they have staked
+    // 3) update their record of flag position, so that next time we don't count this distance again
+    pub accrued_reward_per_gem: u64,
 }
 
 impl VariableRateReward {
@@ -78,7 +86,7 @@ impl VariableRateReward {
         funds.total_funded.try_add_assign(amount)?;
 
         self.config = new_config;
-        self.reward_last_updated_ts = now_ts;
+        self.reward_last_updated_ts = times.reward_upper_bound(now_ts);
 
         msg!("recorded new funding of {}", amount);
         Ok(())
@@ -96,7 +104,7 @@ impl VariableRateReward {
         funds.total_refunded.try_add_assign(refund_amount)?;
 
         self.reward_rate = 0;
-        self.reward_last_updated_ts = now_ts;
+        self.reward_last_updated_ts = times.reward_upper_bound(now_ts);
 
         msg!("prepared a total refund of {}", refund_amount);
         Ok(refund_amount)
@@ -109,46 +117,55 @@ impl VariableRateReward {
         times: &TimeTracker,
         farm_gems_staked: u64,
         farmer_gems_staked: Option<u64>,
-        farmer_reward: Option<&mut FarmerRewardTracker>,
+        farmer_reward: Option<&mut FarmerReward>,
     ) -> ProgramResult {
-        let upper_bound = times.upper_bound(now_ts);
+        let reward_upper_bound = times.reward_upper_bound(now_ts);
 
-        if upper_bound <= self.reward_last_updated_ts {
-            msg!("this reward has ended - OR - not enough time passed since last update");
-            self.reward_last_updated_ts = now_ts;
-            return Ok(());
-        }
+        // calc & update reward per gem
+        let newly_accrued_reward_per_gem =
+            self.newly_accrued_reward_per_gem(farm_gems_staked, reward_upper_bound)?;
 
-        if farm_gems_staked == 0 {
-            msg!("this farm has no staked gems yet");
-            self.reward_last_updated_ts = now_ts;
-            return Ok(());
-        }
+        self.accrued_reward_per_gem
+            .try_add_assign(newly_accrued_reward_per_gem)?;
 
-        let newly_accrued_reward = self.calc_newly_accrued_reward(upper_bound)?;
-
+        // update overall reward
         funds
             .total_accrued_to_stakers
-            .try_add_assign(newly_accrued_reward)?;
+            .try_add_assign(newly_accrued_reward_per_gem.try_mul(farm_gems_staked)?)?;
 
-        // update farmer, if one has been passed
+        // update farmer, if one was passed
         if let Some(farmer_reward) = farmer_reward {
-            farmer_reward.accrued_reward.try_add_assign(
-                newly_accrued_reward
-                    .try_mul(farmer_gems_staked.unwrap())?
-                    .try_div(farm_gems_staked)?,
+            let owed_to_farmer = farmer_gems_staked.unwrap().try_mul(
+                self.accrued_reward_per_gem
+                    .try_sub(farmer_reward.last_recorded_accrued_reward_per_gem)?,
             )?;
+
+            farmer_reward
+                .accrued_reward
+                .try_add_assign(owed_to_farmer)?;
+            farmer_reward.last_recorded_accrued_reward_per_gem = self.accrued_reward_per_gem;
         }
 
-        self.reward_last_updated_ts = now_ts;
+        self.reward_last_updated_ts = reward_upper_bound;
 
-        msg!("updated reward as of {}", now_ts);
+        msg!("updated reward as of {}", self.reward_last_updated_ts);
         Ok(())
     }
 
-    fn calc_newly_accrued_reward(&self, reward_upper_bound_ts: u64) -> Result<u64, ProgramError> {
-        let time_passed = reward_upper_bound_ts.try_sub(self.reward_last_updated_ts)?;
+    fn newly_accrued_reward_per_gem(
+        &self,
+        farm_gems_staked: u64,
+        reward_upper_bound: u64,
+    ) -> Result<u64, ProgramError> {
+        if farm_gems_staked == 0 {
+            msg!("no gems are staked at the farm, means no new rewards accrue");
+            return Ok(0);
+        }
 
-        self.reward_rate.try_mul(time_passed)
+        let time_since_last_calc = reward_upper_bound.try_sub(self.reward_last_updated_ts)?;
+
+        time_since_last_calc
+            .try_mul(self.reward_rate)?
+            .try_div(farm_gems_staked)
     }
 }

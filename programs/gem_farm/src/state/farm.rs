@@ -289,7 +289,7 @@ impl TimeTracker {
         Ok(())
     }
 
-    pub fn upper_bound(&self, now_ts: u64) -> u64 {
+    pub fn reward_upper_bound(&self, now_ts: u64) -> u64 {
         std::cmp::min(self.reward_end_ts, now_ts)
     }
 }
@@ -297,6 +297,9 @@ impl TimeTracker {
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FarmReward {
+    // todo in v0 the next 3 fields (mint, pot type) are set ONLY once, at farm init
+    //  and can't ever be changed for security reasons
+    //  potentially in v1++ might find a way around it, but for now just use a new farm
     pub reward_mint: Pubkey,
 
     pub reward_pot: Pubkey,
@@ -383,7 +386,7 @@ impl FarmReward {
         farm_gems_staked: u64,
         farmer_gems_staked: Option<u64>,
         farmer_begin_staking_ts: Option<u64>,
-        farmer_reward: Option<&mut FarmerRewardTracker>,
+        farmer_reward: Option<&mut FarmerReward>,
     ) -> ProgramResult {
         match self.reward_type {
             RewardType::Variable => self.variable_rate.update_accrued_reward(
@@ -428,8 +431,8 @@ mod tests {
         assert_eq!(70, times.remaining_duration(130).unwrap());
         assert_eq!(0, times.remaining_duration(9999).unwrap());
         assert_eq!(30, times.passed_duration(130).unwrap());
-        assert_eq!(199, times.upper_bound(199));
-        assert_eq!(200, times.upper_bound(201));
+        assert_eq!(199, times.reward_upper_bound(199));
+        assert_eq!(200, times.reward_upper_bound(201));
     }
 
     #[test]

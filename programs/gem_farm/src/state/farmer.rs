@@ -33,9 +33,9 @@ pub struct Farmer {
     pub cooldown_ends_ts: u64,
 
     // --------------------------------------- rewards
-    pub reward_a: FarmerRewardTracker,
+    pub reward_a: FarmerReward,
 
-    pub reward_b: FarmerRewardTracker,
+    pub reward_b: FarmerReward,
 }
 
 impl Farmer {
@@ -128,18 +128,24 @@ impl Farmer {
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
-pub struct FarmerRewardTracker {
+pub struct FarmerReward {
     // total, not per gem
     pub paid_out_reward: u64,
 
     // total, not per gem
     pub accrued_reward: u64,
 
-    // only used in fixed rate staking to indicate we've stashed away enough reward to cover this farmer
+    // (!) VARIABLE RATE ONLY - ignored for fixed rate
+    // used to keep track of how much of the variable reward has been updated for this farmer
+    // (read more in variable rate config)
+    pub last_recorded_accrued_reward_per_gem: u64,
+
+    // (!) FIXED RATE ONLY - ignored for variable rate
+    // used to indicate we've stashed away enough reward to cover what we owe to this farmer
     pub reward_whole: bool,
 }
 
-impl FarmerRewardTracker {
+impl FarmerReward {
     pub fn outstanding_reward(&self) -> Result<u64, ProgramError> {
         self.accrued_reward.try_sub(self.paid_out_reward)
     }

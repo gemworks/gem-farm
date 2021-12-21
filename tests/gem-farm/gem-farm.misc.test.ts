@@ -11,6 +11,7 @@ import { pause } from '../utils/types';
 
 chai.use(chaiAsPromised);
 
+//todo this test (and others outside of fixed/var dirs) should not care if it's init'ed with fixed or var
 describe.skip('misc', () => {
   let gf = new GemFarmTester();
 

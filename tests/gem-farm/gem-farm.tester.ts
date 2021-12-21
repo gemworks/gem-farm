@@ -157,7 +157,7 @@ export class GemFarmTester extends GemFarmClient {
     return this.fetchTreasuryBalance(this.farm.publicKey);
   }
 
-  // --------------------------------------- calls
+  // --------------------------------------- callers
   // ----------------- core
 
   async callInitFarm(farmConfig: FarmConfig) {
@@ -227,10 +227,10 @@ export class GemFarmTester extends GemFarmClient {
     );
   }
 
-  async callClaimRewards() {
+  async callClaimRewards(identity: Keypair) {
     return this.claim(
       this.farm.publicKey,
-      this.farmer1Identity,
+      identity,
       this.rewardMint.publicKey,
       this.rewardSecondMint.publicKey
     );
@@ -301,7 +301,7 @@ export class GemFarmTester extends GemFarmClient {
     );
   }
 
-  // --------------------------------------- verifications
+  // --------------------------------------- verifiers
 
   async verifyFunds(
     funded?: Numerical,
@@ -345,7 +345,11 @@ export class GemFarmTester extends GemFarmClient {
     return times;
   }
 
-  async verifyVariableReward(rewardRate?: Numerical, lastUpdated?: Numerical) {
+  async verifyVariableReward(
+    rewardRate?: Numerical,
+    lastUpdated?: Numerical,
+    accruedRewardPerGem?: Numerical
+  ) {
     let farmAcc = (await this.fetchFarm()) as any;
     let reward = farmAcc[this.reward].variableRate;
 
@@ -354,6 +358,10 @@ export class GemFarmTester extends GemFarmClient {
     }
     if (lastUpdated) {
       assert(reward.rewardLastUpdatedTs.eq(toBN(lastUpdated)));
+    }
+    //todo need to think in which tests this one should be checked
+    if (accruedRewardPerGem) {
+      assert(reward.accruedRewardPerGem.eq(toBN(accruedRewardPerGem)));
     }
 
     return reward;
@@ -406,6 +414,120 @@ export class GemFarmTester extends GemFarmClient {
     }
 
     return sourceAcc;
+  }
+
+  async verifyStakedGemsAndFarmers(gems: Numerical, farmers: Numerical) {
+    let farmAcc = await this.fetchFarm();
+    assert(farmAcc.stakedFarmerCount.eq(toBN(farmers)));
+    assert(farmAcc.gemsStaked.eq(toBN(gems)));
+
+    return farmAcc;
+  }
+
+  async verifyClaimedRewards(identity: Keypair) {
+    const [farmer] = await this.findFarmerPDA(
+      this.farm.publicKey,
+      identity.publicKey
+    );
+    const farmerAcc = (await this.fetchFarmerAcc(farmer)) as any;
+
+    const rewardDest = await this.findATA(
+      this.rewardMint.publicKey,
+      identity.publicKey
+    );
+    const rewardDestAcc = await this.fetchTokenAcc(
+      this.rewardMint.publicKey,
+      rewardDest
+    );
+
+    //verify reward paid out == reward accrued
+    assert(
+      farmerAcc[this.reward].paidOutReward.eq(
+        farmerAcc[this.reward].accruedReward
+      )
+    );
+
+    //verify reward paid out = what's actually in the wallet
+    assert(rewardDestAcc.amount.eq(farmerAcc[this.reward].paidOutReward));
+
+    return { farmerAcc, rewardDestAcc };
+  }
+
+  //todo need to think where this should be used instead of pulling direct
+  async verifyFarmerReward(
+    identity: Keypair,
+    paidOutReward?: Numerical,
+    accruedReward?: Numerical,
+    lastRecordedAccruedRewardPerGem?: Numerical,
+    rewardWhole?: boolean
+  ) {
+    const [farmer] = await this.findFarmerPDA(
+      this.farm.publicKey,
+      identity.publicKey
+    );
+    const farmerAcc = (await this.fetchFarmerAcc(farmer)) as any;
+    const reward = farmerAcc[this.reward];
+
+    if (paidOutReward) {
+      assert(reward.paidOutReward.eq(toBN(paidOutReward)));
+    }
+    if (accruedReward) {
+      assert(reward.accruedReward.eq(toBN(accruedReward)));
+    }
+    if (lastRecordedAccruedRewardPerGem) {
+      assert(
+        reward.lastRecordedAccruedRewardPerGem.eq(
+          toBN(lastRecordedAccruedRewardPerGem)
+        )
+      );
+    }
+    if (rewardWhole) {
+      assert(reward.rewardWhole == rewardWhole);
+    }
+
+    return reward;
+  }
+
+  async stakeAndVerify(identity: Keypair) {
+    const { farmer } = await this.callStake(identity);
+
+    let vaultAcc = await this.fetchVaultAcc(
+      identity === this.farmer1Identity ? this.farmer1Vault : this.farmer2Vault
+    );
+    assert.isTrue(vaultAcc.locked);
+
+    let farmerAcc = await this.fetchFarmerAcc(farmer);
+    assert(
+      farmerAcc.gemsStaked.eq(
+        identity === this.farmer1Identity ? this.gem1Amount : this.gem2Amount
+      )
+    );
+
+    return farmerAcc;
+  }
+
+  async unstakeOnceAndVerify(identity: Keypair) {
+    const { farmer, vault } = await this.callUnstake(identity);
+
+    const vaultAcc = await this.fetchVaultAcc(vault);
+    assert.isTrue(vaultAcc.locked);
+
+    const farmerAcc = await this.fetchFarmerAcc(farmer);
+    assert(farmerAcc.gemsStaked.eq(new BN(0)));
+
+    return farmerAcc;
+  }
+
+  async unstakeTwiceAndVerify(identity: Keypair) {
+    const { farmer, vault } = await this.callUnstake(identity);
+
+    const vaultAcc = await this.fetchVaultAcc(vault);
+    assert.isFalse(vaultAcc.locked);
+
+    const farmerAcc = await this.fetchFarmerAcc(farmer);
+    assert(farmerAcc.gemsStaked.eq(new BN(0)));
+
+    return farmerAcc;
   }
 
   // --------------------------------------- extras
