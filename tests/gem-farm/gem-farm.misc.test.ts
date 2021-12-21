@@ -25,7 +25,7 @@ describe('misc', () => {
     assert.equal(farmAcc.bank.toBase58(), gf.bank.publicKey.toBase58());
     assert.equal(
       // @ts-ignore
-      farmAcc.rewardA.rewardMint.toBase58(),
+      farmAcc[gf.reward].rewardMint.toBase58(),
       gf.rewardMint.publicKey.toBase58()
     );
   });
@@ -78,14 +78,42 @@ describe('misc', () => {
     );
   });
 
-  // // --------------------------------------- flash deposit
+  // --------------------------------------- locking
 
-  it('flash deposits a gems', async () => {
-    // stuff before we can flash deposit
-    const initialDeposit = new BN(1); //drop 1 existing gem, need to lock the vault
-
+  it('locks rewards in place', async () => {
+    // get some funding in
     await gf.callAuthorize();
     await gf.callFundReward(defaultVariableConfig);
+
+    //place the lock
+    await gf.lockReward(
+      gf.farm.publicKey,
+      gf.farmManager,
+      gf.rewardMint.publicKey
+    );
+    // await printStructs('LOCKED');
+
+    //lock duration should now be == reward end duration
+    const farmAcc = await gf.fetchFarm();
+    assert(
+      // @ts-ignore
+      farmAcc[gf.reward].times.lockEndTs.eq(
+        // @ts-ignore
+        farmAcc[gf.reward].times.rewardEndTs
+      )
+    );
+
+    //once locked, funding/cancellation ixs should fail
+    await expect(gf.callFundReward(defaultVariableConfig)).to.be.rejectedWith(
+      '0x155'
+    );
+    await expect(gf.callCancelReward()).to.be.rejectedWith('0x155');
+  });
+
+  // --------------------------------------- flash deposit
+
+  it('flash deposits a gems', async () => {
+    const initialDeposit = new BN(1); //drop 1 existing gem, need to lock the vault
     await gf.callDeposit(initialDeposit, gf.farmer1Identity);
 
     //stake to lock the vault

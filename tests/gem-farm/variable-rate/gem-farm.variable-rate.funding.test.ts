@@ -74,27 +74,4 @@ describe('funding (variable rate)', () => {
   //   );
   //   assert(sourceAcc.amount.gt(variableConfig.amount.sub(fivePercent)));
   // });
-
-  // it('locks rewards in place', async () => {
-  //   // mint a little extra, since some was left in the pot
-  //   const fivePercent = variableConfig.amount.div(new BN(20));
-  //
-  //   // fund again, before we lock
-  //   await gf.callFundReward();
-  //
-  //   await gf.lockReward(
-  //     gf.farm.publicKey,
-  //     gf.farmManager,
-  //     gf.rewardMint.publicKey
-  //   );
-  //   // await printStructs('LOCKED');
-  //
-  //   const farmAcc = await gf.fetchFarm();
-  //   // @ts-ignore - lock should now be set equal to duration
-  //   assert(farmAcc.rewardA.lockEndTs.eq(farmAcc.rewardA.rewardEndTs));
-  //
-  //   //once locked, no more funding or cancellation is possible
-  //   await expect(gf.callFundReward()).to.be.rejectedWith('0x155');
-  //   await expect(gf.callCancelReward()).to.be.rejectedWith('0x155');
-  // });
 });
