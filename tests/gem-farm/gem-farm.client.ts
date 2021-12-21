@@ -85,7 +85,7 @@ export class GemFarmClient extends GemBankClient {
     );
   }
 
-  async fetchRewardAcc(rewardMint: PublicKey, rewardAcc: PublicKey) {
+  async fetchTokenAcc(rewardMint: PublicKey, rewardAcc: PublicKey) {
     return this.deserializeTokenAccount(rewardMint, rewardAcc);
   }
 

@@ -323,7 +323,7 @@ export class GemFarmTester extends GemFarmClient {
     } catch (e) {}
   }
 
-  async mintMoreRewards(token: Token, amount: number) {
-    await token.mintTo(this.rewardSource, this.funder, [], amount);
+  async mintMoreRewards(amount: number) {
+    await this.rewardMint.mintTo(this.rewardSource, this.funder, [], amount);
   }
 }

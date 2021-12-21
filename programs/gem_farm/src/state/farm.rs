@@ -281,7 +281,7 @@ impl TimeTracker {
         self.duration_sec
             .try_sub_assign(self.remaining_duration(now_ts)?)?;
         self.reward_end_ts = now_ts;
-        msg!("rem dur is {}", self.remaining_duration(now_ts)?);
+
         Ok(())
     }
 

@@ -155,7 +155,7 @@ describe('staking (variable rate)', () => {
       gf.farm.publicKey,
       identity.publicKey
     );
-    const rewardDestAcc = await gf.fetchRewardAcc(
+    const rewardDestAcc = await gf.fetchTokenAcc(
       gf.rewardMint.publicKey,
       rewardDest
     );

@@ -89,69 +89,61 @@ macro_rules! try_math {
     ($our_type:ty) => {
         impl TrySub for $our_type {
             fn try_sub(self, rhs: Self) -> Result<Self, ProgramError> {
-                self.checked_sub(rhs)
-                    .ok_or(ErrorCode::ArithmeticError.into())
+                self.checked_sub(rhs).ok_or_else(|| {
+                    msg!("tried subtracting {} from {}", rhs, self);
+                    return ErrorCode::ArithmeticError.into();
+                })
             }
         }
 
         impl TryAdd for $our_type {
             fn try_add(self, rhs: Self) -> Result<Self, ProgramError> {
-                self.checked_add(rhs)
-                    .ok_or(ErrorCode::ArithmeticError.into())
+                self.checked_add(rhs).ok_or_else(|| {
+                    msg!("tried adding {} and {}", rhs, self);
+                    return ErrorCode::ArithmeticError.into();
+                })
             }
         }
 
         impl TryDiv for $our_type {
             fn try_div(self, rhs: Self) -> Result<Self, ProgramError> {
-                self.checked_div(rhs)
-                    .ok_or(ErrorCode::ArithmeticError.into())
+                self.checked_div(rhs).ok_or_else(|| {
+                    msg!("tried dividing {} by {}", self, rhs);
+                    return ErrorCode::ArithmeticError.into();
+                })
             }
             fn try_ceil_div(self, rhs: Self) -> Result<Self, ProgramError> {
-                let reduced_by_one = self
-                    .checked_sub(1)
-                    .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
-
-                let divided = reduced_by_one
-                    .checked_div(rhs)
-                    .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
-
-                (1 as $our_type)
-                    .checked_add(divided)
-                    .ok_or(ErrorCode::ArithmeticError.into())
+                self.try_sub(1)?.try_div(rhs)?.try_add(1)
             }
             fn try_rounded_div(self, rhs: Self) -> Result<Self, ProgramError> {
-                let rounding = rhs
-                    .checked_div(2)
-                    .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
-
-                let with_rounding = self
-                    .checked_add(rounding)
-                    .ok_or::<ProgramError>(ErrorCode::ArithmeticError.into())?;
-
-                with_rounding
-                    .checked_div(rhs)
-                    .ok_or(ErrorCode::ArithmeticError.into())
+                rhs.try_div(2)?.try_add(self)?.try_div(rhs)
             }
         }
 
         impl TryMul for $our_type {
             fn try_mul(self, rhs: Self) -> Result<Self, ProgramError> {
-                self.checked_mul(rhs)
-                    .ok_or(ErrorCode::ArithmeticError.into())
+                self.checked_mul(rhs).ok_or_else(|| {
+                    msg!("tried multiplying {} and {}", self, rhs);
+                    return ErrorCode::ArithmeticError.into();
+                })
             }
         }
 
         impl TryPow for $our_type {
             fn try_pow(self, rhs: u32) -> Result<Self, ProgramError> {
-                self.checked_pow(rhs)
-                    .ok_or(ErrorCode::ArithmeticError.into())
+                self.checked_pow(rhs).ok_or_else(|| {
+                    msg!("tried raising {} to power {}", self, rhs);
+                    return ErrorCode::ArithmeticError.into();
+                })
             }
         }
 
         impl TryRem for $our_type {
             fn try_rem(self, rhs: Self) -> Result<Self, ProgramError> {
-                self.checked_rem(rhs)
-                    .ok_or(ErrorCode::ArithmeticError.into())
+                self.checked_rem(rhs).ok_or_else(|| {
+                    msg!("tried getting the remainder of {} / {}", self, rhs);
+                    return ErrorCode::ArithmeticError.into();
+                })
             }
         }
 
@@ -159,7 +151,10 @@ macro_rules! try_math {
         // https://github.com/solana-labs/solana-program-library/blob/master/libraries/math/src/approximations.rs
         impl TrySqrt for $our_type {
             fn try_sqrt(self) -> Result<Self, ProgramError> {
-                sqrt(self).ok_or(ErrorCode::ArithmeticError.into())
+                sqrt(self).ok_or_else(|| {
+                    msg!("tried taking the square root of {}", self);
+                    return ErrorCode::ArithmeticError.into();
+                })
             }
         }
     };
