@@ -102,7 +102,7 @@ impl Number128 {
 impl TrySub for Number128 {
     fn try_sub(self, rhs: Self) -> Result<Self, ProgramError> {
         let result = self.n.checked_sub(rhs.n).ok_or::<ProgramError>({
-            msg!("tried subtracting {} from {}", rhs, self);
+            // msg!("tried subtracting {} from {}", rhs, self);
             ErrorCode::ArithmeticError.into()
         })?;
         Ok(Self { n: result })
@@ -112,7 +112,7 @@ impl TrySub for Number128 {
 impl TryAdd for Number128 {
     fn try_add(self, rhs: Self) -> Result<Self, ProgramError> {
         let result = self.n.checked_add(rhs.n).ok_or::<ProgramError>({
-            msg!("tried adding {} and {}", rhs, self);
+            // msg!("tried adding {} and {}", rhs, self);
             ErrorCode::ArithmeticError.into()
         })?;
         Ok(Self { n: result })
@@ -125,12 +125,12 @@ impl TryDiv for Number128 {
             .n
             .checked_mul(ONE)
             .ok_or::<ProgramError>({
-                msg!("tried dividing {} by {}", self, rhs);
+                // msg!("tried dividing {} by {}", self, rhs);
                 ErrorCode::ArithmeticError.into()
             })?
             .checked_div(rhs.n)
             .ok_or::<ProgramError>({
-                msg!("tried dividing {} by {}", self, rhs);
+                // msg!("tried dividing {} by {}", self, rhs);
                 ErrorCode::ArithmeticError.into()
             })?;
         Ok(Self { n: result })
@@ -149,12 +149,12 @@ impl TryMul for Number128 {
             .n
             .checked_mul(rhs.n)
             .ok_or::<ProgramError>({
-                msg!("tried multiplying {} and {}", self, rhs);
+                // msg!("tried multiplying {} and {}", self, rhs);
                 ErrorCode::ArithmeticError.into()
             })?
             .checked_div(ONE)
             .ok_or::<ProgramError>({
-                msg!("tried multiplying {} and {}", self, rhs);
+                // msg!("tried multiplying {} and {}", self, rhs);
                 ErrorCode::ArithmeticError.into()
             })?;
         Ok(Self { n: result })
@@ -167,12 +167,12 @@ impl TryPow for Number128 {
             .n
             .checked_pow(rhs)
             .ok_or::<ProgramError>({
-                msg!("tried raising {} to power {}", self, rhs);
+                // msg!("tried raising {} to power {}", self, rhs);
                 ErrorCode::ArithmeticError.into()
             })?
             .checked_div(ONE)
             .ok_or::<ProgramError>({
-                msg!("tried raising {} to power {}", self, rhs);
+                // msg!("tried raising {} to power {}", self, rhs);
                 ErrorCode::ArithmeticError.into()
             })?;
         Ok(Self { n: result })
@@ -185,12 +185,12 @@ impl TryRem for Number128 {
             .n
             .checked_mul(ONE)
             .ok_or::<ProgramError>({
-                msg!("tried getting the remainder of {} / {}", self, rhs);
+                // msg!("tried getting the remainder of {} / {}", self, rhs);
                 ErrorCode::ArithmeticError.into()
             })?
             .checked_rem(rhs.n)
             .ok_or::<ProgramError>({
-                msg!("tried getting the remainder of {} / {}", self, rhs);
+                // msg!("tried getting the remainder of {} / {}", self, rhs);
                 ErrorCode::ArithmeticError.into()
             })?;
         Ok(Self { n: result })

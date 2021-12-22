@@ -16,7 +16,7 @@ const fastConfig = <VariableRateConfig>{
   durationSec: new BN(2),
 };
 
-describe('funding (variable rate)', () => {
+describe.skip('funding (variable rate)', () => {
   let gf = new GemFarmTester();
 
   beforeEach('preps accs', async () => {

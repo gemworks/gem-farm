@@ -363,7 +363,6 @@ export class GemFarmTester extends GemFarmClient {
     if (lastUpdated) {
       assert(reward.rewardLastUpdatedTs.eq(toBN(lastUpdated)));
     }
-    //todo need to think in which tests this one should be checked
     if (accruedRewardPerGem) {
       assert(
         reward.accruedRewardPerGem.n
@@ -434,7 +433,6 @@ export class GemFarmTester extends GemFarmClient {
     return farmAcc;
   }
 
-  //todo need to think where this should be used instead of pulling direct
   async verifyFarmerReward(
     identity: Keypair,
     paidOutReward?: Numerical,

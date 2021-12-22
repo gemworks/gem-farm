@@ -245,12 +245,12 @@ impl TryDiv for Number {
             .0
             .checked_mul(ONE)
             .ok_or::<ProgramError>({
-                msg!("tried dividing {} by {}", self, rhs);
+                // msg!("tried dividing {} by {}", self, rhs);
                 ErrorCode::ArithmeticError.into()
             })?
             .checked_div(rhs.0)
             .ok_or::<ProgramError>({
-                msg!("tried dividing {} by {}", self, rhs);
+                // msg!("tried dividing {} by {}", self, rhs);
                 ErrorCode::ArithmeticError.into()
             })?;
         Ok(Self(result))
@@ -269,12 +269,12 @@ impl TryMul for Number {
             .0
             .checked_mul(rhs.0)
             .ok_or::<ProgramError>({
-                msg!("tried multiplying {} and {}", self, rhs);
+                // msg!("tried multiplying {} and {}", self, rhs);
                 ErrorCode::ArithmeticError.into()
             })?
             .checked_div(ONE)
             .ok_or::<ProgramError>({
-                msg!("tried multiplying {} and {}", self, rhs);
+                // msg!("tried multiplying {} and {}", self, rhs);
                 ErrorCode::ArithmeticError.into()
             })?;
         Ok(Self(result))
@@ -287,12 +287,12 @@ impl TryPow for Number {
             .0
             .checked_pow(U192::from(rhs))
             .ok_or::<ProgramError>({
-                msg!("tried raising {} to power {}", self, rhs);
+                // msg!("tried raising {} to power {}", self, rhs);
                 ErrorCode::ArithmeticError.into()
             })?
             .checked_div(ONE)
             .ok_or::<ProgramError>({
-                msg!("tried raising {} to power {}", self, rhs);
+                // msg!("tried raising {} to power {}", self, rhs);
                 ErrorCode::ArithmeticError.into()
             })?;
         Ok(Self(result))
@@ -305,12 +305,12 @@ impl TryRem for Number {
             .0
             .checked_mul(ONE)
             .ok_or::<ProgramError>({
-                msg!("tried getting the remainder of {} / {}", self, rhs);
+                // msg!("tried getting the remainder of {} / {}", self, rhs);
                 ErrorCode::ArithmeticError.into()
             })?
             .checked_rem(rhs.0)
             .ok_or::<ProgramError>({
-                msg!("tried getting the remainder of {} / {}", self, rhs);
+                // msg!("tried getting the remainder of {} / {}", self, rhs);
                 ErrorCode::ArithmeticError.into()
             })?;
         Ok(Self(result))

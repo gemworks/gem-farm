@@ -90,7 +90,7 @@ macro_rules! try_math {
         impl TrySub for $our_type {
             fn try_sub(self, rhs: Self) -> Result<Self, ProgramError> {
                 self.checked_sub(rhs).ok_or({
-                    msg!("tried subtracting {} from {}", rhs, self);
+                    // msg!("tried subtracting {} from {}", rhs, self);
                     ErrorCode::ArithmeticError.into()
                 })
             }
@@ -99,7 +99,7 @@ macro_rules! try_math {
         impl TryAdd for $our_type {
             fn try_add(self, rhs: Self) -> Result<Self, ProgramError> {
                 self.checked_add(rhs).ok_or({
-                    msg!("tried adding {} and {}", rhs, self);
+                    // msg!("tried adding {} and {}", rhs, self);
                     ErrorCode::ArithmeticError.into()
                 })
             }
@@ -108,7 +108,7 @@ macro_rules! try_math {
         impl TryDiv for $our_type {
             fn try_div(self, rhs: Self) -> Result<Self, ProgramError> {
                 self.checked_div(rhs).ok_or({
-                    msg!("tried dividing {} by {}", self, rhs);
+                    // msg!("tried dividing {} by {}", self, rhs);
                     ErrorCode::ArithmeticError.into()
                 })
             }
@@ -123,7 +123,7 @@ macro_rules! try_math {
         impl TryMul for $our_type {
             fn try_mul(self, rhs: Self) -> Result<Self, ProgramError> {
                 self.checked_mul(rhs).ok_or({
-                    msg!("tried multiplying {} and {}", self, rhs);
+                    // msg!("tried multiplying {} and {}", self, rhs);
                     ErrorCode::ArithmeticError.into()
                 })
             }
@@ -132,7 +132,7 @@ macro_rules! try_math {
         impl TryPow for $our_type {
             fn try_pow(self, rhs: u32) -> Result<Self, ProgramError> {
                 self.checked_pow(rhs).ok_or({
-                    msg!("tried raising {} to power {}", self, rhs);
+                    // msg!("tried raising {} to power {}", self, rhs);
                     ErrorCode::ArithmeticError.into()
                 })
             }
@@ -141,7 +141,7 @@ macro_rules! try_math {
         impl TryRem for $our_type {
             fn try_rem(self, rhs: Self) -> Result<Self, ProgramError> {
                 self.checked_rem(rhs).ok_or({
-                    msg!("tried getting the remainder of {} / {}", self, rhs);
+                    // msg!("tried getting the remainder of {} / {}", self, rhs);
                     ErrorCode::ArithmeticError.into()
                 })
             }
@@ -152,7 +152,7 @@ macro_rules! try_math {
         impl TrySqrt for $our_type {
             fn try_sqrt(self) -> Result<Self, ProgramError> {
                 sqrt(self).ok_or({
-                    msg!("tried taking the square root of {}", self);
+                    // msg!("tried taking the square root of {}", self);
                     ErrorCode::ArithmeticError.into()
                 })
             }

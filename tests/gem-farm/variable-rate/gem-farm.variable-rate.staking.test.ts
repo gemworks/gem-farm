@@ -41,7 +41,7 @@ describe.skip('staking (variable rate)', () => {
 
     //verify funds
     //this is how much has accrued to the farm TOTAL
-    const expectedMin = 450; //todo revisit when implement Number/Decimal
+    const expectedMin = 500;
     const expectedMax = 1000; //if the test hangs for some reason, more will accrue
     await gf.verifyAccruedRewardsForBothFarmers(expectedMin, expectedMax);
 
@@ -78,7 +78,7 @@ describe.skip('staking (variable rate)', () => {
 
     //verify funds
     //this is how much has accrued to the farm TOTAL
-    const expectedMin = 450; //todo revisit when implement Number/Decimal
+    const expectedMin = 500;
     const expectedMax = 1000; //if the test hangs for some reason, more will accrue
     await gf.verifyAccruedRewardsForBothFarmers(expectedMin, expectedMax);
 
