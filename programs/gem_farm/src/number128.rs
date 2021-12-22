@@ -3,9 +3,10 @@
 //! This one in particular suited to peculiarities of Anchor -
 //! specifically that it doesn't support Newtypes
 //!
-//! Unfortunately this meant only using u128 for calculations
-//!
-//! On the positive side - the IDL can be generated, and no need for manual serde
+//! Pros: generates IDL, no need for manual serde
+//! Cons:
+//!  1) can't use https://docs.rs/uint/0.9.1/uint/ so droppped to u128
+//!  2) have to keep the file inside the crate, can't have as separate lib
 
 use anchor_lang::prelude::*;
 use gem_common::errors::ErrorCode;

@@ -2,26 +2,27 @@ import chai, { assert } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import {
   defaultFarmConfig,
-  defaultVariableConfig,
+  defaultFixedConfig,
   GemFarmTester,
 } from '../gem-farm.tester';
 import { BN } from '@project-serum/anchor';
 import { pause } from '../../utils/types';
+import { RewardType } from '../gem-farm.client';
 
 chai.use(chaiAsPromised);
 
-describe.skip('staking (variable rate)', () => {
+describe.skip('staking (fixed rate)', () => {
   let gf = new GemFarmTester();
 
   beforeEach('preps accs', async () => {
-    await gf.prepAccounts(new BN(10000));
-    await gf.callInitFarm(defaultFarmConfig);
+    await gf.prepAccounts(new BN(45000));
+    await gf.callInitFarm(defaultFarmConfig, RewardType.Fixed);
     await gf.callInitFarmer(gf.farmer1Identity);
     await gf.callInitFarmer(gf.farmer2Identity);
     await gf.callDeposit(gf.gem1Amount, gf.farmer1Identity);
     await gf.callDeposit(gf.gem2Amount, gf.farmer2Identity);
     await gf.callAuthorize();
-    await gf.callFundReward(defaultVariableConfig); //begin funding for 100s
+    await gf.callFundReward(undefined, defaultFixedConfig);
   });
 
   it('stakes -> accrues -> claims (multi farmer)', async () => {
@@ -29,18 +30,22 @@ describe.skip('staking (variable rate)', () => {
     await gf.stakeAndVerify(gf.farmer1Identity);
     await gf.stakeAndVerify(gf.farmer2Identity);
 
-    await pause(5000); //pause for 5s = accrue 5% of funding
+    await pause(6000); //6s = cover first 2 legs of fixed rate rewards
 
     //manually refresh to update accrued rewards for each farmer
     await gf.callRefreshFarmer(gf.farmer1Identity);
     await gf.callRefreshFarmer(gf.farmer2Identity);
+    // await gf.printStructs();
 
     //verify counts
     await gf.verifyStakedGemsAndFarmers(gf.gem1Amount.add(gf.gem2Amount), 2);
 
     //verify funds
-    //in theory floor 500, but sometimes it's off by 1-2 due to timing
-    await gf.verifyAccruedRewardsVariable(490);
+    const [farm1Reward, farm2Reward] = await gf.verifyAccruedRewardsFixed(45);
+
+    //verify whether made whole - False, because still staked
+    assert.isFalse(farm1Reward.rewardWhole);
+    assert.isFalse(farm2Reward.rewardWhole);
 
     // ----------------- claim
     await gf.callClaimRewards(gf.farmer1Identity);
@@ -72,8 +77,11 @@ describe.skip('staking (variable rate)', () => {
     await gf.verifyStakedGemsAndFarmers(0, 0);
 
     //verify funds
-    //in theory floor 500, but sometimes it's off by 1-2 due to timing
-    await gf.verifyAccruedRewardsVariable(490);
+    const [farm1Reward, farm2Reward] = await gf.verifyAccruedRewardsFixed(45);
+
+    //verify whether made whole - True, because unstaked
+    assert.isTrue(farm1Reward.rewardWhole);
+    assert.isTrue(farm2Reward.rewardWhole);
 
     // ----------------- claim
     await gf.callClaimRewards(gf.farmer1Identity);

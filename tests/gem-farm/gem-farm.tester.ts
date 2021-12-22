@@ -491,7 +491,7 @@ export class GemFarmTester extends GemFarmClient {
 
   // assumes that both farmers have been staked for the same length of time
   // tried also adding upper bound, but it breaks if f1/f2 ratio is tiny (makes tests non-deterministic)
-  async verifyAccruedRewardsForBothFarmers(minExpectedFarmAccrued: number) {
+  async verifyAccruedRewardsVariable(minExpectedFarmAccrued: number) {
     //fetch farmer 1
     const farmer1Reward = await this.verifyFarmerReward(this.farmer1Identity);
     const farmer1Accrued = farmer1Reward.accruedReward;
@@ -516,17 +516,36 @@ export class GemFarmTester extends GemFarmClient {
       stringifyPubkeysAndBNsInObject(await this.verifyFunds())
     );
 
-    assert(farmer1Accrued.gt(new BN(farmer1Ratio * minExpectedFarmAccrued)));
+    assert(farmer1Accrued.gte(new BN(farmer1Ratio * minExpectedFarmAccrued)));
 
     //verify farmer 2
     const farmer2Ratio = 1 - farmer1Ratio;
-    assert(farmer2Accrued.gt(new BN(farmer2Ratio * minExpectedFarmAccrued)));
+    assert(farmer2Accrued.gte(new BN(farmer2Ratio * minExpectedFarmAccrued)));
 
     // ideally would love to do farmer1accrued + farmer2accrued,
     // but that only works when both farmers unstake, and stop accruing
     // (that's coz we update them sequentially, one by one)
     const funds = await this.verifyFunds(10000, 0);
-    assert(funds.totalAccruedToStakers.gt(toBN(minExpectedFarmAccrued)));
+    assert(funds.totalAccruedToStakers.gte(toBN(minExpectedFarmAccrued)));
+
+    return [farmer1Reward, farmer2Reward];
+  }
+
+  async verifyAccruedRewardsFixed(perGem: Numerical) {
+    //farmer 1
+    const farmer1Reward = await this.verifyFarmerReward(this.farmer1Identity);
+    assert(farmer1Reward.accruedReward.eq(this.gem1Amount.mul(toBN(perGem))));
+
+    //farmer 2
+    const farmer2Reward = await this.verifyFarmerReward(this.farmer2Identity);
+    assert(farmer2Reward.accruedReward.eq(this.gem2Amount.mul(toBN(perGem))));
+
+    const funds = await this.verifyFunds();
+    assert(
+      funds.totalAccruedToStakers.gte(
+        toBN(perGem).mul(this.gem1Amount.add(this.gem2Amount))
+      )
+    );
 
     return [farmer1Reward, farmer2Reward];
   }
