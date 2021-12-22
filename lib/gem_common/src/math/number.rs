@@ -16,12 +16,30 @@ const PRECISION: i32 = 15;
 const ONE: U192 = U192([1_000_000_000_000_000, 0, 0]);
 const U64_MAX: U192 = U192([0xffffffffffffffff, 0x0, 0x0]);
 
-#[derive(Default, Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(
+    Default, Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, AnchorSerialize, AnchorDeserialize,
+)]
 #[repr(transparent)]
 pub struct Number(U192);
 
+impl borsh::BorshDeserialize for U192 {
+    fn deserialize(buf: &mut &[u8]) -> std::io::Result<Self> {
+        Ok(U192::from_little_endian(buf))
+    }
+}
+
+impl borsh::BorshSerialize for U192 {
+    fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+        let mut buf = [0_u8; 24];
+        self.to_little_endian(&mut buf);
+        let _ = writer.write(&buf)?;
+        Ok(())
+    }
+}
+
 static_assertions::const_assert_eq!(24, std::mem::size_of::<Number>());
 static_assertions::const_assert_eq!(0, std::mem::size_of::<Number>() % 8);
+
 impl Number {
     pub const ONE: Number = Number(ONE);
     pub const ZERO: Number = Number(U192::zero());

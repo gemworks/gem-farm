@@ -138,7 +138,7 @@ pub struct FarmerReward {
     // (!) VARIABLE RATE ONLY - ignored for fixed rate
     // used to keep track of how much of the variable reward has been updated for this farmer
     // (read more in variable rate config)
-    pub last_recorded_accrued_reward_per_gem: u64,
+    pub last_recorded_accrued_reward_per_gem: Number,
 
     // (!) FIXED RATE ONLY - ignored for variable rate
     // used to indicate we've stashed away enough reward to cover what we owe to this farmer

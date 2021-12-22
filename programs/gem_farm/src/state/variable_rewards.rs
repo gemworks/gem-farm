@@ -6,7 +6,7 @@ use gem_common::*;
 use crate::state::*;
 
 #[repr(C)]
-#[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
+#[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize, PartialEq)]
 pub struct VariableRateConfig {
     // total amount of rewards
     pub amount: u64,
@@ -22,7 +22,7 @@ pub struct VariableRateReward {
     config: VariableRateConfig,
 
     // in tokens/s, = total reward pot at initialization / reward duration
-    pub reward_rate: u64,
+    pub reward_rate: Number,
 
     pub reward_last_updated_ts: u64,
 
@@ -32,12 +32,12 @@ pub struct VariableRateReward {
     // 1) compare their latest record of flag position, with actual flag position
     // 2) multiply the difference by the amount they have staked
     // 3) update their record of flag position, so that next time we don't count this distance again
-    pub accrued_reward_per_gem: u64,
+    pub accrued_reward_per_gem: Number,
 }
 
 impl VariableRateReward {
     fn required_remaining_funding(&self, remaining_duration: u64) -> Result<u64, ProgramError> {
-        remaining_duration.try_mul(self.reward_rate)
+        remaining_duration.try_mul(self.reward_rate.as_u64_ceil(0))
     }
 
     pub fn lock_reward(
@@ -72,12 +72,12 @@ impl VariableRateReward {
 
         // if previous rewards have been exhausted
         if now_ts > times.reward_end_ts {
-            self.reward_rate = amount.try_div(duration_sec)?;
+            self.reward_rate = Number::from(amount).try_div(Number::from(duration_sec))?;
         // else if previous rewards are still active (merge the two)
         } else {
-            self.reward_rate = amount
-                .try_add(funds.pending_amount()?)?
-                .try_div(duration_sec)?;
+            self.reward_rate = Number::from(amount)
+                .try_add(Number::from(funds.pending_amount()?))?
+                .try_div(Number::from(duration_sec))?;
         }
 
         times.duration_sec = duration_sec;
@@ -103,7 +103,7 @@ impl VariableRateReward {
         let refund_amount = funds.pending_amount()?;
         funds.total_refunded.try_add_assign(refund_amount)?;
 
-        self.reward_rate = 0;
+        self.reward_rate = Number::ZERO;
         self.reward_last_updated_ts = times.reward_upper_bound(now_ts);
 
         msg!("prepared a total refund of {}", refund_amount);
@@ -129,20 +129,22 @@ impl VariableRateReward {
             .try_add_assign(newly_accrued_reward_per_gem)?;
 
         // update overall reward
-        funds
-            .total_accrued_to_stakers
-            .try_add_assign(newly_accrued_reward_per_gem.try_mul(farm_gems_staked)?)?;
+        funds.total_accrued_to_stakers.try_add_assign(
+            newly_accrued_reward_per_gem
+                .try_mul(Number::from(farm_gems_staked))?
+                .as_u64_ceil(0), //overestimate at farm level
+        )?;
 
         // update farmer, if one was passed
         if let Some(farmer_reward) = farmer_reward {
-            let owed_to_farmer = farmer_gems_staked.unwrap().try_mul(
+            let owed_to_farmer = Number::from(farmer_gems_staked.unwrap()).try_mul(
                 self.accrued_reward_per_gem
                     .try_sub(farmer_reward.last_recorded_accrued_reward_per_gem)?,
             )?;
 
             farmer_reward
                 .accrued_reward
-                .try_add_assign(owed_to_farmer)?;
+                .try_add_assign(owed_to_farmer.as_u64(0))?; //underestimate at farmer level
             farmer_reward.last_recorded_accrued_reward_per_gem = self.accrued_reward_per_gem;
         }
 
@@ -156,16 +158,171 @@ impl VariableRateReward {
         &self,
         farm_gems_staked: u64,
         reward_upper_bound: u64,
-    ) -> Result<u64, ProgramError> {
+    ) -> Result<Number, ProgramError> {
         if farm_gems_staked == 0 {
             msg!("no gems are staked at the farm, means no new rewards accrue");
-            return Ok(0);
+            return Ok(Number::ZERO);
         }
 
         let time_since_last_calc = reward_upper_bound.try_sub(self.reward_last_updated_ts)?;
 
-        time_since_last_calc
+        Number::from(time_since_last_calc)
             .try_mul(self.reward_rate)?
-            .try_div(farm_gems_staked)
+            .try_div(Number::from(farm_gems_staked))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // todo in theory can write tests for update_accrued_reward
+
+    #[test]
+    fn test_accrued_reward_per_gem() {
+        let mut var_reward = VariableRateReward {
+            config: VariableRateConfig {
+                amount: 100,
+                duration_sec: 10,
+            },
+            reward_rate: Number::from(10),
+            reward_last_updated_ts: 200,
+            accrued_reward_per_gem: Number::from(1234),
+        };
+
+        let farm_gems_staked = 25;
+        let reward_upper_bound = 205;
+
+        let newly_accrued = var_reward
+            .newly_accrued_reward_per_gem(farm_gems_staked, reward_upper_bound)
+            .unwrap();
+
+        assert_eq!(newly_accrued, Number::from(2));
+    }
+
+    #[test]
+    fn test_fund_reward_fresh() {
+        let mut times = TimeTracker {
+            duration_sec: 10,
+            reward_end_ts: 200,
+            lock_end_ts: 0,
+        };
+        let mut funds = FundsTracker {
+            total_funded: 100,
+            total_refunded: 0,
+            total_accrued_to_stakers: 0,
+        };
+        let new_config = VariableRateConfig {
+            amount: 10,
+            duration_sec: 80,
+        };
+
+        let now_ts = 201; //just after the previous reward ends at 200s
+
+        let mut var_reward = VariableRateReward {
+            config: VariableRateConfig {
+                amount: 100,
+                duration_sec: 10,
+            },
+            reward_rate: Number::from(10),
+            reward_last_updated_ts: 0,
+            accrued_reward_per_gem: Number::from(1234),
+        };
+
+        var_reward.fund_reward(now_ts, &mut times, &mut funds, new_config);
+
+        assert_eq!(var_reward.config, new_config);
+        assert_eq!(var_reward.reward_rate, Number::from_decimal(125, -3));
+        assert_eq!(var_reward.reward_last_updated_ts, 201);
+        assert_eq!(var_reward.accrued_reward_per_gem, Number::from(1234));
+
+        assert_eq!(funds.total_funded, 110);
+
+        assert_eq!(times.duration_sec, 80);
+        assert_eq!(times.reward_end_ts, 281);
+    }
+
+    #[test]
+    fn test_fund_reward_merged_1() {
+        let mut times = TimeTracker {
+            duration_sec: 10,
+            reward_end_ts: 200,
+            lock_end_ts: 0,
+        };
+        let mut funds = FundsTracker {
+            total_funded: 100,
+            total_refunded: 0,
+            total_accrued_to_stakers: 0,
+        };
+        let new_config = VariableRateConfig {
+            amount: 100,
+            duration_sec: 400,
+        };
+
+        let now_ts = 199; //just before the previous reward, which triggers a merge
+
+        let mut var_reward = VariableRateReward {
+            config: VariableRateConfig {
+                amount: 100,
+                duration_sec: 10,
+            },
+            reward_rate: Number::from(10),
+            reward_last_updated_ts: 0,
+            accrued_reward_per_gem: Number::from(1234),
+        };
+
+        var_reward.fund_reward(now_ts, &mut times, &mut funds, new_config);
+
+        assert_eq!(var_reward.config, new_config);
+        assert_eq!(var_reward.reward_rate, Number::from_decimal(5, -1));
+        assert_eq!(var_reward.reward_last_updated_ts, 199);
+        assert_eq!(var_reward.accrued_reward_per_gem, Number::from(1234));
+
+        assert_eq!(funds.total_funded, 200);
+
+        assert_eq!(times.duration_sec, 400);
+        assert_eq!(times.reward_end_ts, 599);
+    }
+
+    /// this one has previous accrued / refunded amounts
+    fn test_fund_reward_merged_2() {
+        let mut times = TimeTracker {
+            duration_sec: 10,
+            reward_end_ts: 200,
+            lock_end_ts: 0,
+        };
+        let mut funds = FundsTracker {
+            total_funded: 100,
+            total_refunded: 20,
+            total_accrued_to_stakers: 30,
+        };
+        let new_config = VariableRateConfig {
+            amount: 100,
+            duration_sec: 400,
+        };
+
+        let now_ts = 199; //just before the previous reward, which triggers a merge
+
+        let mut var_reward = VariableRateReward {
+            config: VariableRateConfig {
+                amount: 100,
+                duration_sec: 10,
+            },
+            reward_rate: Number::from(10),
+            reward_last_updated_ts: 0,
+            accrued_reward_per_gem: Number::from(1234),
+        };
+
+        var_reward.fund_reward(now_ts, &mut times, &mut funds, new_config);
+
+        assert_eq!(var_reward.config, new_config);
+        assert_eq!(var_reward.reward_rate, Number::from_decimal(375, -3));
+        assert_eq!(var_reward.reward_last_updated_ts, 199);
+        assert_eq!(var_reward.accrued_reward_per_gem, Number::from(1234));
+
+        assert_eq!(funds.total_funded, 200);
+
+        assert_eq!(times.duration_sec, 400);
+        assert_eq!(times.reward_end_ts, 599);
     }
 }
