@@ -7,109 +7,57 @@ use crate::state::*;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
-pub struct PeriodConfig {
-    // tokens / sec
-    pub rate: u64,
+pub enum FixedRateRewardTier {
+    Base,
+    Tier1,
+    Tier2,
+    Tier3,
+}
 
-    pub duration_sec: u64,
+#[repr(C)]
+#[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
+pub struct TierConfig {
+    // tokens / sec
+    pub reward_rate: u64,
+
+    pub required_tenure: u64,
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, Default, AnchorSerialize, AnchorDeserialize)]
+pub struct FixedRateSchedule {
+    pub base_rate: u64,
+
+    pub premium_tier: Option<TierConfig>,
+
+    pub godlike_tier: Option<TierConfig>,
 }
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FixedRateConfig {
-    pub period_1: PeriodConfig,
+    pub schedule: FixedRateSchedule,
 
-    pub period_2: Option<PeriodConfig>,
+    pub amount: u64,
 
-    pub period_3: Option<PeriodConfig>,
-
-    pub gems_funded: u64,
+    pub duration_sec: u64,
 }
 
-impl FixedRateConfig {
-    fn max_duration(&self) -> Result<u64, ProgramError> {
-        let period_1_duration = self.period_1.duration_sec;
-        let period_2_duration = if let Some(config) = self.period_2 {
-            config.duration_sec
-        } else {
-            0
-        };
-        let period_3_duration = if let Some(config) = self.period_3 {
-            config.duration_sec
-        } else {
-            0
-        };
+impl FixedRateSchedule {
+    // eg begin 2 seconds in, and end 5 seconds in
+    pub fn calc_amount(
+        &self,
+        start_from_sec: u64,
+        end_at_sec: u64,
+        gems: u64,
+    ) -> Result<u64, ProgramError> {
+        // todo = schedule * (duration - start_sec)
+        let duration = end_at_sec.try_sub(start_from_sec)?;
+        let base_amount = duration.try_mul(self.base_rate)?;
 
-        period_1_duration
-            .try_add(period_2_duration)?
-            .try_add(period_3_duration)
-    }
+        if let Some(premium_tier) = self.premium_tier {}
 
-    fn max_reward_per_gem(&self) -> Result<u64, ProgramError> {
-        let p1_reward = self.period_1.rate.try_mul(self.period_1.duration_sec)?;
-
-        let p2_reward = if let Some(config) = self.period_2 {
-            config.rate.try_mul(config.duration_sec)?
-        } else {
-            0
-        };
-
-        let p3_reward = if let Some(config) = self.period_3 {
-            config.rate.try_mul(config.duration_sec)?
-        } else {
-            0
-        };
-
-        p1_reward.try_add(p2_reward)?.try_add(p3_reward)
-    }
-
-    fn accrued_reward_per_gem(&self, duration: u64) -> Result<u64, ProgramError> {
-        // period 1 alc
-        let p1_duration = std::cmp::min(self.period_1.duration_sec, duration);
-        let p1_reward = self.period_1.rate.try_mul(p1_duration)?;
-
-        // period 2 calc
-        let mut p2_duration = 0;
-        let mut p2_reward = 0;
-
-        if let Some(config) = self.period_2 {
-            p2_duration = std::cmp::min(config.duration_sec, duration.try_sub(p1_duration)?);
-            p2_reward = config.rate.try_mul(p2_duration)?;
-        }
-
-        // period 3 calc
-        let mut p3_duration = 0;
-        let mut p3_reward = 0;
-
-        if let Some(config) = self.period_3 {
-            p3_duration = std::cmp::min(
-                config.duration_sec,
-                duration.try_sub(p1_duration)?.try_sub(p2_duration)?,
-            );
-            p3_reward = config.rate.try_mul(p3_duration)?;
-        }
-
-        let accrued_duration = p1_duration.try_add(p2_duration)?.try_add(p3_duration)?;
-        let accrued_reward_per_gem = p1_reward.try_add(p2_reward)?.try_add(p3_reward)?;
-
-        assert!(accrued_duration <= self.max_duration()?);
-        assert!(accrued_reward_per_gem <= self.max_reward_per_gem()?);
-
-        Ok(accrued_reward_per_gem)
-    }
-
-    fn remaining_reward_per_gem(&self, passed_duration: u64) -> Result<u64, ProgramError> {
-        self.max_reward_per_gem()?
-            .try_sub(self.accrued_reward_per_gem(passed_duration)?)
-    }
-
-    fn remaining_required_funding(&self, passed_duration: u64) -> Result<u64, ProgramError> {
-        self.remaining_reward_per_gem(passed_duration)?
-            .try_mul(self.gems_funded)
-    }
-
-    pub fn required_funding(&self) -> Result<u64, ProgramError> {
-        self.max_reward_per_gem()?.try_mul(self.gems_funded)
+        Ok(123)
     }
 }
 
@@ -119,31 +67,77 @@ pub struct FixedRateReward {
     // configured on funding
     pub config: FixedRateConfig,
 
-    // can only go up, never down - that's the difference with gems_staked
-    pub gems_participating: u64,
-
-    /// this solves a fixed rate-specific issue.
-    /// in var. rate we know exactly how much total unaccrued funding is left,
-    ///  because the accrual rate for the reward as a whole is constant
-    /// in fixed rate we don't. This makes cancelling the reward / refunding hard,
-    ///  because how do we know we're not pulling out too much
-    /// the solution is to mark certain gems that we know won't accrue anymore rewards as "whole"
-    /// only when ALL participating gems are whole, can the reward be cancelled / funding withdrawn  
-    pub gems_made_whole: u64,
+    // amount that has been promised to existing stakers and hence can't be withdrawn
+    pub reserved_amount: u64,
 }
 
 impl FixedRateReward {
+    pub fn enroll_farmer(
+        &mut self,
+        now_ts: u64,
+        times: &mut TimeTracker,
+        funds: &mut FundsTracker,
+        farmer_gems_staked: u64,
+        farmer_reward: &mut FarmerReward,
+    ) -> ProgramResult {
+        // calc time left
+        let remaining_duration = times.remaining_duration(now_ts)?;
+        // todo is this consistent with how variable rate works?
+        if !remaining_duration {
+            return Err(ErrorCode::RewardEnded.into());
+        }
+
+        // calc how much we'd have to reserve for them
+        let reserve_amount =
+            self.config
+                .schedule
+                .calc_amount(0, remaining_duration, farmer_gems_staked)?;
+        if reserve_amount > funds.pending_amount()? {
+            return Err(ErrorCode::RewardUnderfunded.into());
+        }
+
+        // update farmer
+        farmer_reward.fixed_rate.begin_staking_ts = now_ts;
+        farmer_reward.fixed_rate.last_updated_ts = now_ts;
+        farmer_reward.fixed_rate.promised_schedule = self.config.schedule;
+        farmer_reward.fixed_rate.promised_duration = remaining_duration;
+        farmer_reward.fixed_rate.amount_counted_as_accrued = 0;
+
+        // update farm
+        self.reserved_amount.try_add_assign(reserve_amount)?;
+
+        Ok(())
+    }
+
+    /// this can be called either
+    /// 1) by the staker themselves, when they unstake, or
+    /// 2) by the farm if graduation_time has come
+    pub fn graduate_farmer(
+        &mut self,
+        now_ts: u64,
+        times: &mut TimeTracker,
+        funds: &mut FundsTracker,
+        farmer_gems_staked: u64,
+        farmer_reward: &mut FarmerReward,
+    ) -> ProgramResult {
+        // reduce reserved amount
+        let voided_reward = farmer_reward.fixed_rate.voided_reward(farmer_gems_staked)?;
+        self.reserved_amount.try_sub_assign(voided_reward)?;
+
+        // zero out the data on the farmer
+        farmer_reward.fixed_rate = FarmerFixedRateReward::default();
+
+        Ok(())
+    }
+
     pub fn lock_reward(
         &self,
         now_ts: u64,
         times: &mut TimeTracker,
         funds: &mut FundsTracker,
     ) -> ProgramResult {
-        let passed_duration = times.passed_duration(now_ts)?;
-
-        if funds.pending_amount()? < self.config.remaining_required_funding(passed_duration)? {
-            return Err(ErrorCode::RewardUnderfunded.into());
-        }
+        //todo no checks will be done here - we're simply promising an amount until reward_end_ts can't be withdrawn
+        // does the check in variable rate actually do any good?
 
         times.lock_end_ts = times.reward_end_ts;
 
@@ -158,11 +152,11 @@ impl FixedRateReward {
         funds: &mut FundsTracker,
         new_config: FixedRateConfig,
     ) -> ProgramResult {
-        let new_duration = new_config.max_duration()?;
-        let new_amount = new_config.max_duration()?;
+        let new_amount = new_config.amount;
+        let new_duration = new_config.duration_sec;
 
         times.duration_sec = new_duration;
-        times.reward_end_ts = now_ts.try_add(new_amount)?;
+        times.reward_end_ts = now_ts.try_add(new_duration)?;
 
         funds.total_funded.try_add_assign(new_amount)?;
 
@@ -178,13 +172,9 @@ impl FixedRateReward {
         times: &mut TimeTracker,
         funds: &mut FundsTracker,
     ) -> Result<u64, ProgramError> {
-        if self.gems_made_whole < self.gems_participating {
-            return Err(ErrorCode::NotAllGemsWhole.into());
-        }
-
         times.end_reward(now_ts)?;
 
-        let refund_amount = funds.pending_amount()?;
+        let refund_amount = funds.pending_amount()?.try_sub(self.reserved_amount)?;
         funds.total_refunded.try_add_assign(refund_amount)?;
 
         msg!("prepared a total refund of {}", refund_amount);
@@ -194,282 +184,38 @@ impl FixedRateReward {
     pub fn update_accrued_reward(
         &mut self,
         now_ts: u64,
+        times: &mut TimeTracker,
         funds: &mut FundsTracker,
-        times: &TimeTracker,
         farmer_gems_staked: u64,
-        farmer_begin_staking_ts: u64,
-        farmer_reward: &mut FarmerReward, // only ran when farmer present
+        farmer_reward: &mut FarmerReward,
     ) -> ProgramResult {
-        if farmer_reward.is_whole() {
-            msg!("this farmer reward is already made whole, no further changes expected");
-            return Ok(());
-        }
-
-        //todo is this the right place? what other checks of this type are necessary?
-        if farmer_begin_staking_ts > times.reward_upper_bound(now_ts) {
-            msg!("this farmer started staking after the reward ended");
-            return Ok(());
-        }
-
-        // calc newly accrued reward
-        let staking_duration = times
-            .reward_upper_bound(now_ts)
-            .try_sub(farmer_begin_staking_ts)?;
-        let reward_per_gem = self.config.accrued_reward_per_gem(staking_duration)?;
-        let newly_accured_reward = reward_per_gem
-            .try_mul(farmer_gems_staked)?
-            .try_sub(farmer_reward.accrued_reward)?;
-
-        // update farmer
-        farmer_reward
-            .accrued_reward
-            .try_add_assign(newly_accured_reward)?;
+        let newly_accrued_reward = farmer_reward
+            .fixed_rate
+            .newly_accrued_reward(now_ts, farmer_gems_staked)?;
 
         // update farm
         funds
             .total_accrued_to_stakers
-            .try_add_assign(newly_accured_reward)?;
+            .try_add_assign(newly_accrued_reward)?;
+        self.reserved_amount.try_sub_assign(newly_accrued_reward)?;
 
-        // after reward end passes, we won't owe any more money to the farmer than calculated now
-        if now_ts > times.reward_end_ts {
-            farmer_reward.mark_whole();
-            self.gems_made_whole.try_add_assign(farmer_gems_staked)?;
+        // todo should this be a function called on farmer?
+        // update farmer
+        farmer_reward
+            .accrued_reward
+            .try_add_assign(newly_accrued_reward)?;
+        farmer_reward
+            .fixed_rate
+            .reward_counted_as_accrued
+            .try_add_assign(newly_accrued_reward)?;
+        farmer_reward.fixed_rate.last_updated_ts =
+            farmer_reward.fixed_rate.upper_bound_ts(now_ts)?;
+
+        if farmer_reward.fixed_rate.is_graduation_time(now_ts)? {
+            self.graduate_farmer(now_ts, times, funds, farmer_gems_staked, farmer_reward)?
         }
 
         msg!("updated reward as of {}", now_ts);
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_full_config() {
-        let c = FixedRateConfig {
-            period_1: PeriodConfig {
-                rate: 3,
-                duration_sec: 3,
-            },
-            period_2: Some(PeriodConfig {
-                rate: 4,
-                duration_sec: 4,
-            }),
-            period_3: Some(PeriodConfig {
-                rate: 5,
-                duration_sec: 5,
-            }),
-            gems_funded: 100,
-        };
-
-        // test max_duration
-        let total_duration = 3 + 4 + 5;
-        assert_eq!(total_duration, c.max_duration().unwrap());
-
-        // test max_reward_per_gem
-        let total_rewards = (3 * 3) + (4 * 4) + (5 * 5);
-        assert_eq!(total_rewards, c.max_reward_per_gem().unwrap());
-
-        //test required_funding
-        assert_eq!(total_rewards * 100, c.required_funding().unwrap());
-
-        // test accrued_reward_per_gem
-        let duration_p1 = 2;
-        let reward_p1 = 2 * 3;
-        assert_eq!(reward_p1, c.accrued_reward_per_gem(duration_p1).unwrap());
-
-        let duration_p2 = 5;
-        let reward_p2 = (3 * 3) + 2 * 4;
-        assert_eq!(reward_p2, c.accrued_reward_per_gem(duration_p2).unwrap());
-
-        let duration_p3 = 9;
-        let reward_p3 = (3 * 3) + (4 * 4) + 2 * 5;
-        assert_eq!(reward_p3, c.accrued_reward_per_gem(duration_p3).unwrap());
-
-        let duration_too_long = 100;
-        assert_eq!(
-            total_rewards,
-            c.accrued_reward_per_gem(duration_too_long).unwrap()
-        );
-
-        // test remaining_reward_per_gem
-        assert_eq!(
-            total_rewards - reward_p1,
-            c.remaining_reward_per_gem(duration_p1).unwrap()
-        );
-        assert_eq!(
-            total_rewards - reward_p2,
-            c.remaining_reward_per_gem(duration_p2).unwrap()
-        );
-        assert_eq!(
-            total_rewards - reward_p3,
-            c.remaining_reward_per_gem(duration_p3).unwrap()
-        );
-        assert_eq!(0, c.remaining_reward_per_gem(duration_too_long).unwrap());
-
-        // test remaining_required_funding
-        assert_eq!(
-            100 * (total_rewards - reward_p1),
-            c.remaining_required_funding(duration_p1).unwrap()
-        );
-        assert_eq!(
-            100 * (total_rewards - reward_p2),
-            c.remaining_required_funding(duration_p2).unwrap()
-        );
-        assert_eq!(
-            100 * (total_rewards - reward_p3),
-            c.remaining_required_funding(duration_p3).unwrap()
-        );
-        assert_eq!(0, c.remaining_required_funding(duration_too_long).unwrap());
-    }
-
-    #[test]
-    fn test_p2_config() {
-        let c = FixedRateConfig {
-            period_1: PeriodConfig {
-                rate: 3,
-                duration_sec: 3,
-            },
-            period_2: Some(PeriodConfig {
-                rate: 4,
-                duration_sec: 4,
-            }),
-            period_3: None,
-            gems_funded: 100,
-        };
-
-        // test max_duration
-        let total_duration = 3 + 4;
-        assert_eq!(total_duration, c.max_duration().unwrap());
-
-        // test max_reward_per_gem
-        let total_rewards = (3 * 3) + (4 * 4);
-        assert_eq!(total_rewards, c.max_reward_per_gem().unwrap());
-
-        //test required_funding
-        assert_eq!(total_rewards * 100, c.required_funding().unwrap());
-
-        // test accrued_reward_per_gem
-        let duration_p1 = 2;
-        let reward_p1 = 2 * 3;
-        assert_eq!(reward_p1, c.accrued_reward_per_gem(duration_p1).unwrap());
-
-        let duration_p2 = 5;
-        let reward_p2 = (3 * 3) + 2 * 4;
-        assert_eq!(reward_p2, c.accrued_reward_per_gem(duration_p2).unwrap());
-
-        let duration_p3 = 9;
-        let reward_p3 = (3 * 3) + (4 * 4);
-        assert_eq!(reward_p3, c.accrued_reward_per_gem(duration_p3).unwrap());
-
-        let duration_too_long = 100;
-        assert_eq!(
-            total_rewards,
-            c.accrued_reward_per_gem(duration_too_long).unwrap()
-        );
-
-        // test remaining_reward_per_gem
-        assert_eq!(
-            total_rewards - reward_p1,
-            c.remaining_reward_per_gem(duration_p1).unwrap()
-        );
-        assert_eq!(
-            total_rewards - reward_p2,
-            c.remaining_reward_per_gem(duration_p2).unwrap()
-        );
-        assert_eq!(
-            total_rewards - reward_p3,
-            c.remaining_reward_per_gem(duration_p3).unwrap()
-        );
-        assert_eq!(0, c.remaining_reward_per_gem(duration_too_long).unwrap());
-
-        // test remaining_required_funding
-        assert_eq!(
-            100 * (total_rewards - reward_p1),
-            c.remaining_required_funding(duration_p1).unwrap()
-        );
-        assert_eq!(
-            100 * (total_rewards - reward_p2),
-            c.remaining_required_funding(duration_p2).unwrap()
-        );
-        assert_eq!(
-            100 * (total_rewards - reward_p3),
-            c.remaining_required_funding(duration_p3).unwrap()
-        );
-        assert_eq!(0, c.remaining_required_funding(duration_too_long).unwrap());
-    }
-
-    #[test]
-    fn test_p1_config() {
-        let c = FixedRateConfig {
-            period_1: PeriodConfig {
-                rate: 3,
-                duration_sec: 3,
-            },
-            period_2: None,
-            period_3: None,
-            gems_funded: 100,
-        };
-
-        // test max_duration
-        let total_duration = 3;
-        assert_eq!(total_duration, c.max_duration().unwrap());
-
-        // test max_reward_per_gem
-        let total_rewards = 3 * 3;
-        assert_eq!(total_rewards, c.max_reward_per_gem().unwrap());
-
-        //test required_funding
-        assert_eq!(total_rewards * 100, c.required_funding().unwrap());
-
-        // test accrued_reward_per_gem
-        let duration_p1 = 2;
-        let reward_p1 = 2 * 3;
-        assert_eq!(reward_p1, c.accrued_reward_per_gem(duration_p1).unwrap());
-
-        let duration_p2 = 5;
-        let reward_p2 = 3 * 3;
-        assert_eq!(reward_p2, c.accrued_reward_per_gem(duration_p2).unwrap());
-
-        let duration_p3 = 9;
-        let reward_p3 = 3 * 3;
-        assert_eq!(reward_p3, c.accrued_reward_per_gem(duration_p3).unwrap());
-
-        let duration_too_long = 100;
-        assert_eq!(
-            total_rewards,
-            c.accrued_reward_per_gem(duration_too_long).unwrap()
-        );
-
-        // test remaining_reward_per_gem
-        assert_eq!(
-            total_rewards - reward_p1,
-            c.remaining_reward_per_gem(duration_p1).unwrap()
-        );
-        assert_eq!(
-            total_rewards - reward_p2,
-            c.remaining_reward_per_gem(duration_p2).unwrap()
-        );
-        assert_eq!(
-            total_rewards - reward_p3,
-            c.remaining_reward_per_gem(duration_p3).unwrap()
-        );
-        assert_eq!(0, c.remaining_reward_per_gem(duration_too_long).unwrap());
-
-        // test remaining_required_funding
-        assert_eq!(
-            100 * (total_rewards - reward_p1),
-            c.remaining_required_funding(duration_p1).unwrap()
-        );
-        assert_eq!(
-            100 * (total_rewards - reward_p2),
-            c.remaining_required_funding(duration_p2).unwrap()
-        );
-        assert_eq!(
-            100 * (total_rewards - reward_p3),
-            c.remaining_required_funding(duration_p3).unwrap()
-        );
-        assert_eq!(0, c.remaining_required_funding(duration_too_long).unwrap());
     }
 }

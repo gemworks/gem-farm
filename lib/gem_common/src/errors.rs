@@ -86,11 +86,12 @@ pub enum ErrorCode {
     #[msg("can't unstake, cooldown period has not passed yet")]
     CooldownNotPassed,
 
-    #[msg("some gems havent been made whole yet")]
-    NotAllGemsWhole,
+    #[msg("reward has ended, staking no longer possible")]
+    RewardEnded,
 
     #[msg("reward has insufficient funding, please top up")]
     RewardUnderfunded, //0x159
+
     Reserved46,
     Reserved47,
     Reserved48,

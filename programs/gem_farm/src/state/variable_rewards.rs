@@ -71,10 +71,10 @@ impl VariableRateReward {
             duration_sec,
         } = new_config;
 
-        // if previous rewards have been exhausted
+        // if previous reward has been exhausted
         if now_ts > times.reward_end_ts {
             self.reward_rate = Number128::from(amount).try_div(Number128::from(duration_sec))?;
-        // else if previous rewards are still active (merge the two)
+        // else if previous reward is still active (merge the two)
         } else {
             self.reward_rate = Number128::from(amount)
                 .try_add(Number128::from(funds.pending_amount()?))?
@@ -136,17 +136,23 @@ impl VariableRateReward {
                 .as_u64_ceil(0)?, //overestimate at farm level
         )?;
 
+        // todo should this be a function called on farmer?
         // update farmer, if one was passed
         if let Some(farmer_reward) = farmer_reward {
             let owed_to_farmer = Number128::from(farmer_gems_staked.unwrap()).try_mul(
-                self.accrued_reward_per_gem
-                    .try_sub(farmer_reward.last_recorded_accrued_reward_per_gem)?,
+                self.accrued_reward_per_gem.try_sub(
+                    farmer_reward
+                        .variable_rate
+                        .last_recorded_accrued_reward_per_gem,
+                )?,
             )?;
 
             farmer_reward
                 .accrued_reward
                 .try_add_assign(owed_to_farmer.as_u64(0)?)?; //underestimate at farmer level
-            farmer_reward.last_recorded_accrued_reward_per_gem = self.accrued_reward_per_gem;
+            farmer_reward
+                .variable_rate
+                .last_recorded_accrued_reward_per_gem = self.accrued_reward_per_gem;
         }
 
         self.reward_last_updated_ts = reward_upper_bound;

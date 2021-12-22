@@ -455,7 +455,7 @@ export class GemFarmTester extends GemFarmClient {
     }
     if (lastRecordedAccruedRewardPerGem) {
       assert(
-        reward.lastRecordedAccruedRewardPerGem.n
+        reward.variableRate.lastRecordedAccruedRewardPerGem.n
           .div(toBN(PRECISION))
           .eq(toBN(lastRecordedAccruedRewardPerGem))
       );

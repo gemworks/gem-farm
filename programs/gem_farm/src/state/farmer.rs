@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 use gem_common::{errors::ErrorCode, *};
 
 use crate::number128::Number128;
+use crate::state::{FixedRateReward, FixedRateRewardTier, FixedRateSchedule};
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize, PartialEq)]
@@ -28,8 +29,6 @@ pub struct Farmer {
     // total number of gems at the time when the vault is locked
     pub gems_staked: u64,
 
-    pub begin_staking_ts: u64,
-
     pub min_staking_ends_ts: u64,
 
     pub cooldown_ends_ts: u64,
@@ -41,28 +40,6 @@ pub struct Farmer {
 }
 
 impl Farmer {
-    pub fn stake_extra_gems(
-        &mut self,
-        now_ts: u64,
-        gems_in_vault: u64,
-        extra_gems: u64,
-        min_staking_period_sec: u64,
-    ) -> ProgramResult {
-        if self.gems_staked.try_add(extra_gems)? != gems_in_vault {
-            return Err(ErrorCode::AmountMismatch.into());
-        }
-
-        self.state = FarmerState::Staked;
-        self.gems_staked = gems_in_vault;
-
-        // (!) IMPORTANT - we're resetting the min staking here
-        self.begin_staking_ts = now_ts;
-        self.min_staking_ends_ts = now_ts.try_add(min_staking_period_sec)?;
-        self.cooldown_ends_ts = 0; //zero it out in case it was set before
-
-        Ok(())
-    }
-
     pub fn begin_staking(
         &mut self,
         min_staking_period_sec: u64,
@@ -71,9 +48,12 @@ impl Farmer {
     ) -> ProgramResult {
         self.state = FarmerState::Staked;
         self.gems_staked = gems_in_vault;
-        self.begin_staking_ts = now_ts;
         self.min_staking_ends_ts = now_ts.try_add(min_staking_period_sec)?;
         self.cooldown_ends_ts = 0; //zero it out in case it was set before
+
+        // begin a new staking cycle (variable rewards will simply ignore this)
+        self.reward_a.fixed_rate.reset_staking_cycle();
+        self.reward_b.fixed_rate.reset_staking_cycle();
 
         Ok(())
     }
@@ -108,7 +88,6 @@ impl Farmer {
         self.state = FarmerState::Unstaked;
         // zero everything out
         self.gems_staked = 0;
-        self.begin_staking_ts = 0;
         self.min_staking_ends_ts = 0;
         self.cooldown_ends_ts = 0;
 
@@ -137,14 +116,9 @@ pub struct FarmerReward {
     // total, not per gem
     pub accrued_reward: u64,
 
-    // (!) VARIABLE RATE ONLY - ignored for fixed rate
-    // used to keep track of how much of the variable reward has been updated for this farmer
-    // (read more in variable rate config)
-    pub last_recorded_accrued_reward_per_gem: Number128,
+    pub variable_rate: FarmerVariableRateReward,
 
-    // (!) FIXED RATE ONLY - ignored for variable rate
-    // used to indicate we've stashed away enough reward to cover what we owe to this farmer
-    pub reward_whole: bool,
+    pub fixed_rate: FarmerFixedRateReward,
 }
 
 impl FarmerReward {
@@ -160,12 +134,69 @@ impl FarmerReward {
 
         Ok(to_claim)
     }
+}
 
-    pub fn is_whole(&self) -> bool {
-        self.reward_whole
+#[repr(C)]
+#[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
+pub struct FarmerVariableRateReward {
+    // used to keep track of how much of the variable reward has been updated for this farmer
+    // (read more in variable rate config)
+    pub last_recorded_accrued_reward_per_gem: Number128,
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, Default, AnchorSerialize, AnchorDeserialize)]
+pub struct FarmerFixedRateReward {
+    pub begin_staking_ts: u64,
+
+    pub last_updated_ts: u64,
+
+    pub promised_schedule: FixedRateSchedule,
+
+    pub promised_duration: u64,
+
+    pub reward_counted_as_accrued: u64,
+}
+
+impl FarmerFixedRateReward {
+    pub fn graduation_time(&self) -> Result<u64, ProgramError> {
+        self.begin_staking_ts.try_add(self.promised_duration)
     }
 
-    pub fn mark_whole(&mut self) {
-        self.reward_whole = true
+    // pub fn capped_accrued_duration(&self, now_ts: u64) -> Result<u64, ProgramError> {
+    //     let upper_bound_ts = std::cmp::min(now_ts, self.graduation_time()?);
+    //     upper_bound_ts.try_sub(self.begin_staking_ts)
+    // }
+
+    // pub fn unaccrued_duration(&self) -> Result<u64, ProgramError> {
+    //     self.begin_staking_ts
+    //         .try_add(self.promised_duration)?
+    //         .try_sub(self.last_updated_ts)
+    // }
+
+    pub fn is_graduation_time(&self, now_ts: u64) -> Result<bool, ProgramError> {
+        Ok(now_ts >= self.graduation_time()?)
+    }
+
+    pub fn lower_bound_ts(&self) -> u64 {
+        std::cmp::max(self.begin_staking_ts, self.last_updated_ts)
+    }
+
+    pub fn upper_bound_ts(&self, now_ts: u64) -> Result<u64, ProgramError> {
+        Ok(std::cmp::min(now_ts, self.graduation_time()?))
+    }
+
+    pub fn voided_reward(&self, gems: u64) -> Result<u64, ProgramError> {
+        let start_from = self.last_updated_ts.try_sub(self.begin_staking_ts)?;
+        let end_at = self.graduation_time()?.try_sub(self.begin_staking_ts)?;
+        self.promised_schedule.calc_amount(start_from, end_at, gems)
+    }
+
+    pub fn newly_accrued_reward(&self, now_ts: u64, gems: u64) -> Result<u64, ProgramError> {
+        let start_from = self.last_updated_ts.try_sub(self.begin_staking_ts)?;
+        let end_at = self
+            .upper_bound_ts(now_ts)?
+            .try_sub(self.begin_staking_ts)?;
+        self.promised_schedule.calc_amount(start_from, end_at, gems)
     }
 }

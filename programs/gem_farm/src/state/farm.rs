@@ -217,13 +217,12 @@ impl Farm {
         extra_gems: u64,
         farmer: &mut Account<Farmer>,
     ) -> ProgramResult {
+        if self.gems_staked.try_add(extra_gems)? != gems_in_vault {
+            return Err(ErrorCode::AmountMismatch.into());
+        }
+
         // update farmer
-        farmer.stake_extra_gems(
-            now_ts,
-            gems_in_vault,
-            extra_gems,
-            self.config.min_staking_period_sec,
-        )?;
+        farmer.begin_staking(self.config.min_staking_period_sec, now_ts, gems_in_vault)?;
 
         // update farm
         self.gems_staked.try_add_assign(extra_gems)
@@ -269,6 +268,10 @@ pub struct TimeTracker {
 }
 
 impl TimeTracker {
+    pub fn reward_begin_ts(&self) -> Result<u64, ProgramError> {
+        self.reward_end_ts.try_sub(self.duration_sec)
+    }
+
     pub fn remaining_duration(&self, now_ts: u64) -> Result<u64, ProgramError> {
         if now_ts >= self.reward_end_ts {
             return Ok(0);
@@ -289,8 +292,17 @@ impl TimeTracker {
         Ok(())
     }
 
+    /// returns whichever comes first - now or the end of the reward
     pub fn reward_upper_bound(&self, now_ts: u64) -> u64 {
         std::cmp::min(self.reward_end_ts, now_ts)
+    }
+
+    /// returns whichever comes last - beginning of the reward, or beginning of farmer's staking
+    pub fn reward_lower_bound(&self, farmer_begin_staking_ts: u64) -> Result<u64, ProgramError> {
+        Ok(std::cmp::max(
+            self.reward_begin_ts()?,
+            farmer_begin_staking_ts,
+        ))
     }
 }
 
@@ -433,6 +445,8 @@ mod tests {
         assert_eq!(30, times.passed_duration(130).unwrap());
         assert_eq!(199, times.reward_upper_bound(199));
         assert_eq!(200, times.reward_upper_bound(201));
+        assert_eq!(100, times.reward_begin_ts().unwrap());
+        assert_eq!(110, times.reward_lower_bound(110).unwrap());
     }
 
     #[test]
