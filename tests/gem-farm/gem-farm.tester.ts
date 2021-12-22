@@ -490,10 +490,8 @@ export class GemFarmTester extends GemFarmClient {
   }
 
   // assumes that both farmers have been staked for the same length of time
-  async verifyAccruedRewardsForBothFarmers(
-    expectedMin: number,
-    expectedMax: number
-  ) {
+  // tried also adding upper bound, but it breaks if f1/f2 ratio is tiny (makes tests non-deterministic)
+  async verifyAccruedRewardsForBothFarmers(minExpectedFarmAccrued: number) {
     //fetch farmer 1
     const farmer1Reward = await this.verifyFarmerReward(this.farmer1Identity);
     const farmer1Accrued = farmer1Reward.accruedReward;
@@ -518,20 +516,17 @@ export class GemFarmTester extends GemFarmClient {
       stringifyPubkeysAndBNsInObject(await this.verifyFunds())
     );
 
-    assert(farmer1Accrued.gt(new BN(farmer1Ratio * expectedMin)));
-    assert(farmer1Accrued.lt(new BN(farmer1Ratio * expectedMax)));
+    assert(farmer1Accrued.gt(new BN(farmer1Ratio * minExpectedFarmAccrued)));
 
     //verify farmer 2
     const farmer2Ratio = 1 - farmer1Ratio;
-    assert(farmer2Accrued.gt(new BN(farmer2Ratio * expectedMin)));
-    assert(farmer2Accrued.lt(new BN(farmer2Ratio * expectedMax)));
+    assert(farmer2Accrued.gt(new BN(farmer2Ratio * minExpectedFarmAccrued)));
 
     // ideally would love to do farmer1accrued + farmer2accrued,
     // but that only works when both farmers unstake, and stop accruing
     // (that's coz we update them sequentially, one by one)
     const funds = await this.verifyFunds(10000, 0);
-    assert(funds.totalAccruedToStakers.gt(toBN(expectedMin)));
-    assert(funds.totalAccruedToStakers.lt(toBN(expectedMax)));
+    assert(funds.totalAccruedToStakers.gt(toBN(minExpectedFarmAccrued)));
 
     return [farmer1Reward, farmer2Reward];
   }

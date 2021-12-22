@@ -10,7 +10,7 @@ import { pause } from '../../utils/types';
 
 chai.use(chaiAsPromised);
 
-describe.skip('staking (variable rate)', () => {
+describe('staking (variable rate)', () => {
   let gf = new GemFarmTester();
 
   beforeEach('preps accs', async () => {
@@ -40,10 +40,8 @@ describe.skip('staking (variable rate)', () => {
     await gf.verifyStakedGemsAndFarmers(gf.gem1Amount.add(gf.gem2Amount), 2);
 
     //verify funds
-    //this is how much has accrued to the farm TOTAL
-    const expectedMin = 500;
-    const expectedMax = 1000; //if the test hangs for some reason, more will accrue
-    await gf.verifyAccruedRewardsForBothFarmers(expectedMin, expectedMax);
+    //in theory floor 500, but sometimes it's off by 1-2 due to timing
+    await gf.verifyAccruedRewardsForBothFarmers(490);
 
     // ----------------- claim
     await gf.callClaimRewards(gf.farmer1Identity);
@@ -77,10 +75,8 @@ describe.skip('staking (variable rate)', () => {
     await gf.verifyStakedGemsAndFarmers(0, 0);
 
     //verify funds
-    //this is how much has accrued to the farm TOTAL
-    const expectedMin = 500;
-    const expectedMax = 1000; //if the test hangs for some reason, more will accrue
-    await gf.verifyAccruedRewardsForBothFarmers(expectedMin, expectedMax);
+    //in theory floor 500, but sometimes it's off by 1-2 due to timing
+    await gf.verifyAccruedRewardsForBothFarmers(490);
 
     // ----------------- claim
     await gf.callClaimRewards(gf.farmer1Identity);
