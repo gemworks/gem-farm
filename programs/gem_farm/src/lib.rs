@@ -3,6 +3,7 @@ use instructions::*;
 use state::*;
 
 pub mod instructions;
+pub mod number128;
 pub mod state;
 
 declare_id!("5f8w4vbj1CkUBtiZa5k18AjP4R6Qi63pkruDD5xRZwVT");

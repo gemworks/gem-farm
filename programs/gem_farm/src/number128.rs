@@ -7,9 +7,9 @@
 //!
 //! On the positive side - the IDL can be generated, and no need for manual serde
 
-use crate::errors::ErrorCode;
-use crate::{TryAdd, TryDiv, TryMul, TryPow, TryRem, TrySub};
 use anchor_lang::prelude::*;
+use gem_common::errors::ErrorCode;
+use gem_common::{TryAdd, TryDiv, TryMul, TryPow, TryRem, TrySub};
 use std::convert::TryFrom;
 use std::fmt::{Display, Formatter};
 
