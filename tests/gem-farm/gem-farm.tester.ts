@@ -450,7 +450,7 @@ export class GemFarmTester extends GemFarmClient {
     //verify reward paid out = what's actually in the wallet
     assert(rewardDestAcc.amount.eq(farmerAcc[this.reward].paidOutReward));
 
-    return { farmerAcc, rewardDestAcc };
+    return rewardDestAcc.amount;
   }
 
   //todo need to think where this should be used instead of pulling direct
@@ -486,6 +486,47 @@ export class GemFarmTester extends GemFarmClient {
     }
 
     return reward;
+  }
+
+  // assumes that both farmers have been staked for the same length of time
+  async verifyAccruedRewardsForBothFarmers(
+    expectedMin: number,
+    expectedMax: number
+  ) {
+    //fetch farmer 1
+    const farmer1Reward = await this.verifyFarmerReward(this.farmer1Identity);
+    const farmer1Accrued = farmer1Reward.accruedReward;
+
+    //fetch farmer 2
+    const farmer2Reward = await this.verifyFarmerReward(this.farmer2Identity);
+    const farmer2Accrued = farmer2Reward.accruedReward;
+
+    //verify farmer 1
+    const farmer1Ratio =
+      this.gem1Amount.toNumber() /
+      (this.gem1Amount.toNumber() + this.gem2Amount.toNumber());
+
+    console.log(
+      'accrued for farmer 1 and 2:',
+      farmer1Accrued.toString(),
+      farmer2Accrued.toString()
+    );
+    console.log(
+      'accrued total for the farm:',
+      stringifyPubkeysAndBNsInObject(await this.verifyFunds())
+    );
+    console.log('farmer 1 ratio:', farmer1Ratio.toString());
+
+    assert(farmer1Accrued.gt(new BN(farmer1Ratio * expectedMin)));
+    assert(farmer1Accrued.lt(new BN(farmer1Ratio * expectedMax)));
+
+    //verify farmer 2
+    const farmer2Ratio = 1 - farmer1Ratio;
+    assert(farmer2Accrued.gt(new BN(farmer2Ratio * expectedMin)));
+    assert(farmer2Accrued.lt(new BN(farmer2Ratio * expectedMax)));
+
+    //verify farmers add up to total for the farm
+    await this.verifyFunds(10000, 0, farmer1Accrued.add(farmer2Accrued));
   }
 
   async stakeAndVerify(identity: Keypair) {
