@@ -303,6 +303,8 @@ export class GemFarmTester extends GemFarmClient {
 
   // --------------------------------------- verifiers
 
+  // ----------------- funding
+
   async verifyFunds(
     funded?: Numerical,
     refunded?: Numerical,
@@ -416,41 +418,14 @@ export class GemFarmTester extends GemFarmClient {
     return sourceAcc;
   }
 
+  // ----------------- staking
+
   async verifyStakedGemsAndFarmers(gems: Numerical, farmers: Numerical) {
     let farmAcc = await this.fetchFarm();
     assert(farmAcc.stakedFarmerCount.eq(toBN(farmers)));
     assert(farmAcc.gemsStaked.eq(toBN(gems)));
 
     return farmAcc;
-  }
-
-  async verifyClaimedRewards(identity: Keypair) {
-    const [farmer] = await this.findFarmerPDA(
-      this.farm.publicKey,
-      identity.publicKey
-    );
-    const farmerAcc = (await this.fetchFarmerAcc(farmer)) as any;
-
-    const rewardDest = await this.findATA(
-      this.rewardMint.publicKey,
-      identity.publicKey
-    );
-    const rewardDestAcc = await this.fetchTokenAcc(
-      this.rewardMint.publicKey,
-      rewardDest
-    );
-
-    //verify reward paid out == reward accrued
-    assert(
-      farmerAcc[this.reward].paidOutReward.eq(
-        farmerAcc[this.reward].accruedReward
-      )
-    );
-
-    //verify reward paid out = what's actually in the wallet
-    assert(rewardDestAcc.amount.eq(farmerAcc[this.reward].paidOutReward));
-
-    return rewardDestAcc.amount;
   }
 
   //todo need to think where this should be used instead of pulling direct
@@ -488,6 +463,28 @@ export class GemFarmTester extends GemFarmClient {
     return reward;
   }
 
+  async verifyClaimedReward(identity: Keypair) {
+    const rewardDest = await this.findATA(
+      this.rewardMint.publicKey,
+      identity.publicKey
+    );
+    const rewardDestAcc = await this.fetchTokenAcc(
+      this.rewardMint.publicKey,
+      rewardDest
+    );
+
+    //verify that
+    //1)paid out = what's in the wallet
+    //2)accrued = what's in the wallet
+    await this.verifyFarmerReward(
+      identity,
+      rewardDestAcc.amount,
+      rewardDestAcc.amount
+    );
+
+    return rewardDestAcc.amount;
+  }
+
   // assumes that both farmers have been staked for the same length of time
   async verifyAccruedRewardsForBothFarmers(
     expectedMin: number,
@@ -506,6 +503,7 @@ export class GemFarmTester extends GemFarmClient {
       this.gem1Amount.toNumber() /
       (this.gem1Amount.toNumber() + this.gem2Amount.toNumber());
 
+    console.log('farmer 1 ratio:', farmer1Ratio.toString());
     console.log(
       'accrued for farmer 1 and 2:',
       farmer1Accrued.toString(),
@@ -515,7 +513,6 @@ export class GemFarmTester extends GemFarmClient {
       'accrued total for the farm:',
       stringifyPubkeysAndBNsInObject(await this.verifyFunds())
     );
-    console.log('farmer 1 ratio:', farmer1Ratio.toString());
 
     assert(farmer1Accrued.gt(new BN(farmer1Ratio * expectedMin)));
     assert(farmer1Accrued.lt(new BN(farmer1Ratio * expectedMax)));
@@ -525,8 +522,14 @@ export class GemFarmTester extends GemFarmClient {
     assert(farmer2Accrued.gt(new BN(farmer2Ratio * expectedMin)));
     assert(farmer2Accrued.lt(new BN(farmer2Ratio * expectedMax)));
 
-    //verify farmers add up to total for the farm
-    await this.verifyFunds(10000, 0, farmer1Accrued.add(farmer2Accrued));
+    // ideally would love to do farmer1accrued + farmer2accrued,
+    // but that only works when both farmers unstake, and stop accruing
+    // (that's coz we update them sequentially, one by one)
+    const funds = await this.verifyFunds(10000, 0);
+    assert(funds.totalAccruedToStakers.gt(toBN(expectedMin)));
+    assert(funds.totalAccruedToStakers.lt(toBN(expectedMax)));
+
+    return [farmer1Reward, farmer2Reward];
   }
 
   async stakeAndVerify(identity: Keypair) {

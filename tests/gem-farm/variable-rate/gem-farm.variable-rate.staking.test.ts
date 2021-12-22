@@ -10,7 +10,7 @@ import { pause } from '../../utils/types';
 
 chai.use(chaiAsPromised);
 
-describe.skip('staking (variable rate)', () => {
+describe('staking (variable rate)', () => {
   let gf = new GemFarmTester();
 
   beforeEach('preps accs', async () => {
@@ -49,8 +49,8 @@ describe.skip('staking (variable rate)', () => {
     await gf.callClaimRewards(gf.farmer1Identity);
     await gf.callClaimRewards(gf.farmer2Identity);
 
-    await gf.verifyClaimedRewards(gf.farmer1Identity);
-    await gf.verifyClaimedRewards(gf.farmer2Identity);
+    await gf.verifyClaimedReward(gf.farmer1Identity);
+    await gf.verifyClaimedReward(gf.farmer2Identity);
   });
 
   it('stakes -> accrues -> unstakes (twice) -> claims (multi farmer)', async () => {
@@ -86,8 +86,8 @@ describe.skip('staking (variable rate)', () => {
     await gf.callClaimRewards(gf.farmer1Identity);
     await gf.callClaimRewards(gf.farmer2Identity);
 
-    const farmer1ClaimedOld = await gf.verifyClaimedRewards(gf.farmer1Identity);
-    const farmer2ClaimedOld = await gf.verifyClaimedRewards(gf.farmer2Identity);
+    const farmer1ClaimedOld = await gf.verifyClaimedReward(gf.farmer1Identity);
+    const farmer2ClaimedOld = await gf.verifyClaimedReward(gf.farmer2Identity);
 
     // since the farmers are now UNstaked, we can verify no further rewards can be claimed,
     // despite the farm continuing to be active
@@ -97,8 +97,8 @@ describe.skip('staking (variable rate)', () => {
     await gf.callClaimRewards(gf.farmer1Identity);
     await gf.callClaimRewards(gf.farmer2Identity);
 
-    const farmer1ClaimedNew = await gf.verifyClaimedRewards(gf.farmer1Identity);
-    const farmer2ClaimedNew = await gf.verifyClaimedRewards(gf.farmer2Identity);
+    const farmer1ClaimedNew = await gf.verifyClaimedReward(gf.farmer1Identity);
+    const farmer2ClaimedNew = await gf.verifyClaimedReward(gf.farmer2Identity);
 
     assert(farmer1ClaimedNew.eq(farmer1ClaimedOld));
     assert(farmer2ClaimedNew.eq(farmer2ClaimedOld));
