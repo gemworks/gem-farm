@@ -2,25 +2,25 @@ import chai, { assert, expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import {
   defaultFarmConfig,
-  defaultVariableConfig,
+  defaultFixedConfig,
   GemFarmTester,
-} from './gem-farm.tester';
+} from '../gem-farm.tester';
 import { BN } from '@project-serum/anchor';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { pause } from '../utils/types';
+import { pause } from '../../utils/types';
+import { RewardType } from '../gem-farm.client';
 
 chai.use(chaiAsPromised);
 
-//todo this test (and others outside of fixed/var dirs) should not care if it's init'ed with fixed or var
 describe.skip('misc', () => {
   let gf = new GemFarmTester();
 
   before('preps accs', async () => {
-    await gf.prepAccounts(new BN(10000));
+    await gf.prepAccounts(new BN(45000));
   });
 
   it('inits the farm', async () => {
-    await gf.callInitFarm(defaultFarmConfig);
+    await gf.callInitFarm(defaultFarmConfig, RewardType.Fixed);
 
     const farmAcc = (await gf.fetchFarm()) as any;
     assert.equal(farmAcc.bank.toBase58(), gf.bank.publicKey.toBase58());
@@ -68,7 +68,9 @@ describe.skip('misc', () => {
     ).to.be.rejectedWith('Account does not exist');
 
     //funding should not be possible now
-    await expect(gf.callFundReward(defaultVariableConfig)).to.be.rejectedWith(
+    await expect(
+      gf.callFundReward(undefined, defaultFixedConfig)
+    ).to.be.rejectedWith(
       'The given account is not owned by the executing program'
     );
 
@@ -76,36 +78,6 @@ describe.skip('misc', () => {
     await expect(gf.callDeauthorize()).to.be.rejectedWith(
       'The given account is not owned by the executing program'
     );
-  });
-
-  // --------------------------------------- locking
-
-  it('locks rewards in place', async () => {
-    // get some funding in
-    await gf.callAuthorize();
-    await gf.callFundReward(defaultVariableConfig);
-
-    //place the lock
-    await gf.lockReward(
-      gf.farm.publicKey,
-      gf.farmManager,
-      gf.rewardMint.publicKey
-    );
-    // await printStructs('LOCKED');
-
-    //lock duration should now be == reward end duration
-    const farmAcc = (await gf.fetchFarm()) as any;
-    assert(
-      farmAcc[gf.reward].times.lockEndTs.eq(
-        farmAcc[gf.reward].times.rewardEndTs
-      )
-    );
-
-    //once locked, funding/cancellation ixs should fail
-    await expect(gf.callFundReward(defaultVariableConfig)).to.be.rejectedWith(
-      '0x155'
-    );
-    await expect(gf.callCancelReward()).to.be.rejectedWith('0x155');
   });
 
   // --------------------------------------- flash deposit

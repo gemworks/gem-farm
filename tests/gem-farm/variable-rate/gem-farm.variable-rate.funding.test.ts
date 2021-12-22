@@ -1,4 +1,4 @@
-import chai, { assert } from 'chai';
+import chai, { assert, expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import {
   defaultFarmConfig,
@@ -44,6 +44,33 @@ describe.skip('funding (variable rate)', () => {
     //token accounts
     await gf.verifyFunderAccContains(0);
     await gf.verifyPotContains(pot, 10000);
+  });
+
+  it('funds -> locks', async () => {
+    const { pot } = await gf.callFundReward(defaultVariableConfig);
+
+    await gf.callLockReward();
+
+    // ----------------- tests
+    //funds
+    await gf.verifyFunds(10000, 0, 0);
+
+    //times
+    const times = await gf.verifyTimes(100);
+    assert(times.lockEndTs.eq(times.rewardEndTs));
+
+    //variable reward
+    await gf.verifyVariableReward(100);
+
+    //token accounts
+    await gf.verifyFunderAccContains(0);
+    await gf.verifyPotContains(pot, 10000);
+
+    //once locked, funding/cancellation ixs should fail
+    await expect(gf.callFundReward(defaultVariableConfig)).to.be.rejectedWith(
+      '0x155'
+    );
+    await expect(gf.callCancelReward()).to.be.rejectedWith('0x155');
   });
 
   it('funds -> cancels (no stakers)', async () => {

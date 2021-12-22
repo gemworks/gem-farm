@@ -160,16 +160,16 @@ export class GemFarmTester extends GemFarmClient {
   // --------------------------------------- callers
   // ----------------- core
 
-  async callInitFarm(farmConfig: FarmConfig) {
+  async callInitFarm(farmConfig: FarmConfig, rewardType?: any) {
     return this.initFarm(
       this.farm,
       this.farmManager,
       this.farmManager,
       this.bank,
       this.rewardMint.publicKey,
-      RewardType.Variable,
+      rewardType ?? RewardType.Variable,
       this.rewardSecondMint.publicKey,
-      RewardType.Variable,
+      rewardType ?? RewardType.Variable,
       farmConfig
     );
   }

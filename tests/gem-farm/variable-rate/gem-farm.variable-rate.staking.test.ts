@@ -10,7 +10,7 @@ import { pause } from '../../utils/types';
 
 chai.use(chaiAsPromised);
 
-describe('staking (variable rate)', () => {
+describe.skip('staking (variable rate)', () => {
   let gf = new GemFarmTester();
 
   beforeEach('preps accs', async () => {
