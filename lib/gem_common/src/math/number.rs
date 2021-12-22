@@ -8,6 +8,7 @@ use crate::{TryAdd, TryDiv, TryMul, TryPow, TryRem, TrySub};
 use anchor_lang::prelude::*;
 
 uint::construct_uint! {
+    #[derive(AnchorSerialize, AnchorDeserialize)]
     pub struct U192(3);
 }
 
@@ -21,21 +22,6 @@ const U64_MAX: U192 = U192([0xffffffffffffffff, 0x0, 0x0]);
 )]
 #[repr(transparent)]
 pub struct Number(U192);
-
-impl borsh::BorshDeserialize for U192 {
-    fn deserialize(buf: &mut &[u8]) -> std::io::Result<Self> {
-        Ok(U192::from_little_endian(buf))
-    }
-}
-
-impl borsh::BorshSerialize for U192 {
-    fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
-        let mut buf = [0_u8; 24];
-        self.to_little_endian(&mut buf);
-        let _ = writer.write(&buf)?;
-        Ok(())
-    }
-}
 
 static_assertions::const_assert_eq!(24, std::mem::size_of::<Number>());
 static_assertions::const_assert_eq!(0, std::mem::size_of::<Number>() % 8);
