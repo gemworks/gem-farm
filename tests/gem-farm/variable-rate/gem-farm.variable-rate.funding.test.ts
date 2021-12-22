@@ -111,8 +111,7 @@ describe('funding (variable rate)', () => {
 
     // ----------------- tests
     //funds
-    //todo revisit when implement Number/Decimal
-    // await gf.verifyFunds(10000, 0, 10000);
+    await gf.verifyFunds(10000, 0, 10000);
 
     //times
     await gf.verifyTimes(2); //since we exhausted the reward, duration doesn't change
@@ -121,9 +120,8 @@ describe('funding (variable rate)', () => {
     await gf.verifyVariableReward(0); //after cancellation goes to 0
 
     //token accounts
-    //todo revisit when implement Number/Decimal
-    // await gf.verifyFunderAccContains(0);
-    // await gf.verifyPotContains(pot, 10000);
+    await gf.verifyFunderAccContains(0);
+    await gf.verifyPotContains(pot, 10000);
   });
 
   it('funds -> cancels (late stakers = partially accrues)', async () => {
@@ -200,8 +198,7 @@ describe('funding (variable rate)', () => {
 
     // ----------------- tests
     //funds
-    //todo revisit when implement Number/Decimal
-    // await gf.verifyFunds(20000, 0, 10000);
+    await gf.verifyFunds(20000, 0, 10000);
 
     //times
     await gf.verifyTimes(100);
@@ -210,9 +207,8 @@ describe('funding (variable rate)', () => {
     await gf.verifyVariableReward(100); //100 from second reward only
 
     //token accounts
-    //todo revisit when implement Number/Decimal
-    // await gf.verifyFunderAccContains(0);
-    // await gf.verifyPotContains(pot, 20000);
+    await gf.verifyFunderAccContains(0);
+    await gf.verifyPotContains(pot, 20000);
   });
 
   it('funds -> cancels -> funds again', async () => {
@@ -254,8 +250,7 @@ describe('funding (variable rate)', () => {
 
     // ----------------- tests
     //funds
-    //todo revisit when implement Number/Decimal
-    // await gf.verifyFunds(20000, 0, 10000);
+    await gf.verifyFunds(20000, 0, 10000);
 
     //times
     await gf.verifyTimes(100);
@@ -264,8 +259,7 @@ describe('funding (variable rate)', () => {
     await gf.verifyVariableReward(100); //back to 100 after going to 0 on cancellation
 
     //token accounts
-    //todo revisit when implement Number/Decimal
-    // await gf.verifyFunderAccContains(0);
-    // await gf.verifyPotContains(pot, 20000);
+    await gf.verifyFunderAccContains(0);
+    await gf.verifyPotContains(pot, 20000);
   });
 });

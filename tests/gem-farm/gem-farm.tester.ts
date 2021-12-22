@@ -21,6 +21,8 @@ import { assert } from 'chai';
 
 // --------------------------------------- configs
 
+export const PRECISION = 10 ** 15;
+
 export const defaultFarmConfig = <FarmConfig>{
   minStakingPeriodSec: new BN(0),
   cooldownPeriodSec: new BN(0),
@@ -356,14 +358,18 @@ export class GemFarmTester extends GemFarmClient {
     let reward = farmAcc[this.reward].variableRate;
 
     if (rewardRate) {
-      assert(reward.rewardRate.eq(toBN(rewardRate)));
+      assert(reward.rewardRate.n.div(toBN(PRECISION)).eq(toBN(rewardRate)));
     }
     if (lastUpdated) {
       assert(reward.rewardLastUpdatedTs.eq(toBN(lastUpdated)));
     }
     //todo need to think in which tests this one should be checked
     if (accruedRewardPerGem) {
-      assert(reward.accruedRewardPerGem.eq(toBN(accruedRewardPerGem)));
+      assert(
+        reward.accruedRewardPerGem.n
+          .div(toBN(PRECISION))
+          .eq(toBN(accruedRewardPerGem))
+      );
     }
 
     return reward;
@@ -451,9 +457,9 @@ export class GemFarmTester extends GemFarmClient {
     }
     if (lastRecordedAccruedRewardPerGem) {
       assert(
-        reward.lastRecordedAccruedRewardPerGem.eq(
-          toBN(lastRecordedAccruedRewardPerGem)
-        )
+        reward.lastRecordedAccruedRewardPerGem.n
+          .div(toBN(PRECISION))
+          .eq(toBN(lastRecordedAccruedRewardPerGem))
       );
     }
     if (rewardWhole) {
