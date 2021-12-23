@@ -82,9 +82,9 @@ impl Farm {
         }
     }
 
-    pub fn lock_reward_by_mint(&mut self, now_ts: u64, reward_mint: Pubkey) -> ProgramResult {
+    pub fn lock_reward_by_mint(&mut self, reward_mint: Pubkey) -> ProgramResult {
         let reward = self.match_reward_by_mint(reward_mint)?;
-        reward.lock_reward_by_type(now_ts)
+        reward.lock_reward()
     }
 
     pub fn fund_reward_by_mint(
@@ -267,6 +267,7 @@ pub struct TimeTracker {
     pub lock_end_ts: u64,
 }
 
+// todo testin rust
 impl TimeTracker {
     pub fn reward_begin_ts(&self) -> Result<u64, ProgramError> {
         self.reward_end_ts.try_sub(self.duration_sec)
@@ -332,17 +333,11 @@ impl FarmReward {
     /// (!) THIS OPERATION IS IRREVERSIBLE
     /// locking ensures the committed reward cannot be withdrawn/changed by a malicious farm operator
     /// once locked, any funding / cancellation ixs become non executable until reward_ned_ts is reached
-    fn lock_reward_by_type(&mut self, now_ts: u64) -> ProgramResult {
-        match self.reward_type {
-            RewardType::Variable => {
-                self.variable_rate
-                    .lock_reward(now_ts, &mut self.times, &mut self.funds)
-            }
-            RewardType::Fixed => {
-                self.fixed_rate
-                    .lock_reward(now_ts, &mut self.times, &mut self.funds)
-            }
-        }
+    fn lock_reward(&mut self) -> ProgramResult {
+        self.times.lock_end_ts = self.times.reward_end_ts;
+
+        msg!("locked reward up to {}", self.times.reward_end_ts);
+        Ok(())
     }
 
     fn is_locked(&self, now_ts: u64) -> bool {

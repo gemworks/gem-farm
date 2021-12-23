@@ -19,9 +19,6 @@ pub struct VariableRateConfig {
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct VariableRateReward {
-    // configured on funding
-    config: VariableRateConfig,
-
     // in tokens/s, = total reward pot at initialization / reward duration
     pub reward_rate: Number128,
 
@@ -37,28 +34,6 @@ pub struct VariableRateReward {
 }
 
 impl VariableRateReward {
-    fn required_remaining_funding(&self, remaining_duration: u64) -> Result<u64, ProgramError> {
-        remaining_duration.try_mul(self.reward_rate.as_u64_ceil(0)?)
-    }
-
-    pub fn lock_reward(
-        &self,
-        now_ts: u64,
-        times: &mut TimeTracker,
-        funds: &mut FundsTracker,
-    ) -> ProgramResult {
-        let remaining_duration = times.remaining_duration(now_ts)?;
-
-        if funds.pending_amount()? < self.required_remaining_funding(remaining_duration)? {
-            return Err(ErrorCode::RewardUnderfunded.into());
-        }
-
-        times.lock_end_ts = times.reward_end_ts;
-
-        msg!("locked reward up to {}", times.reward_end_ts);
-        Ok(())
-    }
-
     pub fn fund_reward(
         &mut self,
         now_ts: u64,
@@ -86,7 +61,6 @@ impl VariableRateReward {
 
         funds.total_funded.try_add_assign(amount)?;
 
-        self.config = new_config;
         self.reward_last_updated_ts = times.reward_upper_bound(now_ts);
 
         msg!("recorded new funding of {}", amount);
@@ -99,10 +73,10 @@ impl VariableRateReward {
         times: &mut TimeTracker,
         funds: &mut FundsTracker,
     ) -> Result<u64, ProgramError> {
-        times.end_reward(now_ts)?;
-
         let refund_amount = funds.pending_amount()?;
         funds.total_refunded.try_add_assign(refund_amount)?;
+
+        times.end_reward(now_ts)?;
 
         self.reward_rate = Number128::ZERO;
         self.reward_last_updated_ts = times.reward_upper_bound(now_ts);
@@ -136,10 +110,9 @@ impl VariableRateReward {
                 .as_u64_ceil(0)?, //overestimate at farm level
         )?;
 
-        // todo should this be a function called on farmer?
         // update farmer, if one was passed
         if let Some(farmer_reward) = farmer_reward {
-            let owed_to_farmer = Number128::from(farmer_gems_staked.unwrap()).try_mul(
+            let newly_accrued_to_farmer = Number128::from(farmer_gems_staked.unwrap()).try_mul(
                 self.accrued_reward_per_gem.try_sub(
                     farmer_reward
                         .variable_rate
@@ -147,12 +120,10 @@ impl VariableRateReward {
                 )?,
             )?;
 
-            farmer_reward
-                .accrued_reward
-                .try_add_assign(owed_to_farmer.as_u64(0)?)?; //underestimate at farmer level
-            farmer_reward
-                .variable_rate
-                .last_recorded_accrued_reward_per_gem = self.accrued_reward_per_gem;
+            farmer_reward.update_variable_reward(
+                newly_accrued_to_farmer.as_u64(0)?, //underestimate at farmer level
+                self.accrued_reward_per_gem,
+            );
         }
 
         self.reward_last_updated_ts = reward_upper_bound;

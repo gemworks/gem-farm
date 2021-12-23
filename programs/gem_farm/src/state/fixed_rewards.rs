@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use std::cmp::{max, min};
 
 use gem_common::errors::ErrorCode;
 use gem_common::*;
@@ -28,9 +29,11 @@ pub struct TierConfig {
 pub struct FixedRateSchedule {
     pub base_rate: u64,
 
-    pub premium_tier: Option<TierConfig>,
+    pub tier1: Option<TierConfig>,
 
-    pub godlike_tier: Option<TierConfig>,
+    pub tier2: Option<TierConfig>,
+
+    pub tier3: Option<TierConfig>,
 }
 
 #[repr(C)]
@@ -43,21 +46,88 @@ pub struct FixedRateConfig {
     pub duration_sec: u64,
 }
 
+// todo test in rust
 impl FixedRateSchedule {
-    // eg begin 2 seconds in, and end 5 seconds in
-    pub fn calc_amount(
+    pub fn verify_schedule_invariants(&self) {
+        if let Some(t3) = self.tier3 {
+            // later tiers require earlier tiers to be present (no gaps)
+            assert!(self.tier2.is_some() && self.tier1.is_some());
+
+            // later tenures must be further into the future than earlier tenures
+            let t2_tenure = self.tier2.unwrap().required_tenure;
+            assert!(t3.required_tenure >= t2_tenure);
+
+            let t1_tenure = self.tier1.unwrap().required_tenure;
+            assert!(t2_tenure >= t1_tenure);
+        };
+
+        if let Some(t2) = self.tier2 {
+            // later tiers require earlier tiers to be present (no gaps)
+            assert!(self.tier1.is_some());
+
+            // later tenures must be further into the future than earlier tenures
+            let t1_tenure = self.tier1.unwrap().required_tenure;
+            assert!(t2.required_tenure >= t1_tenure);
+        };
+
+        // rates themselves can be anything, no invariant
+    }
+
+    pub fn calc_reward_amount(
         &self,
         start_from_sec: u64,
         end_at_sec: u64,
         gems: u64,
     ) -> Result<u64, ProgramError> {
-        // todo = schedule * (duration - start_sec)
-        let duration = end_at_sec.try_sub(start_from_sec)?;
-        let base_amount = duration.try_mul(self.base_rate)?;
+        // base
+        let base_end = if let Some(t1) = self.tier1 {
+            t1.required_tenure
+        } else {
+            end_at_sec
+        };
+        let base_reward = base_end.try_sub(start_from_sec)?.try_mul(self.base_rate)?;
 
-        if let Some(premium_tier) = self.premium_tier {}
+        // tier 1
+        let mut tier1_end = 0;
+        let mut tier1_reward = 0;
 
-        Ok(123)
+        if let Some(t1) = self.tier1 {
+            tier1_end = if let Some(t2) = self.tier2 {
+                t2.required_tenure
+            } else {
+                end_at_sec
+            };
+            tier1_reward = tier1_end.try_sub(base_end)?.try_mul(t1.reward_rate)?;
+        }
+
+        // tier 2
+        let mut tier2_end = 0;
+        let mut tier2_reward = 0;
+
+        if let Some(t2) = self.tier2 {
+            tier2_end = if let Some(t3) = self.tier3 {
+                t3.required_tenure
+            } else {
+                end_at_sec
+            };
+            tier2_reward = tier2_end.try_sub(tier2_end)?.try_mul(t2.reward_rate)?;
+        }
+
+        // tier 3
+        let mut tier3_end = 0;
+        let mut tier3_reward = 0;
+
+        if let Some(t3) = self.tier3 {
+            tier3_end = end_at_sec;
+            tier3_reward = tier3_end.try_sub(tier3_end)?.try_mul(t3.reward_rate)?;
+        }
+
+        gems.try_mul(
+            base_reward
+                .try_add(tier1_reward)?
+                .try_add(tier2_reward)?
+                .try_add(tier3_reward)?,
+        )
     }
 }
 
@@ -65,13 +135,82 @@ impl FixedRateSchedule {
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FixedRateReward {
     // configured on funding
-    pub config: FixedRateConfig,
+    pub schedule: FixedRateSchedule,
 
     // amount that has been promised to existing stakers and hence can't be withdrawn
     pub reserved_amount: u64,
 }
 
 impl FixedRateReward {
+    pub fn fund_reward(
+        &mut self,
+        now_ts: u64,
+        times: &mut TimeTracker,
+        funds: &mut FundsTracker,
+        new_config: FixedRateConfig,
+    ) -> ProgramResult {
+        let FixedRateConfig {
+            schedule,
+            amount,
+            duration_sec,
+        } = new_config;
+
+        schedule.verify_schedule_invariants()?;
+
+        times.duration_sec = duration_sec;
+        times.reward_end_ts = now_ts.try_add(duration_sec)?;
+
+        funds.total_funded.try_add_assign(amount)?;
+
+        msg!("recorded new funding of {}", amount);
+        Ok(())
+    }
+
+    pub fn cancel_reward(
+        &mut self,
+        now_ts: u64,
+        times: &mut TimeTracker,
+        funds: &mut FundsTracker,
+    ) -> Result<u64, ProgramError> {
+        let refund_amount = funds.pending_amount()?.try_sub(self.reserved_amount)?;
+        funds.total_refunded.try_add_assign(refund_amount)?;
+
+        times.end_reward(now_ts)?;
+
+        msg!("prepared a total refund of {}", refund_amount);
+        Ok(refund_amount)
+    }
+
+    // todo need logic for when they want to keep themselves staked
+    pub fn update_accrued_reward(
+        &mut self,
+        now_ts: u64,
+        times: &mut TimeTracker,
+        funds: &mut FundsTracker,
+        farmer_gems_staked: u64,
+        farmer_reward: &mut FarmerReward,
+    ) -> ProgramResult {
+        let newly_accrued_reward = farmer_reward
+            .fixed_rate
+            .newly_accrued_reward(now_ts, farmer_gems_staked)?;
+
+        // update farm (move from reserved to accrued)
+        funds
+            .total_accrued_to_stakers
+            .try_add_assign(newly_accrued_reward)?;
+        self.reserved_amount.try_sub_assign(newly_accrued_reward)?;
+
+        // update farmer
+        farmer_reward.update_fixed_reward(now_ts, newly_accrued_reward)?;
+
+        if farmer_reward.fixed_rate.is_graduation_time(now_ts)? {
+            self.graduate_farmer(now_ts, times, funds, farmer_gems_staked, farmer_reward)?
+        }
+
+        msg!("updated reward as of {}", now_ts);
+        Ok(())
+    }
+
     pub fn enroll_farmer(
         &mut self,
         now_ts: u64,
@@ -91,7 +230,7 @@ impl FixedRateReward {
         let reserve_amount =
             self.config
                 .schedule
-                .calc_amount(0, remaining_duration, farmer_gems_staked)?;
+                .calc_reward_amount(0, remaining_duration, farmer_gems_staked)?;
         if reserve_amount > funds.pending_amount()? {
             return Err(ErrorCode::RewardUnderfunded.into());
         }
@@ -106,6 +245,7 @@ impl FixedRateReward {
         // update farm
         self.reserved_amount.try_add_assign(reserve_amount)?;
 
+        msg!("enrolled farmer as of {}", now_ts);
         Ok(())
     }
 
@@ -127,95 +267,7 @@ impl FixedRateReward {
         // zero out the data on the farmer
         farmer_reward.fixed_rate = FarmerFixedRateReward::default();
 
-        Ok(())
-    }
-
-    pub fn lock_reward(
-        &self,
-        now_ts: u64,
-        times: &mut TimeTracker,
-        funds: &mut FundsTracker,
-    ) -> ProgramResult {
-        //todo no checks will be done here - we're simply promising an amount until reward_end_ts can't be withdrawn
-        // does the check in variable rate actually do any good?
-
-        times.lock_end_ts = times.reward_end_ts;
-
-        msg!("locked reward up to {}", times.reward_end_ts);
-        Ok(())
-    }
-
-    pub fn fund_reward(
-        &mut self,
-        now_ts: u64,
-        times: &mut TimeTracker,
-        funds: &mut FundsTracker,
-        new_config: FixedRateConfig,
-    ) -> ProgramResult {
-        let new_amount = new_config.amount;
-        let new_duration = new_config.duration_sec;
-
-        times.duration_sec = new_duration;
-        times.reward_end_ts = now_ts.try_add(new_duration)?;
-
-        funds.total_funded.try_add_assign(new_amount)?;
-
-        self.config = new_config;
-
-        msg!("recorded new funding of {}", new_amount);
-        Ok(())
-    }
-
-    pub fn cancel_reward(
-        &mut self,
-        now_ts: u64,
-        times: &mut TimeTracker,
-        funds: &mut FundsTracker,
-    ) -> Result<u64, ProgramError> {
-        times.end_reward(now_ts)?;
-
-        let refund_amount = funds.pending_amount()?.try_sub(self.reserved_amount)?;
-        funds.total_refunded.try_add_assign(refund_amount)?;
-
-        msg!("prepared a total refund of {}", refund_amount);
-        Ok(refund_amount)
-    }
-
-    pub fn update_accrued_reward(
-        &mut self,
-        now_ts: u64,
-        times: &mut TimeTracker,
-        funds: &mut FundsTracker,
-        farmer_gems_staked: u64,
-        farmer_reward: &mut FarmerReward,
-    ) -> ProgramResult {
-        let newly_accrued_reward = farmer_reward
-            .fixed_rate
-            .newly_accrued_reward(now_ts, farmer_gems_staked)?;
-
-        // update farm
-        funds
-            .total_accrued_to_stakers
-            .try_add_assign(newly_accrued_reward)?;
-        self.reserved_amount.try_sub_assign(newly_accrued_reward)?;
-
-        // todo should this be a function called on farmer?
-        // update farmer
-        farmer_reward
-            .accrued_reward
-            .try_add_assign(newly_accrued_reward)?;
-        farmer_reward
-            .fixed_rate
-            .reward_counted_as_accrued
-            .try_add_assign(newly_accrued_reward)?;
-        farmer_reward.fixed_rate.last_updated_ts =
-            farmer_reward.fixed_rate.upper_bound_ts(now_ts)?;
-
-        if farmer_reward.fixed_rate.is_graduation_time(now_ts)? {
-            self.graduate_farmer(now_ts, times, funds, farmer_gems_staked, farmer_reward)?
-        }
-
-        msg!("updated reward as of {}", now_ts);
+        msg!("graduated farmer on {}", now_ts);
         Ok(())
     }
 }

@@ -121,6 +121,7 @@ pub struct FarmerReward {
     pub fixed_rate: FarmerFixedRateReward,
 }
 
+// todo test in rust
 impl FarmerReward {
     pub fn outstanding_reward(&self) -> Result<u64, ProgramError> {
         self.accrued_reward.try_sub(self.paid_out_reward)
@@ -133,6 +134,29 @@ impl FarmerReward {
         self.paid_out_reward.try_add_assign(to_claim)?;
 
         Ok(to_claim)
+    }
+
+    pub fn update_variable_reward(
+        &mut self,
+        newly_accrued_reward: u64,
+        accrued_reward_per_gem: Number128,
+    ) -> ProgramResult {
+        self.accrued_reward.try_add_assign(newly_accrued_reward)?;
+
+        self.variable_rate.last_recorded_accrued_reward_per_gem = accrued_reward_per_gem;
+
+        Ok(())
+    }
+
+    pub fn update_fixed_reward(&mut self, now_ts: u64, newly_accrued_reward: u64) -> ProgramResult {
+        self.accrued_reward.try_add_assign(newly_accrued_reward)?;
+
+        self.fixed_rate
+            .reward_counted_as_accrued
+            .try_add_assign(newly_accrued_reward)?;
+        self.fixed_rate.last_updated_ts = self.fixed_rate.upper_bound_ts(now_ts)?;
+
+        Ok(())
     }
 }
 
@@ -158,6 +182,7 @@ pub struct FarmerFixedRateReward {
     pub reward_counted_as_accrued: u64,
 }
 
+// todo test in rust
 impl FarmerFixedRateReward {
     pub fn graduation_time(&self) -> Result<u64, ProgramError> {
         self.begin_staking_ts.try_add(self.promised_duration)
@@ -178,9 +203,9 @@ impl FarmerFixedRateReward {
         Ok(now_ts >= self.graduation_time()?)
     }
 
-    pub fn lower_bound_ts(&self) -> u64 {
-        std::cmp::max(self.begin_staking_ts, self.last_updated_ts)
-    }
+    // pub fn lower_bound_ts(&self) -> u64 {
+    //     std::cmp::max(self.begin_staking_ts, self.last_updated_ts)
+    // }
 
     pub fn upper_bound_ts(&self, now_ts: u64) -> Result<u64, ProgramError> {
         Ok(std::cmp::min(now_ts, self.graduation_time()?))
@@ -189,7 +214,9 @@ impl FarmerFixedRateReward {
     pub fn voided_reward(&self, gems: u64) -> Result<u64, ProgramError> {
         let start_from = self.last_updated_ts.try_sub(self.begin_staking_ts)?;
         let end_at = self.graduation_time()?.try_sub(self.begin_staking_ts)?;
-        self.promised_schedule.calc_amount(start_from, end_at, gems)
+
+        self.promised_schedule
+            .calc_reward_amount(start_from, end_at, gems)
     }
 
     pub fn newly_accrued_reward(&self, now_ts: u64, gems: u64) -> Result<u64, ProgramError> {
@@ -197,6 +224,8 @@ impl FarmerFixedRateReward {
         let end_at = self
             .upper_bound_ts(now_ts)?
             .try_sub(self.begin_staking_ts)?;
-        self.promised_schedule.calc_amount(start_from, end_at, gems)
+
+        self.promised_schedule
+            .calc_reward_amount(start_from, end_at, gems)
     }
 }
