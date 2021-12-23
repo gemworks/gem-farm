@@ -270,7 +270,6 @@ pub struct TimeTracker {
     pub lock_end_ts: u64,
 }
 
-// todo testin rust
 impl TimeTracker {
     pub fn reward_begin_ts(&self) -> Result<u64, ProgramError> {
         self.reward_end_ts.try_sub(self.duration_sec)
@@ -443,6 +442,19 @@ mod tests {
         assert_eq!(200, times.reward_upper_bound(201));
         assert_eq!(100, times.reward_begin_ts().unwrap());
         assert_eq!(110, times.reward_lower_bound(110).unwrap());
+    }
+
+    #[test]
+    fn test_time_tracker_end_reward() {
+        let mut times = TimeTracker {
+            duration_sec: 80,
+            reward_end_ts: 200,
+            lock_end_ts: 0,
+        };
+
+        times.end_reward(140).unwrap();
+        assert_eq!(times.duration_sec, 20);
+        assert_eq!(times.reward_end_ts, 140);
     }
 
     #[test]
