@@ -22,16 +22,22 @@ export interface FarmConfig {
   unstakingFeeLamp: BN;
 }
 
-export interface PeriodConfig {
-  rate: BN;
-  durationSec: BN;
+export interface TierConfig {
+  rewardRate: BN;
+  requiredTenure: BN;
+}
+
+export interface FixedRateSchedule {
+  baseRate: BN;
+  tier1: TierConfig | null;
+  tier2: TierConfig | null;
+  tier3: TierConfig | null;
 }
 
 export interface FixedRateConfig {
-  period1: PeriodConfig;
-  period2: PeriodConfig | null;
-  period3: PeriodConfig | null;
-  gemsFunded: BN;
+  schedule: FixedRateSchedule;
+  amount: BN;
+  durationSec: BN;
 }
 
 export interface VariableRateConfig {

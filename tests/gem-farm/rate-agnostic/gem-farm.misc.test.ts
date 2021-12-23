@@ -12,7 +12,7 @@ import { RewardType } from '../gem-farm.client';
 
 chai.use(chaiAsPromised);
 
-describe.skip('misc', () => {
+describe('misc', () => {
   let gf = new GemFarmTester();
 
   before('preps accs', async () => {
@@ -99,7 +99,6 @@ describe.skip('misc', () => {
 
     let farmerAcc = await gf.fetchFarmerAcc(farmer);
     assert(farmerAcc.gemsStaked.eq(initialDeposit));
-    const oldBeginTs = farmerAcc.beginStakingTs;
     const oldEndTs = farmerAcc.minStakingEndsTs;
 
     //wait for 1 sec so that flash deposit staking time is recorded as different
@@ -122,7 +121,6 @@ describe.skip('misc', () => {
     farmerAcc = await gf.fetchFarmerAcc(farmer);
     assert(farmerAcc.gemsStaked.eq(initialDeposit.add(flashDeposit)));
     //flash deposits resets staking time, which means it should be higher
-    assert(farmerAcc.beginStakingTs.gt(oldBeginTs));
     assert(farmerAcc.minStakingEndsTs.gt(oldEndTs));
   });
 

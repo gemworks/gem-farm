@@ -9,7 +9,7 @@ import {
   FarmConfig,
   FixedRateConfig,
   GemFarmClient,
-  PeriodConfig,
+  TierConfig,
   RewardType,
   VariableRateConfig,
 } from './gem-farm.client';
@@ -35,50 +35,25 @@ export const defaultVariableConfig = <VariableRateConfig>{
 };
 
 export const defaultFixedConfig = <FixedRateConfig>{
-  period1: <PeriodConfig>{
-    //per gem per second
-    rate: new BN(5),
-    //seconds it lasts
-    durationSec: new BN(3),
+  schedule: {
+    //total 150 per gem
+    baseRate: toBN(3),
+    tier1: {
+      rewardRate: toBN(5),
+      requiredTenure: toBN(10),
+    },
+    tier2: {
+      rewardRate: toBN(7),
+      requiredTenure: toBN(20),
+    },
+    tier3: {
+      rewardRate: toBN(0),
+      requiredTenure: toBN(30),
+    },
   },
-  period2: <PeriodConfig>{
-    rate: new BN(10),
-    durationSec: new BN(3),
-  },
-  period3: <PeriodConfig>{
-    //setting this to 0 let's us get deterministic test results
-    //since the last leg is empty, as long as staking is delayed <6s we don't care
-    rate: new BN(0),
-    durationSec: new BN(6),
-  },
-  gemsFunded: new BN(1000),
+  amount: new BN(15000), //fund 100 gems
+  durationSec: new BN(100),
 };
-
-export function totalRewardsPerGem() {
-  const p1 = defaultFixedConfig.period1.rate.mul(
-    defaultFixedConfig.period1.durationSec
-  );
-  const p2 = defaultFixedConfig.period2!.rate.mul(
-    defaultFixedConfig.period2!.durationSec
-  );
-  const p3 = defaultFixedConfig.period3!.rate.mul(
-    defaultFixedConfig.period3!.durationSec
-  );
-
-  return p1.add(p2).add(p3);
-}
-
-export function totalDuration() {
-  const p1 = defaultFixedConfig.period1.durationSec;
-  const p2 = defaultFixedConfig.period2!.durationSec;
-  const p3 = defaultFixedConfig.period3!.durationSec;
-
-  return p1.add(p2).add(p3);
-}
-
-export function totalRewardsAmount() {
-  return defaultFixedConfig.gemsFunded.mul(totalRewardsPerGem());
-}
 
 // --------------------------------------- tester class
 
@@ -374,18 +349,12 @@ export class GemFarmTester extends GemFarmClient {
     return reward;
   }
 
-  async verifyFixedReward(
-    gemsParticipating?: Numerical,
-    gemsMadeWhole?: Numerical
-  ) {
+  async verifyFixedReward(reservedAmount?: Numerical) {
     let farmAcc = (await this.fetchFarm()) as any;
     let reward = farmAcc[this.reward].fixedRate;
 
-    if (gemsParticipating) {
-      assert(reward.gemsParticipating.eq(toBN(gemsParticipating)));
-    }
-    if (gemsMadeWhole) {
-      assert(reward.gemsMadeWhole.eq(toBN(gemsMadeWhole)));
+    if (reservedAmount) {
+      assert(reward.reservedAmount.eq(toBN(reservedAmount)));
     }
 
     return reward;
@@ -433,12 +402,16 @@ export class GemFarmTester extends GemFarmClient {
     return farmAcc;
   }
 
+  //todo missing fixed rate stuff
   async verifyFarmerReward(
     identity: Keypair,
     paidOutReward?: Numerical,
     accruedReward?: Numerical,
     lastRecordedAccruedRewardPerGem?: Numerical,
-    rewardWhole?: boolean
+    beginStakingTs?: Numerical,
+    beginScheduleTs?: Numerical,
+    lastUpdatedTs?: Numerical,
+    promisedDuration?: Numerical
   ) {
     const [farmer] = await this.findFarmerPDA(
       this.farm.publicKey,
@@ -460,8 +433,17 @@ export class GemFarmTester extends GemFarmClient {
           .eq(toBN(lastRecordedAccruedRewardPerGem))
       );
     }
-    if (rewardWhole) {
-      assert(reward.rewardWhole == rewardWhole);
+    if (beginStakingTs) {
+      assert(reward.fixedRate.beginStakingTs.eq(toBN(beginStakingTs)));
+    }
+    if (beginScheduleTs) {
+      assert(reward.fixedRate.beginScheduleTs.eq(toBN(beginScheduleTs)));
+    }
+    if (lastUpdatedTs) {
+      assert(reward.fixedRate.lastUpdatedTs.eq(toBN(lastUpdatedTs)));
+    }
+    if (promisedDuration) {
+      assert(reward.fixedRate.promisedDuration.eq(toBN(promisedDuration)));
     }
 
     return reward;

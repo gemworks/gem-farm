@@ -15,7 +15,7 @@ const farmConfig = <FarmConfig>{
 };
 
 //this test
-describe.skip('farmer lifecycle (unstaked -> staked -> cooldown)', () => {
+describe('farmer lifecycle (unstaked -> staked -> cooldown)', () => {
   let gf = new GemFarmTester();
 
   beforeEach('preps accs', async () => {
