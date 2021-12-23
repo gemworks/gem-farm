@@ -170,7 +170,7 @@ impl Farm {
                 &mut self.reward_b.times,
                 &mut self.reward_b.funds,
                 farmer.gems_staked,
-                &mut farmer.reward_a,
+                &mut farmer.reward_b,
                 None,
             )?;
         }

@@ -188,6 +188,8 @@ impl FixedRateSchedule {
             }
         }?;
 
+        msg!("reward per gem {}", per_gem);
+
         gems.try_mul(per_gem)
     }
 }
@@ -216,12 +218,16 @@ impl FixedRateReward {
             duration_sec,
         } = new_config;
 
+        msg!("new config is {:?}", new_config);
+
         schedule.verify_schedule_invariants();
 
         times.duration_sec = duration_sec;
         times.reward_end_ts = now_ts.try_add(duration_sec)?;
 
         funds.total_funded.try_add_assign(amount)?;
+
+        self.schedule = schedule;
 
         msg!("recorded new funding of {}", amount);
         Ok(())
@@ -254,6 +260,8 @@ impl FixedRateReward {
             .fixed_rate
             .newly_accrued_reward(now_ts, farmer_gems_staked)?;
 
+        msg!("newly accrued {}", newly_accrued_reward);
+
         // update farm (move from reserved to accrued)
         // todo include reserved amount in js fixed rate tests
         funds
@@ -264,7 +272,9 @@ impl FixedRateReward {
         // update farmer
         farmer_reward.update_fixed_reward(now_ts, newly_accrued_reward)?;
 
-        if farmer_reward.fixed_rate.is_time_to_graduate(now_ts)? {
+        if farmer_reward.fixed_rate.is_staked()
+            && farmer_reward.fixed_rate.is_time_to_graduate(now_ts)?
+        {
             let original_staking_start = farmer_reward.fixed_rate.begin_staking_ts;
 
             // todo test graduation
@@ -298,6 +308,8 @@ impl FixedRateReward {
         // calc time left (do NOT throw an error if 0 - A might hav ended but B not)
         let remaining_duration = times.remaining_duration(now_ts)?;
 
+        msg!("remaining duration is {}", remaining_duration);
+
         // calc any bonus due to previous staking
         farmer_reward.fixed_rate.begin_staking_ts = original_staking_start.unwrap_or(now_ts);
         farmer_reward.fixed_rate.begin_schedule_ts = now_ts;
@@ -313,10 +325,14 @@ impl FixedRateReward {
             return Err(ErrorCode::RewardUnderfunded.into());
         }
 
+        msg!("self schedule, {:?}", self.schedule);
+
         // update farmer
         farmer_reward.fixed_rate.last_updated_ts = now_ts;
         farmer_reward.fixed_rate.promised_schedule = self.schedule;
         farmer_reward.fixed_rate.promised_duration = remaining_duration;
+
+        msg!("promised is {}", farmer_reward.fixed_rate.promised_duration);
 
         // update farm
         self.reserved_amount.try_add_assign(reserve_amount)?;

@@ -190,6 +190,11 @@ impl FarmerFixedRateReward {
         self.begin_schedule_ts.try_add(self.promised_duration)
     }
 
+    pub fn is_staked(&self) -> bool {
+        // these get zeroed out when farmer graduates
+        self.begin_staking_ts > 0 && self.begin_schedule_ts > 0
+    }
+
     pub fn is_time_to_graduate(&self, now_ts: u64) -> Result<bool, ProgramError> {
         Ok(now_ts >= self.end_schedule_ts()?)
     }
@@ -219,6 +224,8 @@ impl FarmerFixedRateReward {
         let end_at = self
             .reward_upper_bound(now_ts)?
             .try_sub(self.begin_staking_ts)?;
+
+        msg!("start end gems {} {} {}", start_from, end_at, gems);
 
         self.promised_schedule
             .reward_amount(start_from, end_at, gems)

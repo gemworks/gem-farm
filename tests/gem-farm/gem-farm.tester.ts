@@ -5,15 +5,14 @@ import {
   toBN,
 } from '../utils/types';
 import * as anchor from '@project-serum/anchor';
+import { BN } from '@project-serum/anchor';
 import {
   FarmConfig,
   FixedRateConfig,
   GemFarmClient,
-  TierConfig,
   RewardType,
   VariableRateConfig,
 } from './gem-farm.client';
-import { BN } from '@project-serum/anchor';
 import { Token } from '@solana/spl-token';
 import { ITokenData } from '../utils/account';
 import { prepGem } from '../utils/gem-common';
@@ -36,22 +35,23 @@ export const defaultVariableConfig = <VariableRateConfig>{
 
 export const defaultFixedConfig = <FixedRateConfig>{
   schedule: {
-    //total 150 per gem
+    //total 30 per gem
     baseRate: toBN(3),
     tier1: {
       rewardRate: toBN(5),
-      requiredTenure: toBN(10),
+      requiredTenure: toBN(2),
     },
     tier2: {
       rewardRate: toBN(7),
-      requiredTenure: toBN(20),
+      requiredTenure: toBN(4),
     },
+    //leaving this one at 0 so that it's easy to test how much accrued over first 6s
     tier3: {
       rewardRate: toBN(0),
-      requiredTenure: toBN(30),
+      requiredTenure: toBN(6),
     },
   },
-  amount: new BN(15000), //fund 100 gems
+  amount: new BN(30000), //fund 1000 gems
   durationSec: new BN(100),
 };
 
@@ -290,13 +290,13 @@ export class GemFarmTester extends GemFarmClient {
     let farmAcc = (await this.fetchFarm()) as any;
     let funds = farmAcc[this.reward].funds;
 
-    if (funded) {
+    if (funded || funded === 0) {
       assert(funds.totalFunded.eq(toBN(funded)));
     }
-    if (refunded) {
+    if (refunded || refunded === 0) {
       assert(funds.totalRefunded.eq(toBN(refunded)));
     }
-    if (accrued) {
+    if (accrued || accrued === 0) {
       assert(funds.totalAccruedToStakers.eq(toBN(accrued)));
     }
 
@@ -311,13 +311,13 @@ export class GemFarmTester extends GemFarmClient {
     let farmAcc = (await this.fetchFarm()) as any;
     let times = farmAcc[this.reward].times;
 
-    if (duration) {
+    if (duration || duration === 0) {
       assert(times.durationSec.eq(toBN(duration)));
     }
-    if (rewardEnd) {
+    if (rewardEnd || rewardEnd === 0) {
       assert(times.rewardEndTs.eq(toBN(rewardEnd)));
     }
-    if (lockEnd) {
+    if (lockEnd || lockEnd === 0) {
       assert(times.lockEndTs.eq(toBN(lockEnd)));
     }
 
@@ -332,13 +332,13 @@ export class GemFarmTester extends GemFarmClient {
     let farmAcc = (await this.fetchFarm()) as any;
     let reward = farmAcc[this.reward].variableRate;
 
-    if (rewardRate) {
+    if (rewardRate || rewardRate === 0) {
       assert(reward.rewardRate.n.div(toBN(PRECISION)).eq(toBN(rewardRate)));
     }
-    if (lastUpdated) {
+    if (lastUpdated || lastUpdated === 0) {
       assert(reward.rewardLastUpdatedTs.eq(toBN(lastUpdated)));
     }
-    if (accruedRewardPerGem) {
+    if (accruedRewardPerGem || accruedRewardPerGem === 0) {
       assert(
         reward.accruedRewardPerGem.n
           .div(toBN(PRECISION))
@@ -353,7 +353,10 @@ export class GemFarmTester extends GemFarmClient {
     let farmAcc = (await this.fetchFarm()) as any;
     let reward = farmAcc[this.reward].fixedRate;
 
-    if (reservedAmount) {
+    // console.log('reserved is', reward.reservedAmount.toNumber());
+    // console.log('expected is', toBN(reservedAmount).toNumber());
+
+    if (reservedAmount || reservedAmount === 0) {
       assert(reward.reservedAmount.eq(toBN(reservedAmount)));
     }
 
@@ -402,7 +405,6 @@ export class GemFarmTester extends GemFarmClient {
     return farmAcc;
   }
 
-  //todo missing fixed rate stuff
   async verifyFarmerReward(
     identity: Keypair,
     paidOutReward?: Numerical,
@@ -420,29 +422,32 @@ export class GemFarmTester extends GemFarmClient {
     const farmerAcc = (await this.fetchFarmerAcc(farmer)) as any;
     const reward = farmerAcc[this.reward];
 
-    if (paidOutReward) {
+    if (paidOutReward || paidOutReward === 0) {
       assert(reward.paidOutReward.eq(toBN(paidOutReward)));
     }
-    if (accruedReward) {
+    if (accruedReward || accruedReward === 0) {
       assert(reward.accruedReward.eq(toBN(accruedReward)));
     }
-    if (lastRecordedAccruedRewardPerGem) {
+    if (
+      lastRecordedAccruedRewardPerGem ||
+      lastRecordedAccruedRewardPerGem === 0
+    ) {
       assert(
         reward.variableRate.lastRecordedAccruedRewardPerGem.n
           .div(toBN(PRECISION))
           .eq(toBN(lastRecordedAccruedRewardPerGem))
       );
     }
-    if (beginStakingTs) {
+    if (beginStakingTs || beginStakingTs === 0) {
       assert(reward.fixedRate.beginStakingTs.eq(toBN(beginStakingTs)));
     }
-    if (beginScheduleTs) {
+    if (beginScheduleTs || beginScheduleTs === 0) {
       assert(reward.fixedRate.beginScheduleTs.eq(toBN(beginScheduleTs)));
     }
-    if (lastUpdatedTs) {
+    if (lastUpdatedTs || lastUpdatedTs === 0) {
       assert(reward.fixedRate.lastUpdatedTs.eq(toBN(lastUpdatedTs)));
     }
-    if (promisedDuration) {
+    if (promisedDuration || promisedDuration === 0) {
       assert(reward.fixedRate.promisedDuration.eq(toBN(promisedDuration)));
     }
 
@@ -530,6 +535,29 @@ export class GemFarmTester extends GemFarmClient {
     );
 
     return [farmer1Reward, farmer2Reward];
+  }
+
+  async verifyFixedRewardTimings(identity: Keypair, atStaking: boolean) {
+    let fixed = (await this.verifyFarmerReward(identity)).fixedRate;
+    const tenSecAgo = +new Date() / 1000 - 10;
+
+    //all TS within 10 sec
+    assert(fixed.beginStakingTs.gt(toBN(tenSecAgo)));
+    assert(fixed.beginScheduleTs.gt(toBN(tenSecAgo)));
+
+    //it will be equal if ran right after staking, it will be above if ran later
+    if (atStaking) {
+      assert(fixed.lastUpdatedTs.eq(fixed.beginStakingTs));
+    } else {
+      assert(fixed.lastUpdatedTs.gt(fixed.beginStakingTs));
+    }
+
+    //staking TS = schedule TS
+    assert(fixed.beginStakingTs.eq(fixed.beginScheduleTs));
+
+    //duration close to 100
+    assert(fixed.promisedDuration.gt(toBN(90)));
+    assert(fixed.promisedDuration.lte(toBN(100)));
   }
 
   async stakeAndVerify(identity: Keypair) {
