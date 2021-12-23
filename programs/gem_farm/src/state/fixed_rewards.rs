@@ -188,8 +188,6 @@ impl FixedRateSchedule {
             }
         }?;
 
-        msg!("reward per gem {}", per_gem);
-
         gems.try_mul(per_gem)
     }
 }
@@ -217,8 +215,6 @@ impl FixedRateReward {
             amount,
             duration_sec,
         } = new_config;
-
-        msg!("new config is {:?}", new_config);
 
         schedule.verify_schedule_invariants();
 
@@ -260,10 +256,7 @@ impl FixedRateReward {
             .fixed_rate
             .newly_accrued_reward(now_ts, farmer_gems_staked)?;
 
-        msg!("newly accrued {}", newly_accrued_reward);
-
         // update farm (move from reserved to accrued)
-        // todo include reserved amount in js fixed rate tests
         funds
             .total_accrued_to_stakers
             .try_add_assign(newly_accrued_reward)?;
@@ -277,11 +270,9 @@ impl FixedRateReward {
         {
             let original_staking_start = farmer_reward.fixed_rate.begin_staking_ts;
 
-            // todo test graduation
             self.graduate_farmer(now_ts, farmer_gems_staked, farmer_reward)?;
 
             // we roll them forward with original staking time
-            // todo test rolling forward
             self.enroll_farmer(
                 now_ts,
                 times,
@@ -305,10 +296,10 @@ impl FixedRateReward {
         farmer_reward: &mut FarmerReward,
         original_staking_start: Option<u64>, //used when we roll a farmer forward, w/o them unstaking
     ) -> ProgramResult {
-        // calc time left (do NOT throw an error if 0 - A might hav ended but B not)
+        // calc time left
+        // do NOT throw an error if 0 - A might hav ended but B not
+        // do NOT return OK(()) - this prevents us from passing down original_staking_start when next reward not ready
         let remaining_duration = times.remaining_duration(now_ts)?;
-
-        msg!("remaining duration is {}", remaining_duration);
 
         // calc any bonus due to previous staking
         farmer_reward.fixed_rate.begin_staking_ts = original_staking_start.unwrap_or(now_ts);
@@ -325,14 +316,10 @@ impl FixedRateReward {
             return Err(ErrorCode::RewardUnderfunded.into());
         }
 
-        msg!("self schedule, {:?}", self.schedule);
-
         // update farmer
         farmer_reward.fixed_rate.last_updated_ts = now_ts;
         farmer_reward.fixed_rate.promised_schedule = self.schedule;
         farmer_reward.fixed_rate.promised_duration = remaining_duration;
-
-        msg!("promised is {}", farmer_reward.fixed_rate.promised_duration);
 
         // update farm
         self.reserved_amount.try_add_assign(reserve_amount)?;
@@ -353,7 +340,6 @@ impl FixedRateReward {
         // reduce reserved amount
         let voided_reward = farmer_reward.fixed_rate.voided_reward(farmer_gems_staked)?;
 
-        // todo check that after multiple farmers voided, reserved goes to 0
         self.reserved_amount.try_sub_assign(voided_reward)?;
 
         // zero out the data on the farmer

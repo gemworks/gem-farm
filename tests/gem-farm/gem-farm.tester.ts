@@ -537,7 +537,7 @@ export class GemFarmTester extends GemFarmClient {
     return [farmer1Reward, farmer2Reward];
   }
 
-  async verifyFixedRewardTimings(identity: Keypair, atStaking: boolean) {
+  async verifyFarmerFixedRewardTimings(identity: Keypair, atStaking: boolean) {
     let fixed = (await this.verifyFarmerReward(identity)).fixedRate;
     const tenSecAgo = +new Date() / 1000 - 10;
 

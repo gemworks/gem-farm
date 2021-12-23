@@ -182,15 +182,8 @@ impl Farm {
         match farmer.state {
             FarmerState::Unstaked => Ok(msg!("already unstaked!")),
             FarmerState::Staked => {
-                // update farmer
-                let gems_unstaked =
-                    farmer.end_staking_begin_cooldown(now_ts, self.config.cooldown_period_sec)?;
-
-                // update farm
-                self.staked_farmer_count.try_sub_assign(1)?;
-                self.gems_staked.try_sub_assign(gems_unstaked)?;
-
                 // fixed-rate only - we need to do some extra book-keeping
+                // (!) MUST COME BEFORE FARMER IS UPDATED - WE NEED CURRENT GEMS AMOUNT
                 if self.reward_a.reward_type == RewardType::Fixed {
                     self.reward_a.fixed_rate.graduate_farmer(
                         now_ts,
@@ -206,6 +199,14 @@ impl Farm {
                         &mut farmer.reward_b,
                     )?;
                 }
+
+                // update farmer
+                let gems_unstaked =
+                    farmer.end_staking_begin_cooldown(now_ts, self.config.cooldown_period_sec)?;
+
+                // update farm
+                self.staked_farmer_count.try_sub_assign(1)?;
+                self.gems_staked.try_sub_assign(gems_unstaked)?;
 
                 Ok(())
             }

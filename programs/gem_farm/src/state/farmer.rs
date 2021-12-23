@@ -225,8 +225,6 @@ impl FarmerFixedRateReward {
             .reward_upper_bound(now_ts)?
             .try_sub(self.begin_staking_ts)?;
 
-        msg!("start end gems {} {} {}", start_from, end_at, gems);
-
         self.promised_schedule
             .reward_amount(start_from, end_at, gems)
     }
