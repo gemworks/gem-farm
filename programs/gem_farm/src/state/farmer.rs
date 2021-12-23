@@ -212,7 +212,7 @@ impl FarmerFixedRateReward {
         let end_at = self.end_schedule_ts()?.try_sub(self.begin_staking_ts)?;
 
         self.promised_schedule
-            .calc_reward_amount(start_from, end_at, gems)
+            .reward_amount(start_from, end_at, gems)
     }
 
     /// (!) intentionally uses begin_staking_ts for both start_from and end_at
@@ -224,6 +224,6 @@ impl FarmerFixedRateReward {
             .try_sub(self.begin_staking_ts)?;
 
         self.promised_schedule
-            .calc_reward_amount(start_from, end_at, gems)
+            .reward_amount(start_from, end_at, gems)
     }
 }
