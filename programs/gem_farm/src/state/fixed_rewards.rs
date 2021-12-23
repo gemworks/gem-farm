@@ -24,9 +24,9 @@ pub struct TierConfig {
 }
 
 impl TierConfig {
-    pub fn get_reward(&self, start: u64, end: u64, gems: u64) -> Result<u64, ProgramError> {
+    pub fn get_reward(&self, start: u64, end: u64) -> Result<u64, ProgramError> {
         let duration = end.try_sub(start)?;
-        self.reward_rate.try_mul(duration)?.try_mul(gems)
+        self.reward_rate.try_mul(duration)
     }
 }
 
@@ -78,42 +78,40 @@ impl FixedRateSchedule {
         };
     }
 
-    pub fn extract_rate_and_tenure(
-        &self,
-        tier: &str,
-    ) -> (Option<u64>, Option<u64>, Option<TierConfig>) {
+    pub fn extract_tenure(&self, tier: &str) -> (Option<u64>, Option<TierConfig>) {
         match tier {
             "t1" => {
                 if let Some(t) = self.tier1 {
-                    (Some(t.required_tenure), Some(t.reward_rate), Some(t))
+                    (Some(t.required_tenure), Some(t))
                 } else {
-                    (None, None, None)
+                    (None, None)
                 }
             }
             "t2" => {
                 if let Some(t) = self.tier2 {
-                    (Some(t.required_tenure), Some(t.reward_rate), Some(t))
+                    (Some(t.required_tenure), Some(t))
                 } else {
-                    (None, None, None)
+                    (None, None)
                 }
             }
             "t3" => {
                 if let Some(t) = self.tier3 {
-                    (Some(t.required_tenure), Some(t.reward_rate), Some(t))
+                    (Some(t.required_tenure), Some(t))
                 } else {
-                    (None, None, None)
+                    (None, None)
                 }
             }
             _ => panic!("undefined tier"),
         }
     }
 
-    pub fn get_base_reward(&self, start: u64, end: u64, gems: u64) -> Result<u64, ProgramError> {
+    pub fn get_base_reward(&self, start: u64, end: u64) -> Result<u64, ProgramError> {
         let duration = end.try_sub(start)?;
-        self.base_rate.try_mul(duration)?.try_mul(gems)
+        self.base_rate.try_mul(duration)
     }
 
-    // todo replace unwraps with "?"s
+    // todo there has to be a better way
+    //  https://users.rust-lang.org/t/looking-for-a-cleaner-way-to-handle-large-number-of-options/69243
     #[allow(unused_assignments)]
     pub fn reward_amount(
         &self,
@@ -121,75 +119,77 @@ impl FixedRateSchedule {
         end_at: u64,
         gems: u64,
     ) -> Result<u64, ProgramError> {
-        let (t1_start, t1_rate, t1) = self.extract_rate_and_tenure("t1");
-        let (t2_start, t2_rate, t2) = self.extract_rate_and_tenure("t2");
-        let (t3_start, t3_rate, t3) = self.extract_rate_and_tenure("t3");
+        let (t1_start, t1) = self.extract_tenure("t1");
+        let (t2_start, t2) = self.extract_tenure("t2");
+        let (t3_start, t3) = self.extract_tenure("t3");
 
-        // triage based on starting point
-        if t3.is_some() && start_from >= t3_start.unwrap() {
-            // simplest case - only t3 rate is applicable
-            t3.unwrap().get_reward(start_from, end_at, gems)
+        // triage based on starting point on the outside, ending point on the inside
+        let per_gem = if t3.is_some() && start_from >= t3_start.unwrap() {
+            // t3 only case
+            t3.unwrap().get_reward(start_from, end_at)
         } else if t2.is_some() && start_from >= t2_start.unwrap() {
             if t3.is_some() && end_at >= t3_start.unwrap() {
-                let t2_reward = t2
-                    .unwrap()
-                    .get_reward(start_from, t3_start.unwrap(), gems)?;
-                let t3_reward = t3.unwrap().get_reward(t3_start.unwrap(), end_at, gems)?;
+                // t2 + t3 case
+                let t2_reward = t2.unwrap().get_reward(start_from, t3_start.unwrap())?;
+                let t3_reward = t3.unwrap().get_reward(t3_start.unwrap(), end_at)?;
                 t2_reward.try_add(t3_reward)
             } else {
-                // simplest case - only t2 rate is applicable
-                t2.unwrap().get_reward(start_from, end_at, gems)
+                // t2 only case
+                t2.unwrap().get_reward(start_from, end_at)
             }
         } else if t1.is_some() && start_from >= t1_start.unwrap() {
             if t3.is_some() && end_at >= t3_start.unwrap() {
-                let t1_reward = t1
+                // t1 + t2 + t3 case
+                let t1_reward = t1.unwrap().get_reward(start_from, t2_start.unwrap())?;
+                let t2_reward = t2
                     .unwrap()
-                    .get_reward(start_from, t2_start.unwrap(), gems)?;
-                let t2_reward =
-                    t2.unwrap()
-                        .get_reward(t2_start.unwrap(), t3_start.unwrap(), gems)?;
-                let t3_reward = t3.unwrap().get_reward(t3_start.unwrap(), end_at, gems)?;
+                    .get_reward(t2_start.unwrap(), t3_start.unwrap())?;
+                let t3_reward = t3.unwrap().get_reward(t3_start.unwrap(), end_at)?;
                 t1_reward.try_add(t2_reward)?.try_add(t3_reward)
             } else if t2.is_some() && end_at >= t2_start.unwrap() {
-                let t1_reward = t1
-                    .unwrap()
-                    .get_reward(start_from, t2_start.unwrap(), gems)?;
-                let t2_reward = t2.unwrap().get_reward(t2_start.unwrap(), end_at, gems)?;
+                // t1 + t2 case
+                let t1_reward = t1.unwrap().get_reward(start_from, t2_start.unwrap())?;
+                let t2_reward = t2.unwrap().get_reward(t2_start.unwrap(), end_at)?;
                 t1_reward.try_add(t2_reward)
             } else {
-                // simplest case - only t1 rate is applicable
-                t1.unwrap().get_reward(start_from, end_at, gems)
+                // t1 only case
+                t1.unwrap().get_reward(start_from, end_at)
             }
         } else {
             if t3.is_some() && end_at >= t3_start.unwrap() {
-                let base_reward = self.get_base_reward(start_from, t1_start.unwrap(), gems)?;
-                let t1_reward =
-                    t1.unwrap()
-                        .get_reward(t1_start.unwrap(), t2_start.unwrap(), gems)?;
-                let t2_reward =
-                    t2.unwrap()
-                        .get_reward(t2_start.unwrap(), t3_start.unwrap(), gems)?;
-                let t3_reward = t3.unwrap().get_reward(t3_start.unwrap(), end_at, gems)?;
+                // base + t1 + t2 + t3 case
+                let base_reward = self.get_base_reward(start_from, t1_start.unwrap())?;
+                let t1_reward = t1
+                    .unwrap()
+                    .get_reward(t1_start.unwrap(), t2_start.unwrap())?;
+                let t2_reward = t2
+                    .unwrap()
+                    .get_reward(t2_start.unwrap(), t3_start.unwrap())?;
+                let t3_reward = t3.unwrap().get_reward(t3_start.unwrap(), end_at)?;
                 base_reward
                     .try_add(t1_reward)?
                     .try_add(t2_reward)?
                     .try_add(t3_reward)
             } else if t2.is_some() && end_at >= t2_start.unwrap() {
-                let base_reward = self.get_base_reward(start_from, t1_start.unwrap(), gems)?;
-                let t1_reward =
-                    t1.unwrap()
-                        .get_reward(t1_start.unwrap(), t2_start.unwrap(), gems)?;
-                let t2_reward = t2.unwrap().get_reward(t2_start.unwrap(), end_at, gems)?;
+                // base + t1 + t2 case
+                let base_reward = self.get_base_reward(start_from, t1_start.unwrap())?;
+                let t1_reward = t1
+                    .unwrap()
+                    .get_reward(t1_start.unwrap(), t2_start.unwrap())?;
+                let t2_reward = t2.unwrap().get_reward(t2_start.unwrap(), end_at)?;
                 base_reward.try_add(t1_reward)?.try_add(t2_reward)
             } else if t1.is_some() && end_at >= t1_start.unwrap() {
-                let base_reward = self.get_base_reward(start_from, t1_start.unwrap(), gems)?;
-                let t1_reward = t1.unwrap().get_reward(t1_start.unwrap(), end_at, gems)?;
+                // base + t1 case
+                let base_reward = self.get_base_reward(start_from, t1_start.unwrap())?;
+                let t1_reward = t1.unwrap().get_reward(t1_start.unwrap(), end_at)?;
                 base_reward.try_add(t1_reward)
             } else {
-                // simplest case - only base rate is applicable
-                self.get_base_reward(start_from, end_at, gems)
+                // base only case
+                self.get_base_reward(start_from, end_at)
             }
-        }
+        }?;
+
+        gems.try_mul(per_gem)
     }
 }
 
@@ -546,7 +546,7 @@ mod tests {
         let amount = t1.reward_amount(0, 0, 10).unwrap();
         assert_eq!(amount, 0);
 
-        // base case
+        // base only case
         let amount = t1.reward_amount(0, 5, 10).unwrap();
         assert_eq!(amount, 3 * 5 * 10);
 
@@ -560,6 +560,96 @@ mod tests {
 
         // max out case
         let amount = t1.reward_amount(25, 25, 10).unwrap();
+        assert_eq!(amount, 0);
+    }
+
+    #[test]
+    fn test_t2_reward_amounts() {
+        let t2 = FixedRateSchedule::new_t2(7, 20);
+
+        // zero case
+        let amount = t2.reward_amount(0, 0, 10).unwrap();
+        assert_eq!(amount, 0);
+
+        // base only case
+        let amount = t2.reward_amount(0, 5, 10).unwrap();
+        assert_eq!(amount, 3 * 5 * 10);
+
+        // t1 only case
+        let amount = t2.reward_amount(10, 15, 10).unwrap();
+        assert_eq!(amount, 5 * 5 * 10);
+
+        // base + t1 case
+        let amount = t2.reward_amount(0, 15, 10).unwrap();
+        assert_eq!(amount, (3 * 10 + 5 * 5) * 10);
+
+        // t2 only case
+        let amount = t2.reward_amount(20, 25, 10).unwrap();
+        assert_eq!(amount, (7 * 5) * 10);
+
+        // t1 + t2 case
+        let amount = t2.reward_amount(10, 25, 10).unwrap();
+        assert_eq!(amount, (5 * 10 + 7 * 5) * 10);
+
+        // base + t1 + t2 case
+        let amount = t2.reward_amount(0, 25, 10).unwrap();
+        assert_eq!(amount, (3 * 10 + 5 * 10 + 7 * 5) * 10);
+
+        // max out case
+        let amount = t2.reward_amount(25, 25, 10).unwrap();
+        assert_eq!(amount, 0);
+    }
+
+    #[test]
+    fn test_t3_reward_amounts() {
+        let t3 = FixedRateSchedule::new_t3(7, 20, 11, 30);
+
+        // zero case
+        let amount = t3.reward_amount(0, 0, 10).unwrap();
+        assert_eq!(amount, 0);
+
+        // base only case
+        let amount = t3.reward_amount(0, 5, 10).unwrap();
+        assert_eq!(amount, 3 * 5 * 10);
+
+        // t1 only case
+        let amount = t3.reward_amount(10, 15, 10).unwrap();
+        assert_eq!(amount, 5 * 5 * 10);
+
+        // base + t1 case
+        let amount = t3.reward_amount(0, 15, 10).unwrap();
+        assert_eq!(amount, (3 * 10 + 5 * 5) * 10);
+
+        // t2 only case
+        let amount = t3.reward_amount(20, 25, 10).unwrap();
+        assert_eq!(amount, (7 * 5) * 10);
+
+        // t1 + t2 case
+        let amount = t3.reward_amount(10, 25, 10).unwrap();
+        assert_eq!(amount, (5 * 10 + 7 * 5) * 10);
+
+        // base + t1 + t2 case
+        let amount = t3.reward_amount(0, 25, 10).unwrap();
+        assert_eq!(amount, (3 * 10 + 5 * 10 + 7 * 5) * 10);
+
+        // t3 only case
+        let amount = t3.reward_amount(30, 35, 10).unwrap();
+        assert_eq!(amount, (11 * 5) * 10);
+
+        // t2 + t3 case
+        let amount = t3.reward_amount(20, 35, 10).unwrap();
+        assert_eq!(amount, (7 * 10 + 11 * 5) * 10);
+
+        // t1 + t2 + t3 case
+        let amount = t3.reward_amount(10, 35, 10).unwrap();
+        assert_eq!(amount, (5 * 10 + 7 * 10 + 11 * 5) * 10);
+
+        // base + t1 + t2 + t3 case
+        let amount = t3.reward_amount(0, 35, 10).unwrap();
+        assert_eq!(amount, (3 * 10 + 5 * 10 + 7 * 10 + 11 * 5) * 10);
+
+        // max out case
+        let amount = t3.reward_amount(35, 35, 10).unwrap();
         assert_eq!(amount, 0);
     }
 }
