@@ -86,8 +86,7 @@ pub enum ErrorCode {
     #[msg("can't unstake, cooldown period has not passed yet")]
     CooldownNotPassed,
 
-    #[msg("reward has ended, staking no longer possible")]
-    RewardEnded,
+    Reserved44,
 
     #[msg("reward has insufficient funding, please top up")]
     RewardUnderfunded, //0x159

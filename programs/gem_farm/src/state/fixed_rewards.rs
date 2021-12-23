@@ -181,11 +181,10 @@ impl FixedRateReward {
         Ok(refund_amount)
     }
 
-    // todo need logic for when they want to keep themselves staked
     pub fn update_accrued_reward(
         &mut self,
         now_ts: u64,
-        times: &TimeTracker,
+        times: &mut TimeTracker,
         funds: &mut FundsTracker,
         farmer_gems_staked: u64,
         farmer_reward: &mut FarmerReward,
@@ -203,8 +202,22 @@ impl FixedRateReward {
         // update farmer
         farmer_reward.update_fixed_reward(now_ts, newly_accrued_reward)?;
 
-        if farmer_reward.fixed_rate.is_graduation_time(now_ts)? {
-            self.graduate_farmer(now_ts, farmer_gems_staked, farmer_reward)?
+        if farmer_reward.fixed_rate.is_time_to_graduate(now_ts)? {
+            let original_staking_start = farmer_reward.fixed_rate.begin_staking_ts;
+
+            // todo test graduation
+            self.graduate_farmer(now_ts, farmer_gems_staked, farmer_reward)?;
+
+            // we roll them forward with original staking time
+            // todo test rolling forward
+            self.enroll_farmer(
+                now_ts,
+                times,
+                funds,
+                farmer_gems_staked,
+                farmer_reward,
+                Some(original_staking_start),
+            )?;
         }
 
         msg!("updated reward as of {}", now_ts);
@@ -218,24 +231,27 @@ impl FixedRateReward {
         funds: &mut FundsTracker,
         farmer_gems_staked: u64,
         farmer_reward: &mut FarmerReward,
+        original_staking_start: Option<u64>, //used when we roll a farmer forward, w/o them unstaking
     ) -> ProgramResult {
-        // calc time left
+        // calc time left (do NOT throw an error if 0 - A might hav ended but B not)
         let remaining_duration = times.remaining_duration(now_ts)?;
-        // todo is this consistent with how variable rate works?
-        if remaining_duration == 0 {
-            return Err(ErrorCode::RewardEnded.into());
-        }
+
+        // calc any bonus due to previous staking
+        farmer_reward.fixed_rate.begin_staking_ts = original_staking_start.unwrap_or(now_ts);
+        farmer_reward.fixed_rate.begin_schedule_ts = now_ts;
+        let loyal_staker_bonus = farmer_reward.fixed_rate.loyal_staker_bonus()?;
 
         // calc how much we'd have to reserve for them
-        let reserve_amount =
-            self.schedule
-                .calc_reward_amount(0, remaining_duration, farmer_gems_staked)?;
+        let reserve_amount = self.schedule.calc_reward_amount(
+            loyal_staker_bonus,
+            remaining_duration.try_add(loyal_staker_bonus)?,
+            farmer_gems_staked,
+        )?;
         if reserve_amount > funds.pending_amount()? {
             return Err(ErrorCode::RewardUnderfunded.into());
         }
 
         // update farmer
-        farmer_reward.fixed_rate.begin_staking_ts = now_ts;
         farmer_reward.fixed_rate.last_updated_ts = now_ts;
         farmer_reward.fixed_rate.promised_schedule = self.schedule;
         farmer_reward.fixed_rate.promised_duration = remaining_duration;
@@ -249,7 +265,7 @@ impl FixedRateReward {
     }
 
     /// this can be called either
-    /// 1) todo by the staker themselves, when they unstake, or
+    /// 1) by the staker themselves, when they unstake, or
     /// 2) by the farm if graduation_time has come
     pub fn graduate_farmer(
         &mut self,

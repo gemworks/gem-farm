@@ -160,6 +160,7 @@ impl Farm {
                 &mut self.reward_a.funds,
                 farmer.gems_staked,
                 &mut farmer.reward_a,
+                None,
             )?;
         }
 
@@ -170,6 +171,7 @@ impl Farm {
                 &mut self.reward_b.funds,
                 farmer.gems_staked,
                 &mut farmer.reward_a,
+                None,
             )?;
         }
 
@@ -412,7 +414,7 @@ impl FarmReward {
 
                 self.fixed_rate.update_accrued_reward(
                     now_ts,
-                    &self.times,
+                    &mut self.times,
                     &mut self.funds,
                     farmer_gems_staked.unwrap(),
                     farmer_reward.unwrap(),
