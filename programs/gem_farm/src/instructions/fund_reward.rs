@@ -60,14 +60,14 @@ pub fn handler(
     let amount = if let Some(config) = variable_rate_config {
         config.amount
     } else {
-        fixed_rate_config.unwrap().required_funding()?
+        fixed_rate_config.unwrap().amount
     };
 
     // update existing rewards + record new ones
     let farm = &mut ctx.accounts.farm;
     let now_ts = now_ts()?;
 
-    farm.update_rewards_for_all_mints(now_ts, None)?;
+    farm.update_rewards(now_ts, None)?;
 
     farm.fund_reward_by_mint(
         now_ts,

@@ -51,10 +51,6 @@ impl Farmer {
         self.min_staking_ends_ts = now_ts.try_add(min_staking_period_sec)?;
         self.cooldown_ends_ts = 0; //zero it out in case it was set before
 
-        // begin a new staking cycle (variable rewards will simply ignore this)
-        self.reward_a.fixed_rate.reset_staking_cycle();
-        self.reward_b.fixed_rate.reset_staking_cycle();
-
         Ok(())
     }
 

@@ -88,8 +88,8 @@ impl VariableRateReward {
     pub fn update_accrued_reward(
         &mut self,
         now_ts: u64,
-        funds: &mut FundsTracker,
         times: &TimeTracker,
+        funds: &mut FundsTracker,
         farm_gems_staked: u64,
         farmer_gems_staked: Option<u64>,
         farmer_reward: Option<&mut FarmerReward>,
@@ -159,10 +159,6 @@ mod tests {
     #[test]
     fn test_accrued_reward_per_gem() {
         let var_reward = VariableRateReward {
-            config: VariableRateConfig {
-                amount: 100,
-                duration_sec: 10,
-            },
             reward_rate: Number128::from(10u64),
             reward_last_updated_ts: 200,
             accrued_reward_per_gem: Number128::from(1234u64),
@@ -198,10 +194,6 @@ mod tests {
         let now_ts = 201; //just after the previous reward ends at 200s
 
         let mut var_reward = VariableRateReward {
-            config: VariableRateConfig {
-                amount: 100,
-                duration_sec: 10,
-            },
             reward_rate: Number128::from(10u64),
             reward_last_updated_ts: 0,
             accrued_reward_per_gem: Number128::from(1234u64),
@@ -211,7 +203,6 @@ mod tests {
             .fund_reward(now_ts, &mut times, &mut funds, new_config)
             .unwrap();
 
-        assert_eq!(var_reward.config, new_config);
         assert_eq!(
             var_reward.reward_rate,
             Number128::from_decimal(125u64, -3i32)
@@ -245,10 +236,6 @@ mod tests {
         let now_ts = 199; //just before the previous reward, which triggers a merge
 
         let mut var_reward = VariableRateReward {
-            config: VariableRateConfig {
-                amount: 100,
-                duration_sec: 10,
-            },
             reward_rate: Number128::from(10u64),
             reward_last_updated_ts: 0,
             accrued_reward_per_gem: Number128::from(1234u64),
@@ -258,7 +245,6 @@ mod tests {
             .fund_reward(now_ts, &mut times, &mut funds, new_config)
             .unwrap();
 
-        assert_eq!(var_reward.config, new_config);
         assert_eq!(var_reward.reward_rate, Number128::from_decimal(5u64, -1i32));
         assert_eq!(var_reward.reward_last_updated_ts, 199);
         assert_eq!(var_reward.accrued_reward_per_gem, Number128::from(1234u64));
@@ -290,10 +276,6 @@ mod tests {
         let now_ts = 199; //just before the previous reward, which triggers a merge
 
         let mut var_reward = VariableRateReward {
-            config: VariableRateConfig {
-                amount: 100,
-                duration_sec: 10,
-            },
             reward_rate: Number128::from(10u64),
             reward_last_updated_ts: 0,
             accrued_reward_per_gem: Number128::from(1234u64),
@@ -303,7 +285,6 @@ mod tests {
             .fund_reward(now_ts, &mut times, &mut funds, new_config)
             .unwrap();
 
-        assert_eq!(var_reward.config, new_config);
         assert_eq!(
             var_reward.reward_rate,
             Number128::from_decimal(375u64, -3i32)

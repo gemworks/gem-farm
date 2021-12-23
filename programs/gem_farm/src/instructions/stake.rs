@@ -74,7 +74,7 @@ pub fn handler(ctx: Context<Stake>) -> ProgramResult {
     let vault = &ctx.accounts.vault;
     let now_ts = now_ts()?;
 
-    farm.update_rewards_for_all_mints(now_ts, Some(farmer))?;
+    farm.update_rewards(now_ts, Some(farmer))?;
 
     // begin staking
     farm.begin_staking(now_ts, vault.gem_count, farmer)?;

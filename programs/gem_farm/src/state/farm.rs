@@ -107,26 +107,21 @@ impl Farm {
         reward.cancel_reward_by_type(now_ts)
     }
 
-    pub fn update_rewards_for_all_mints(
+    pub fn update_rewards(
         &mut self,
         now_ts: u64,
         mut farmer: Option<&mut Account<Farmer>>,
     ) -> ProgramResult {
         // reward a
-        let (farmer_gems_staked, farmer_begin_staking_ts, farmer_reward_a) = match farmer {
-            Some(ref mut farmer) => (
-                Some(farmer.gems_staked),
-                Some(farmer.begin_staking_ts),
-                Some(&mut farmer.reward_a),
-            ),
-            None => (None, None, None),
+        let (farmer_gems_staked, farmer_reward_a) = match farmer {
+            Some(ref mut farmer) => (Some(farmer.gems_staked), Some(&mut farmer.reward_a)),
+            None => (None, None),
         };
 
         self.reward_a.update_accrued_reward_by_type(
             now_ts,
             self.gems_staked,
             farmer_gems_staked,
-            farmer_begin_staking_ts,
             farmer_reward_a,
         )?;
 
@@ -140,7 +135,6 @@ impl Farm {
             now_ts,
             self.gems_staked,
             farmer_gems_staked,
-            farmer_begin_staking_ts,
             farmer_reward_b,
         )
     }
@@ -158,18 +152,25 @@ impl Farm {
         self.staked_farmer_count.try_add_assign(1)?;
         self.gems_staked.try_add_assign(gems_in_vault)?;
 
+        // fixed-rate only - we need to do some extra book-keeping
         if self.reward_a.reward_type == RewardType::Fixed {
-            self.reward_a
-                .fixed_rate
-                .gems_participating
-                .try_add_assign(gems_in_vault)?;
+            self.reward_a.fixed_rate.enroll_farmer(
+                now_ts,
+                &mut self.reward_a.times,
+                &mut self.reward_a.funds,
+                farmer.gems_staked,
+                &mut farmer.reward_a,
+            )?;
         }
 
         if self.reward_b.reward_type == RewardType::Fixed {
-            self.reward_b
-                .fixed_rate
-                .gems_participating
-                .try_add_assign(gems_in_vault)?;
+            self.reward_b.fixed_rate.enroll_farmer(
+                now_ts,
+                &mut self.reward_b.times,
+                &mut self.reward_b.funds,
+                farmer.gems_staked,
+                &mut farmer.reward_a,
+            )?;
         }
 
         Ok(())
@@ -187,21 +188,21 @@ impl Farm {
                 self.staked_farmer_count.try_sub_assign(1)?;
                 self.gems_staked.try_sub_assign(gems_unstaked)?;
 
-                // we will have updated the reward by now, so safe to mark whole
+                // fixed-rate only - we need to do some extra book-keeping
                 if self.reward_a.reward_type == RewardType::Fixed {
-                    farmer.reward_a.mark_whole();
-                    self.reward_a
-                        .fixed_rate
-                        .gems_made_whole
-                        .try_add_assign(gems_unstaked)?;
+                    self.reward_a.fixed_rate.graduate_farmer(
+                        now_ts,
+                        farmer.gems_staked,
+                        &mut farmer.reward_a,
+                    )?;
                 }
 
                 if self.reward_b.reward_type == RewardType::Fixed {
-                    farmer.reward_b.mark_whole();
-                    self.reward_b
-                        .fixed_rate
-                        .gems_made_whole
-                        .try_add_assign(gems_unstaked)?;
+                    self.reward_b.fixed_rate.graduate_farmer(
+                        now_ts,
+                        farmer.gems_staked,
+                        &mut farmer.reward_b,
+                    )?;
                 }
 
                 Ok(())
@@ -392,14 +393,13 @@ impl FarmReward {
         now_ts: u64,
         farm_gems_staked: u64,
         farmer_gems_staked: Option<u64>,
-        farmer_begin_staking_ts: Option<u64>,
         farmer_reward: Option<&mut FarmerReward>,
     ) -> ProgramResult {
         match self.reward_type {
             RewardType::Variable => self.variable_rate.update_accrued_reward(
                 now_ts,
-                &mut self.funds,
                 &self.times,
+                &mut self.funds,
                 farm_gems_staked,
                 farmer_gems_staked,
                 farmer_reward,
@@ -412,10 +412,9 @@ impl FarmReward {
 
                 self.fixed_rate.update_accrued_reward(
                     now_ts,
-                    &mut self.funds,
                     &self.times,
+                    &mut self.funds,
                     farmer_gems_staked.unwrap(),
-                    farmer_begin_staking_ts.unwrap(),
                     farmer_reward.unwrap(),
                 )
             }
