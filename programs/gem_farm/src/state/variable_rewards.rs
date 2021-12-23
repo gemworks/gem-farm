@@ -1,7 +1,6 @@
 use anchor_lang::prelude::*;
 
 use crate::number128::Number128;
-use gem_common::errors::ErrorCode;
 use gem_common::*;
 
 use crate::state::*;
@@ -123,7 +122,7 @@ impl VariableRateReward {
             farmer_reward.update_variable_reward(
                 newly_accrued_to_farmer.as_u64(0)?, //underestimate at farmer level
                 self.accrued_reward_per_gem,
-            );
+            )?;
         }
 
         self.reward_last_updated_ts = reward_upper_bound;

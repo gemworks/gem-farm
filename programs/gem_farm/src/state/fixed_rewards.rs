@@ -1,5 +1,4 @@
 use anchor_lang::prelude::*;
-use std::cmp::{max, min};
 
 use gem_common::errors::ErrorCode;
 use gem_common::*;
@@ -73,6 +72,7 @@ impl FixedRateSchedule {
         // rates themselves can be anything, no invariant
     }
 
+    #[allow(unused_assignments)]
     pub fn calc_reward_amount(
         &self,
         start_from_sec: u64,
@@ -119,7 +119,7 @@ impl FixedRateSchedule {
 
         if let Some(t3) = self.tier3 {
             tier3_end = end_at_sec;
-            tier3_reward = tier3_end.try_sub(tier3_end)?.try_mul(t3.reward_rate)?;
+            tier3_reward = tier3_end.try_sub(tier2_end)?.try_mul(t3.reward_rate)?;
         }
 
         gems.try_mul(

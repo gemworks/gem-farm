@@ -1,6 +1,5 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::Mint;
-use gem_common::now_ts;
 
 use crate::state::Farm;
 
