@@ -148,9 +148,7 @@ impl FarmerReward {
     pub fn update_fixed_reward(&mut self, now_ts: u64, newly_accrued_reward: u64) -> ProgramResult {
         self.accrued_reward.try_add_assign(newly_accrued_reward)?;
 
-        self.fixed_rate
-            .reward_counted_as_accrued
-            .try_add_assign(newly_accrued_reward)?;
+        // todo test last update never above upper bound
         self.fixed_rate.last_updated_ts = self.fixed_rate.reward_upper_bound(now_ts)?;
 
         Ok(())
@@ -175,20 +173,19 @@ pub struct FarmerFixedRateReward {
     // this is the time the current reward begins (this + promised duration = end)
     pub begin_schedule_ts: u64,
 
+    // should always be set to upper bound, not just now_ts (except funding)
     pub last_updated_ts: u64,
 
     pub promised_schedule: FixedRateSchedule,
 
     pub promised_duration: u64,
-
-    pub reward_counted_as_accrued: u64,
 }
 
 // todo test in rust
 // todo need a time diagram in README or this might be hard to comprehend
 impl FarmerFixedRateReward {
     /// accrued to rolled stakers, whose begin_staking_ts < begin_schedule_ts
-    pub fn loyal_staker_bonus(&self) -> Result<u64, ProgramError> {
+    pub fn loyal_staker_bonus_time(&self) -> Result<u64, ProgramError> {
         self.begin_schedule_ts.try_sub(self.begin_staking_ts)
     }
 
@@ -196,37 +193,22 @@ impl FarmerFixedRateReward {
         self.begin_schedule_ts.try_add(self.promised_duration)
     }
 
-    // pub fn capped_accrued_duration(&self, now_ts: u64) -> Result<u64, ProgramError> {
-    //     let upper_bound_ts = std::cmp::min(now_ts, self.graduation_time()?);
-    //     upper_bound_ts.try_sub(self.begin_staking_ts)
-    // }
-
-    // pub fn unaccrued_duration(&self) -> Result<u64, ProgramError> {
-    //     self.begin_staking_ts
-    //         .try_add(self.promised_duration)?
-    //         .try_sub(self.last_updated_ts)
-    // }
-
     pub fn is_time_to_graduate(&self, now_ts: u64) -> Result<bool, ProgramError> {
         Ok(now_ts >= self.end_schedule_ts()?)
     }
-
-    // pub fn lower_bound_ts(&self) -> u64 {
-    //     std::cmp::max(self.begin_staking_ts, self.last_updated_ts)
-    // }
 
     pub fn reward_upper_bound(&self, now_ts: u64) -> Result<u64, ProgramError> {
         Ok(std::cmp::min(now_ts, self.end_schedule_ts()?))
     }
 
-    pub fn time_since_begin_staking(&self) -> Result<u64, ProgramError> {
+    pub fn time_from_staking_to_update(&self) -> Result<u64, ProgramError> {
         self.last_updated_ts.try_sub(self.begin_staking_ts)
     }
 
     /// (!) intentionally uses begin_staking_ts for both start_from and end_at
-    /// in doing so we increase both start_from and end_at by exactly loyal_staker_bonus
+    /// in doing so we increase both start_from and end_at by exactly loyal_staker_bonus_time
     pub fn voided_reward(&self, gems: u64) -> Result<u64, ProgramError> {
-        let start_from = self.time_since_begin_staking()?;
+        let start_from = self.time_from_staking_to_update()?;
         let end_at = self.end_schedule_ts()?.try_sub(self.begin_staking_ts)?;
 
         self.promised_schedule
@@ -234,9 +216,9 @@ impl FarmerFixedRateReward {
     }
 
     /// (!) intentionally uses begin_staking_ts for both start_from and end_at
-    /// in doing so we increase both start_from and end_at by exactly loyal_staker_bonus
+    /// in doing so we increase both start_from and end_at by exactly loyal_staker_bonus_time
     pub fn newly_accrued_reward(&self, now_ts: u64, gems: u64) -> Result<u64, ProgramError> {
-        let start_from = self.time_since_begin_staking()?;
+        let start_from = self.time_from_staking_to_update()?;
         let end_at = self
             .reward_upper_bound(now_ts)?
             .try_sub(self.begin_staking_ts)?;

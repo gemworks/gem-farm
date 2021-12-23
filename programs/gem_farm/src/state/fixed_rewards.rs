@@ -194,6 +194,7 @@ impl FixedRateReward {
             .newly_accrued_reward(now_ts, farmer_gems_staked)?;
 
         // update farm (move from reserved to accrued)
+        // todo include reserved amount in js fixed rate tests
         funds
             .total_accrued_to_stakers
             .try_add_assign(newly_accrued_reward)?;
@@ -239,12 +240,12 @@ impl FixedRateReward {
         // calc any bonus due to previous staking
         farmer_reward.fixed_rate.begin_staking_ts = original_staking_start.unwrap_or(now_ts);
         farmer_reward.fixed_rate.begin_schedule_ts = now_ts;
-        let loyal_staker_bonus = farmer_reward.fixed_rate.loyal_staker_bonus()?;
+        let bonus_time = farmer_reward.fixed_rate.loyal_staker_bonus_time()?;
 
         // calc how much we'd have to reserve for them
         let reserve_amount = self.schedule.calc_reward_amount(
-            loyal_staker_bonus,
-            remaining_duration.try_add(loyal_staker_bonus)?,
+            bonus_time,
+            remaining_duration.try_add(bonus_time)?,
             farmer_gems_staked,
         )?;
         if reserve_amount > funds.pending_amount()? {
@@ -255,7 +256,6 @@ impl FixedRateReward {
         farmer_reward.fixed_rate.last_updated_ts = now_ts;
         farmer_reward.fixed_rate.promised_schedule = self.schedule;
         farmer_reward.fixed_rate.promised_duration = remaining_duration;
-        farmer_reward.fixed_rate.reward_counted_as_accrued = 0;
 
         // update farm
         self.reserved_amount.try_add_assign(reserve_amount)?;
@@ -275,6 +275,8 @@ impl FixedRateReward {
     ) -> ProgramResult {
         // reduce reserved amount
         let voided_reward = farmer_reward.fixed_rate.voided_reward(farmer_gems_staked)?;
+
+        // todo check that after multiple farmers voided, reserved goes to 0
         self.reserved_amount.try_sub_assign(voided_reward)?;
 
         // zero out the data on the farmer

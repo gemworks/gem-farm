@@ -21,6 +21,7 @@ pub struct VariableRateReward {
     // in tokens/s, = total reward pot at initialization / reward duration
     pub reward_rate: Number128,
 
+    // should always be set to upper bound, not just now_ts (except funding)
     pub reward_last_updated_ts: u64,
 
     // this is somewhat redundant with total_accrued_to_stakers in funds, but necessary
