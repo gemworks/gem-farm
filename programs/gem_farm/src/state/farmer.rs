@@ -118,7 +118,6 @@ pub struct FarmerReward {
     pub fixed_rate: FarmerFixedRateReward,
 }
 
-// todo test in rust
 impl FarmerReward {
     pub fn outstanding_reward(&self) -> Result<u64, ProgramError> {
         self.accrued_reward.try_sub(self.paid_out_reward)
@@ -148,7 +147,6 @@ impl FarmerReward {
     pub fn update_fixed_reward(&mut self, now_ts: u64, newly_accrued_reward: u64) -> ProgramResult {
         self.accrued_reward.try_add_assign(newly_accrued_reward)?;
 
-        // todo test last update never above upper bound
         self.fixed_rate.last_updated_ts = self.fixed_rate.reward_upper_bound(now_ts)?;
 
         Ok(())
@@ -181,7 +179,6 @@ pub struct FarmerFixedRateReward {
     pub promised_duration: u64,
 }
 
-// todo test in rust
 // todo need a time diagram in README or this might be hard to comprehend
 impl FarmerFixedRateReward {
     /// accrued to rolled stakers, whose begin_staking_ts < begin_schedule_ts
@@ -225,5 +222,105 @@ impl FarmerFixedRateReward {
 
         self.promised_schedule
             .reward_amount(start_from, end_at, gems)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::state::TierConfig;
+
+    impl FarmerFixedRateReward {
+        pub fn new() -> Self {
+            Self {
+                begin_staking_ts: 100,
+                begin_schedule_ts: 150,
+                last_updated_ts: 155,
+                promised_schedule: FixedRateSchedule {
+                    base_rate: 3,
+                    tier1: Some(TierConfig {
+                        reward_rate: 5,
+                        required_tenure: 55,
+                    }),
+                    tier2: Some(TierConfig {
+                        reward_rate: 7,
+                        required_tenure: 65,
+                    }),
+                    tier3: Some(TierConfig {
+                        reward_rate: 11,
+                        required_tenure: 75,
+                    }),
+                },
+                promised_duration: 60,
+            }
+        }
+    }
+
+    impl FarmerReward {
+        pub fn new() -> Self {
+            Self {
+                paid_out_reward: 0,
+                accrued_reward: 123,
+                variable_rate: FarmerVariableRateReward {
+                    last_recorded_accrued_reward_per_gem: Number128::from(10u64),
+                },
+                fixed_rate: FarmerFixedRateReward::new(),
+            }
+        }
+    }
+
+    #[test]
+    fn test_farmer_fixed_rate_reward() {
+        let r = FarmerFixedRateReward::new();
+
+        assert_eq!(50, r.loyal_staker_bonus_time().unwrap());
+        assert_eq!(210, r.end_schedule_ts().unwrap());
+        assert_eq!(true, r.is_time_to_graduate(210).unwrap());
+        assert_eq!(210, r.reward_upper_bound(250).unwrap());
+        assert_eq!(55, r.time_from_staking_to_update().unwrap());
+
+        // last update - staking = 55
+        // ub - staking = 110
+        // reward accrues for a total of 55s, with 50s bonus and 5s coming from current staking period
+        assert_eq!((50 + 70 + 11 * 35) * 10, r.voided_reward(10).unwrap());
+
+        // last update - staking = 55
+        // now - staking = 85
+        // reward accrues for a total of 30s, with 50s bonus and 5s coming from current staking period
+        assert_eq!(
+            (50 + 70 + 110) * 10,
+            r.newly_accrued_reward(185, 10).unwrap()
+        );
+    }
+
+    #[test]
+    fn test_farmer_reward_update_variable() {
+        let mut r = FarmerReward::new();
+        assert_eq!(123, r.outstanding_reward().unwrap());
+
+        r.update_variable_reward(10, Number128::from(50u64));
+        assert_eq!(133, r.outstanding_reward().unwrap());
+        assert_eq!(
+            Number128::from(50u64),
+            r.variable_rate.last_recorded_accrued_reward_per_gem
+        );
+    }
+
+    #[test]
+    fn test_farmer_reward_update_fixed() {
+        let mut r = FarmerReward::new();
+        assert_eq!(123, r.outstanding_reward().unwrap());
+
+        r.update_fixed_reward(9999, 10);
+        assert_eq!(133, r.outstanding_reward().unwrap());
+        assert_eq!(210, r.fixed_rate.last_updated_ts);
+    }
+
+    fn test_farmer_reward_claim() {
+        let mut r = FarmerReward::new();
+        assert_eq!(123, r.outstanding_reward().unwrap());
+
+        r.claim_reward(100).unwrap();
+        assert_eq!(23, r.outstanding_reward().unwrap());
     }
 }

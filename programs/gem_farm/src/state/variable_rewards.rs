@@ -154,8 +154,6 @@ impl VariableRateReward {
 mod tests {
     use super::*;
 
-    // todo in theory can write tests for update_accrued_reward
-
     #[test]
     fn test_accrued_reward_per_gem() {
         let var_reward = VariableRateReward {

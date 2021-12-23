@@ -52,7 +52,6 @@ pub struct FixedRateConfig {
     pub duration_sec: u64,
 }
 
-// todo test in rust
 impl FixedRateSchedule {
     /// rates themselves can be anything, no invariant
     pub fn verify_schedule_invariants(&self) {
