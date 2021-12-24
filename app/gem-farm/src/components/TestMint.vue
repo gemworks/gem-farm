@@ -1,6 +1,6 @@
 <template>
   <div class="nes-container with-title">
-    <p class="title">Test Reward Mint</p>
+    <p class="title">Create Test Reward Mint</p>
     <button class="nes-btn is-primary" @click="createTestReward">
       Create Test Mint
     </button>
@@ -24,13 +24,12 @@ export default defineComponent({
     const { wallet, getWallet } = useWallet();
     const { cluster, getConnection } = useCluster();
 
-    const mint = ref(undefined);
-
     let gf: any;
-
     watch([wallet, cluster], async () => {
       gf = await initGemFarm(getConnection(), getWallet()!);
     });
+
+    const mint = ref(undefined);
 
     const createTestReward = async () => {
       const { mint: rewardMint } = await gf.createTestReward(1000000);

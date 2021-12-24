@@ -8,21 +8,27 @@ import {
   GemFarmClient,
   FarmConfig,
 } from '../../../../../tests/gem-farm/gem-farm.client';
-import BN from 'bn.js';
 
 export async function initGemFarm(
   conn: Connection,
   wallet?: SignerWalletAdapter
 ) {
   const walletToUse = wallet ?? createFakeWallet();
-  const idl = await (await fetch('gem_farm.json')).json();
-  return new GemFarm(conn, walletToUse as anchor.Wallet, idl);
+  const farmIdl = await (await fetch('gem_farm.json')).json();
+  const bankIdl = await (await fetch('gem_bank.json')).json();
+  return new GemFarm(conn, walletToUse as anchor.Wallet, farmIdl, bankIdl);
 }
 
 export class GemFarm extends GemFarmClient {
-  constructor(conn: Connection, wallet: anchor.Wallet, idl: Idl) {
-    const programId = DEFAULTS.GEM_BANK_PROG_ID;
-    super(conn, wallet, idl, programId);
+  constructor(
+    conn: Connection,
+    wallet: anchor.Wallet,
+    farmIdl: Idl,
+    bankIdl: Idl
+  ) {
+    const farmProgId = DEFAULTS.GEM_FARM_PROG_ID;
+    const bankProgId = DEFAULTS.GEM_BANK_PROG_ID;
+    super(conn, wallet, farmIdl, farmProgId, bankIdl, bankProgId);
   }
 
   async createTestReward(initialFundingAmount: number) {
