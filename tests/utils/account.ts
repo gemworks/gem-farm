@@ -2,6 +2,7 @@ import {
   Connection,
   Keypair,
   PublicKey,
+  sendAndConfirmRawTransaction,
   sendAndConfirmTransaction,
   Signer,
   SystemProgram,
@@ -13,43 +14,29 @@ import {
   AccountLayout as TokenAccountLayout,
   ASSOCIATED_TOKEN_PROGRAM_ID,
   MintInfo,
+  MintLayout,
   NATIVE_MINT,
   Token,
   TOKEN_PROGRAM_ID,
   u64,
 } from '@solana/spl-token';
-import { HasPublicKey, ToBytes, toPublicKeys } from './types';
+import {
+  HasPublicKey,
+  stringifyPubkeysAndBNsInObject,
+  ToBytes,
+  toPublicKeys,
+} from './types';
 
 export interface ITokenData {
   tokenMint: PublicKey;
   tokenAcc: PublicKey;
   owner: PublicKey;
-  token: TestToken;
+  token: Token;
 }
 
-export class TestToken extends Token {
-  decimals: number;
-  one_unit: u64;
-
-  constructor(conn: Connection, token: Token, decimals: number) {
-    super(conn, token.publicKey, token.programId, token.payer);
-    this.decimals = decimals;
-    this.one_unit = new u64(10).pow(new u64(this.decimals));
-  }
-
-  as_int(amount: u64 | number): u64 {
-    if (typeof amount == 'number') {
-      amount = new u64(amount);
-    }
-    return amount.mul(this.one_unit);
-  }
-
-  as_decimal(amount: u64 | number): u64 {
-    if (typeof amount == 'number') {
-      amount = new u64(amount);
-    }
-    return amount.div(this.one_unit);
-  }
+export interface TxWithSigners {
+  tx: Transaction;
+  signers: Signer[];
 }
 
 export class AccountUtils {
@@ -85,7 +72,7 @@ export class AccountUtils {
 
   async createWallet(lamports: number): Promise<Keypair> {
     const wallet = Keypair.generate();
-    const fundTx = new Transaction().add(
+    const tx = new Transaction().add(
       SystemProgram.transfer({
         fromPubkey: this.wallet.publicKey,
         toPubkey: wallet.publicKey,
@@ -93,7 +80,7 @@ export class AccountUtils {
       })
     );
 
-    await this.sendAndConfirmTransaction(fundTx, [this.wallet.payer]);
+    await this.sendAndConfirmTx({ tx, signers: [this.wallet.payer] });
     return wallet;
   }
 
@@ -120,27 +107,25 @@ export class AccountUtils {
 
   async createToken(
     decimals: number,
-    authority: PublicKey = this.wallet.payer.publicKey
-  ): Promise<TestToken> {
-    const token = await Token.createMint(
+    authority: Keypair = this.wallet.payer
+  ): Promise<Token> {
+    return Token.createMint(
       this.conn,
-      this.wallet.payer,
       authority,
-      authority,
+      authority.publicKey,
+      authority.publicKey,
       decimals,
       TOKEN_PROGRAM_ID
     );
-    return new TestToken(this.conn, token, decimals);
   }
 
   async createNativeToken() {
-    const token = new Token(
+    return new Token(
       this.conn,
       NATIVE_MINT,
       TOKEN_PROGRAM_ID,
       this.wallet.payer
     );
-    return new TestToken(this.conn, token, 9);
   }
 
   async getBalance(publicKey: PublicKey): Promise<number> {
@@ -193,7 +178,10 @@ export class AccountUtils {
     }
   }
 
-  async createMintAndATA(owner: PublicKey, amount: BN): Promise<ITokenData> {
+  async createMintAndFundATA(
+    owner: PublicKey,
+    amount: BN
+  ): Promise<ITokenData> {
     const token = await this.createToken(0);
     const tokenAcc = await this.createAndFundATA(token, owner, amount);
     return {
@@ -204,64 +192,211 @@ export class AccountUtils {
     } as ITokenData;
   }
 
-  async createTokenAccountTx(
-    token: Token,
-    owner: PublicKey | HasPublicKey,
+  async createMintAndFundATAWithWallet(
+    wallet: Wallet,
+    decimals: number,
     amount: number
-  ): Promise<[PublicKey, Transaction]> {
-    if ('publicKey' in owner) {
-      owner = owner.publicKey;
-    }
-    let lamportBalanceNeeded = await Token.getMinBalanceRentForExemptAccount(
-      this.conn
+  ) {
+    //create mint
+    const [mint, newMintTx] = await this.createMintTx(
+      wallet.publicKey,
+      wallet.publicKey,
+      decimals
     );
-    if (token.publicKey == NATIVE_MINT) {
-      lamportBalanceNeeded += amount;
-    }
+    //create token ATA
+    const [tokenAcc, newTokenAccTx] = await this.createTokenAccountTx(
+      mint,
+      wallet.publicKey,
+      wallet.publicKey,
+      true
+    );
+    //fund ATA
+    const mintToTx = await this.mintToTx(
+      mint,
+      tokenAcc,
+      wallet.publicKey,
+      wallet.publicKey,
+      amount
+    );
+
+    const tx = await this.mergeTxs(
+      [newMintTx, newTokenAccTx, mintToTx],
+      wallet.publicKey
+    );
+    const txSig = await this.sendTxWithWallet(wallet, tx);
+
+    return { mint, tokenAcc, txSig };
+  }
+
+  async createMintTx(
+    authority: PublicKey,
+    payer: PublicKey,
+    decimals: number
+  ): Promise<[PublicKey, TxWithSigners]> {
+    const mintAccount = Keypair.generate();
+    const balanceNeeded = await Token.getMinBalanceRentForExemptMint(this.conn);
     const tx = new Transaction({
-      feePayer: this.wallet.payer.publicKey,
+      feePayer: payer,
       recentBlockhash: (await this.conn.getRecentBlockhash()).blockhash,
     });
+    tx.add(
+      SystemProgram.createAccount({
+        fromPubkey: authority,
+        newAccountPubkey: mintAccount.publicKey,
+        lamports: balanceNeeded,
+        space: MintLayout.span,
+        programId: TOKEN_PROGRAM_ID,
+      }),
+      Token.createInitMintInstruction(
+        TOKEN_PROGRAM_ID,
+        mintAccount.publicKey,
+        decimals,
+        authority,
+        authority
+      )
+    );
+
+    return [mintAccount.publicKey, { tx, signers: [mintAccount] }];
+  }
+
+  async createTokenAccountTx(
+    mint: PublicKey,
+    authority: PublicKey,
+    payer: PublicKey,
+    isAssociated: boolean
+  ): Promise<[PublicKey, TxWithSigners]> {
     const newAccount = Keypair.generate();
-    const transaction = tx.add(
+    let balanceNeeded = await Token.getMinBalanceRentForExemptAccount(
+      this.conn
+    );
+    const tx = new Transaction({
+      feePayer: payer,
+      recentBlockhash: (await this.conn.getRecentBlockhash()).blockhash,
+    });
+    if (isAssociated) {
+      const associatedAddress = await Token.getAssociatedTokenAddress(
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+        TOKEN_PROGRAM_ID,
+        mint,
+        authority
+      );
+      tx.add(
+        Token.createAssociatedTokenAccountInstruction(
+          ASSOCIATED_TOKEN_PROGRAM_ID,
+          TOKEN_PROGRAM_ID,
+          mint,
+          associatedAddress,
+          authority,
+          payer
+        )
+      );
+
+      return [associatedAddress, { tx, signers: [] }];
+    }
+    tx.add(
       SystemProgram.createAccount(
         toPublicKeys({
-          fromPubkey: this.wallet.payer,
+          fromPubkey: authority,
           newAccountPubkey: newAccount,
-          lamports: lamportBalanceNeeded,
+          lamports: balanceNeeded,
           space: TokenAccountLayout.span,
           programId: TOKEN_PROGRAM_ID,
         })
-      ),
-      Token.createInitAccountInstruction(
-        TOKEN_PROGRAM_ID,
-        token.publicKey,
-        newAccount.publicKey,
-        owner
       )
     );
-    transaction.sign(newAccount);
-    return [newAccount.publicKey, transaction];
+    tx.add(
+      Token.createInitAccountInstruction(
+        TOKEN_PROGRAM_ID,
+        mint,
+        newAccount.publicKey,
+        authority
+      )
+    );
+
+    return [newAccount.publicKey, { tx, signers: [newAccount] }];
+  }
+
+  async mintToTx(
+    mint: PublicKey,
+    dest: PublicKey,
+    authority: PublicKey,
+    payer: PublicKey,
+    amount: number,
+  ): Promise<TxWithSigners> {
+    const tx = new Transaction({
+      feePayer: payer,
+      recentBlockhash: (await this.conn.getRecentBlockhash()).blockhash,
+    });
+    tx.add(
+      Token.createMintToInstruction(
+        TOKEN_PROGRAM_ID,
+        mint,
+        dest,
+        authority,
+        [],
+        amount
+      )
+    );
+
+    return { tx, signers: [] };
   }
 
   // --------------------------------------- Tx
 
-  async sendAndConfirmTransaction(
-    transaction: Transaction,
-    signers: Signer[]
-  ): Promise<string> {
-    return await sendAndConfirmTransaction(
-      this.conn,
-      transaction,
-      signers.concat(this.wallet.payer)
-    );
+  // ----------------- single
+
+  async sendTxWithWallet(wallet: Wallet, tx: TxWithSigners) {
+    await wallet.signTransaction(tx.tx);
+    return this.sendAndConfirmTx(tx);
   }
 
-  async sendAndConfirmTransactionSet(
-    ...transactions: [Transaction, Signer[]][]
-  ): Promise<string[]> {
+  async sendAndConfirmTx(tx: TxWithSigners): Promise<string> {
+    tx.signers.forEach((s) => {
+      tx.tx.partialSign(s);
+    });
+    const txSig = await sendAndConfirmRawTransaction(
+      this.conn,
+      tx.tx.serialize()
+    );
+    console.log('success', txSig);
+    return txSig;
+  }
+
+  // ----------------- multiple
+
+  async mergeTxs(
+    txs: TxWithSigners[],
+    payer: PublicKey
+  ): Promise<TxWithSigners> {
+    const finalTx = new Transaction({
+      feePayer: payer,
+      recentBlockhash: (await this.conn.getRecentBlockhash()).blockhash,
+    });
+    let finalSigners: Signer[] = [];
+
+    txs.forEach((t) => {
+      finalTx.instructions.push(...t.tx.instructions);
+      finalTx.signatures.push(...t.tx.signatures);
+      finalSigners.push(...t.signers);
+    });
+
+    //dedup
+    finalTx.signatures = [...new Set(finalTx.signatures)];
+    finalSigners = [...new Set(finalSigners)];
+
+    return { tx: finalTx, signers: finalSigners };
+  }
+
+  // (!) does NOT merge - will fail if one tx depends on another
+  async sendTxsSetWithWallet(wallet: Wallet, txs: TxWithSigners[]) {
+    await wallet.signAllTransactions(txs.map((t) => t.tx));
+    return this.sendAndConfirmTxsSet(txs);
+  }
+
+  async sendAndConfirmTxsSet(txs: TxWithSigners[]): Promise<string[]> {
+    console.log(`attempting to send ${txs.length} transactions`);
     const signatures = await Promise.all(
-      transactions.map(([t, s]) => this.conn.sendTransaction(t, s))
+      txs.map((t) => this.sendAndConfirmTx(t))
     );
     const result = await Promise.all(
       signatures.map((s) => this.conn.confirmTransaction(s))
@@ -271,8 +406,9 @@ export class AccountUtils {
 
     if (failedTx.length > 0) {
       throw new Error(`Transactions failed: ${failedTx}`);
+    } else {
+      console.log('All transactions succeeded:', signatures);
     }
-
     return signatures;
   }
 }

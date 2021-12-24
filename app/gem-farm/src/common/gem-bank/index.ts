@@ -10,7 +10,7 @@ import { DEFAULTS } from '@/globals';
 import { NodeWallet, programs } from '@metaplex/js';
 
 //when we only want to view vaults, no need to connect a real wallet.
-function createFakeWallet() {
+export function createFakeWallet() {
   const leakedKp = Keypair.fromSecretKey(
     Uint8Array.from([
       208, 175, 150, 242, 88, 34, 108, 88, 177, 16, 168, 75, 115, 181, 199, 242,
