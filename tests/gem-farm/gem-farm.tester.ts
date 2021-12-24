@@ -106,13 +106,13 @@ export class GemFarmTester extends GemFarmClient {
     );
 
     if (reward) this.reward = reward;
-    this.rewardMint = await this.createToken(0);
+    this.rewardMint = await this.createMint(0);
     this.rewardSource = await this.createAndFundATA(
       this.rewardMint,
       this.funder,
       toBN(initialFundingAmount)
     );
-    this.rewardSecondMint = await this.createToken(0);
+    this.rewardSecondMint = await this.createMint(0);
 
     ({ gemAmount: this.gem1Amount, gem: this.gem1 } = await prepGem(
       this,

@@ -84,7 +84,11 @@ export class AccountUtils {
     return wallet;
   }
 
-  // --------------------------------------- Token / Mint
+  async getBalance(publicKey: PublicKey): Promise<number> {
+    return this.conn.getBalance(publicKey);
+  }
+
+  // --------------------------------------- Mint
 
   async deserializeToken(mint: PublicKey): Promise<Token> {
     //doesn't matter which keypair goes here, we just need some key for instantiation
@@ -105,7 +109,7 @@ export class AccountUtils {
     return t.getMintInfo();
   }
 
-  async createToken(
+  async createMint(
     decimals: number,
     authority: Keypair = this.wallet.payer
   ): Promise<Token> {
@@ -119,7 +123,7 @@ export class AccountUtils {
     );
   }
 
-  async createNativeToken() {
+  async createNativeMint() {
     return new Token(
       this.conn,
       NATIVE_MINT,
@@ -128,8 +132,60 @@ export class AccountUtils {
     );
   }
 
-  async getBalance(publicKey: PublicKey): Promise<number> {
-    return this.conn.getBalance(publicKey);
+  async createMintTx(
+    authority: PublicKey,
+    payer: PublicKey,
+    decimals: number
+  ): Promise<[PublicKey, TxWithSigners]> {
+    const mintAccount = Keypair.generate();
+    const balanceNeeded = await Token.getMinBalanceRentForExemptMint(this.conn);
+    const tx = new Transaction({
+      feePayer: payer,
+      recentBlockhash: (await this.conn.getRecentBlockhash()).blockhash,
+    });
+    tx.add(
+      SystemProgram.createAccount({
+        fromPubkey: authority,
+        newAccountPubkey: mintAccount.publicKey,
+        lamports: balanceNeeded,
+        space: MintLayout.span,
+        programId: TOKEN_PROGRAM_ID,
+      }),
+      Token.createInitMintInstruction(
+        TOKEN_PROGRAM_ID,
+        mintAccount.publicKey,
+        decimals,
+        authority,
+        authority
+      )
+    );
+
+    return [mintAccount.publicKey, { tx, signers: [mintAccount] }];
+  }
+
+  async mintToTx(
+    mint: PublicKey,
+    dest: PublicKey,
+    authority: PublicKey,
+    payer: PublicKey,
+    amount: number
+  ): Promise<TxWithSigners> {
+    const tx = new Transaction({
+      feePayer: payer,
+      recentBlockhash: (await this.conn.getRecentBlockhash()).blockhash,
+    });
+    tx.add(
+      Token.createMintToInstruction(
+        TOKEN_PROGRAM_ID,
+        mint,
+        dest,
+        authority,
+        [],
+        amount
+      )
+    );
+
+    return { tx, signers: [] };
   }
 
   // --------------------------------------- Token Acc / ATA
@@ -182,7 +238,7 @@ export class AccountUtils {
     owner: PublicKey,
     amount: BN
   ): Promise<ITokenData> {
-    const token = await this.createToken(0);
+    const token = await this.createMint(0);
     const tokenAcc = await this.createAndFundATA(token, owner, amount);
     return {
       tokenMint: token.publicKey,
@@ -226,37 +282,6 @@ export class AccountUtils {
     const txSig = await this.sendTxWithWallet(wallet, tx);
 
     return { mint, tokenAcc, txSig };
-  }
-
-  async createMintTx(
-    authority: PublicKey,
-    payer: PublicKey,
-    decimals: number
-  ): Promise<[PublicKey, TxWithSigners]> {
-    const mintAccount = Keypair.generate();
-    const balanceNeeded = await Token.getMinBalanceRentForExemptMint(this.conn);
-    const tx = new Transaction({
-      feePayer: payer,
-      recentBlockhash: (await this.conn.getRecentBlockhash()).blockhash,
-    });
-    tx.add(
-      SystemProgram.createAccount({
-        fromPubkey: authority,
-        newAccountPubkey: mintAccount.publicKey,
-        lamports: balanceNeeded,
-        space: MintLayout.span,
-        programId: TOKEN_PROGRAM_ID,
-      }),
-      Token.createInitMintInstruction(
-        TOKEN_PROGRAM_ID,
-        mintAccount.publicKey,
-        decimals,
-        authority,
-        authority
-      )
-    );
-
-    return [mintAccount.publicKey, { tx, signers: [mintAccount] }];
   }
 
   async createTokenAccountTx(
@@ -314,31 +339,6 @@ export class AccountUtils {
     );
 
     return [newAccount.publicKey, { tx, signers: [newAccount] }];
-  }
-
-  async mintToTx(
-    mint: PublicKey,
-    dest: PublicKey,
-    authority: PublicKey,
-    payer: PublicKey,
-    amount: number,
-  ): Promise<TxWithSigners> {
-    const tx = new Transaction({
-      feePayer: payer,
-      recentBlockhash: (await this.conn.getRecentBlockhash()).blockhash,
-    });
-    tx.add(
-      Token.createMintToInstruction(
-        TOKEN_PROGRAM_ID,
-        mint,
-        dest,
-        authority,
-        [],
-        amount
-      )
-    );
-
-    return { tx, signers: [] };
   }
 
   // --------------------------------------- Tx
