@@ -63,4 +63,12 @@ export class GemFarm extends GemFarmClient {
 
     return { farm, bank, ...stuff };
   }
+
+  async authorizeFunderWallet(farm: PublicKey, funder: PublicKey) {
+    return this.authorizeFunder(farm, this.wallet.publicKey, funder);
+  }
+
+  async deauthorizeFunderWallet(farm: PublicKey, funder: PublicKey) {
+    return this.deauthorizeFunder(farm, this.wallet.publicKey, funder);
+  }
 }

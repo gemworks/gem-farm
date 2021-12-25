@@ -1,91 +1,47 @@
 <template>
   <ConfigPane />
-  <!--<div v-if="!wallet" class="text-center">Pls connect (burner) wallet</div>-->
-
-  <!--<div v-else>-->
-  <TestMint />
-
-  <div class="nes-container with-title mt-10">
-    <p class="title">New Farm Config</p>
-    <form @submit.prevent="initFarm">
-      <!--reward A-->
-      <div class="flex items-end mb-5">
-        <div class="nes-field mr-5 w-9/12">
-          <label for="mintA">Reward A mint:</label>
-          <input type="text" id="mintA" class="nes-input" v-model="mintA" />
-        </div>
-        <div class="nes-select w-1/4">
-          <select v-model="typeA">
-            <option :value="RewardType.Variable">Variable</option>
-            <option :value="RewardType.Fixed">Fixed</option>
+  <div v-if="!wallet" class="text-center">Pls connect (burner) wallet</div>
+  <div v-else>
+    <!--when farm initialized-->
+    <div v-if="foundFarms && foundFarms.length">
+      <!--farm selector-->
+      <div class="nes-container with-title mb-10">
+        <p class="title">Farms found</p>
+        <div class="nes-select mb-5">
+          <select v-model="farm">
+            <option v-for="f in foundFarms" :key="f.publicKey.toBase58()">
+              {{ f.publicKey.toBase58() }}
+            </option>
           </select>
         </div>
+        <div class="mb-5">Selected farm: {{ farm }}</div>
+        <div class="mb-5">Associated bank: {{ bank }}</div>
       </div>
-      <!--reward B-->
-      <div class="flex items-end mb-5">
-        <div class="nes-field mr-5 w-9/12">
-          <label for="mintA">Reward B mint:</label>
-          <input type="text" id="mintB" class="nes-input" v-model="mintB" />
-        </div>
-        <div class="nes-select w-1/4">
-          <select v-model="typeB">
-            <option :value="RewardType.Variable">Variable</option>
-            <option :value="RewardType.Fixed">Fixed</option>
-          </select>
-        </div>
-      </div>
-      <!--FarmConfig-->
-      <div class="nes-field mb-5">
-        <label for="minStakingPeriodSec">Min staking period (sec)</label>
-        <input
-          type="number"
-          id="minStakingPeriodSec"
-          class="nes-input"
-          v-model="minStakingPeriodSec"
-        />
-      </div>
-      <div class="nes-field mb-5">
-        <label for="cooldownPeriodSec">Cooldown period (sec)</label>
-        <input
-          type="number"
-          id="cooldownPeriodSec"
-          class="nes-input"
-          v-model="cooldownPeriodSec"
-        />
-      </div>
-      <div class="nes-field mb-5">
-        <label for="unstakingFeeLamp">Unstaking fee (lamports)</label>
-        <input
-          type="number"
-          id="unstakingFeeLamp"
-          class="nes-input"
-          v-model="unstakingFeeLamp"
-        />
-      </div>
-      <button class="nes-btn is-primary mb-5" type="submit">Start farm*</button>
-      <p class="mb-5">* this creates a gem-bank automatically</p>
-    </form>
+      <!--authorize funder-->
+      <AuthorizeFunder :farm="farm" />
+    </div>
+    <!--when it's not-->
+    <div v-else>
+      <TestMint class="mb-10" />
+      <InitFarm class="mb-10" @new-farm-bank="handleNewFarmBank" />
+    </div>
   </div>
-
-  <!--</div>-->
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, watch } from 'vue';
+import { defineComponent, onMounted, ref, watch } from 'vue';
 import ConfigPane from '@/components/ConfigPane.vue';
 import useWallet from '@/composables/wallet';
 import useCluster from '@/composables/cluster';
-import {
-  RewardType,
-  FarmConfig,
-} from '../../../../tests/gem-farm/gem-farm.client';
 import TestMint from '@/components/TestMint.vue';
 import { initGemFarm } from '@/common/gem-farm';
+import InitFarm from '@/components/InitFarm.vue';
 import { PublicKey } from '@solana/web3.js';
-import { BN } from '@project-serum/anchor';
+import { stringifyPubkeysAndBNInArray } from '../../../../tests/utils/types';
+import AuthorizeFunder from '@/components/AuthorizeFunder.vue';
 
 export default defineComponent({
-  components: { TestMint, ConfigPane },
+  components: { AuthorizeFunder, InitFarm, TestMint, ConfigPane },
   setup() {
     const { wallet, getWallet } = useWallet();
     const { cluster, getConnection } = useCluster();
@@ -93,44 +49,50 @@ export default defineComponent({
     let gf: any;
     watch([wallet, cluster], async () => {
       gf = await initGemFarm(getConnection(), getWallet()!);
+      await findFarmsByManager(getWallet()!.publicKey!);
     });
 
-    const mintA = ref('HpoWeaMWCNwveUmXqryG3EnUJ3UacBCKqJEA7pG9EHhV');
-    const typeA = ref(RewardType.Variable);
-    const mintB = ref('CUaxcHnWqmsJjegT1EYXfVA3m76sbSRmFJGy4k5EgGgS');
-    const typeB = ref(RewardType.Fixed);
+    const foundFarms = ref<any[]>([]);
+    const farm = ref(undefined);
+    const bank = ref(undefined);
 
-    const minStakingPeriodSec = ref(0);
-    const cooldownPeriodSec = ref(0);
-    const unstakingFeeLamp = ref(0);
+    watch(farm, (newFarm: any) => {
+      console.log('new farm is', newFarm);
+      let ff = filterFoundFarmsByPk(newFarm);
+      bank.value = ff.account.bank.toBase58();
+    });
 
-    const initFarm = async () => {
-      const { farm, bank } = await gf.initFarmWallet(
-        new PublicKey(mintA.value),
-        typeA.value,
-        new PublicKey(mintB.value),
-        typeB.value,
-        {
-          minStakingPeriodSec: new BN(minStakingPeriodSec.value),
-          cooldownPeriodSec: new BN(cooldownPeriodSec.value),
-          unstakingFeeLamp: new BN(unstakingFeeLamp.value),
-        }
+    const filterFoundFarmsByPk = (farm: string) => {
+      return foundFarms.value.filter(
+        (ff) => ff.publicKey.toBase58() === farm
+      )[0];
+    };
+
+    const findFarmsByManager = async (manager: PublicKey) => {
+      foundFarms.value = await gf.fetchAllFarmPDAs(manager);
+      console.log(
+        `found a total of ${
+          foundFarms.value.length
+        } farms for manager ${manager.toBase58()}`
       );
-      console.log('new farm started!', farm.publicKey.toBase58());
-      console.log('bank is', bank.publicKey.toBase58());
+      console.log(stringifyPubkeysAndBNInArray([foundFarms.value[0]]));
+
+      //start by assinging the 1st one
+      farm.value = foundFarms.value[0].publicKey.toBase58();
+      bank.value = foundFarms.value[0].account.bank.toBase58();
+    };
+
+    const handleNewFarmBank = (obj: any) => {
+      farm.value = obj.farm;
+      bank.value = obj.bank;
     };
 
     return {
       wallet,
-      RewardType,
-      mintA,
-      typeA,
-      mintB,
-      typeB,
-      minStakingPeriodSec,
-      cooldownPeriodSec,
-      unstakingFeeLamp,
-      initFarm,
+      foundFarms,
+      farm,
+      bank,
+      handleNewFarmBank,
     };
   },
 });

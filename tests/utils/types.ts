@@ -111,10 +111,6 @@ export async function pause(ms: number) {
   );
 }
 
-export function isKp(toCheck: PublicKey | Keypair) {
-  return toCheck instanceof Keypair;
-}
-
 export function stringToBytes(str: string) {
   const myBuffer = [];
   const buffer = new Buffer(str);
@@ -124,11 +120,23 @@ export function stringToBytes(str: string) {
   return myBuffer;
 }
 
+export function isKp(toCheck: PublicKey | Keypair) {
+  return toCheck instanceof Keypair;
+}
+
+export function isPk(obj: any): boolean {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    typeof obj['toBase58'] === 'function'
+  );
+}
+
 export function stringifyPubkeysAndBNsInObject(o: any): any {
   const newO = { ...o };
   for (const [k, v] of Object.entries(newO)) {
-    if (v instanceof PublicKey) {
-      newO[k] = v.toBase58();
+    if (isPk(v)) {
+      newO[k] = (<PublicKey>v).toBase58();
     } else if (v instanceof BN) {
       newO[k] = v.toString();
     } else if (parseType(v) === 'array') {
@@ -145,7 +153,7 @@ export function stringifyPubkeysAndBNsInObject(o: any): any {
 export function stringifyPubkeysAndBNInArray(a: any[]): any[] {
   const newA = [];
   for (const i of a) {
-    if (i instanceof PublicKey) {
+    if (isPk(i)) {
       newA.push(i.toBase58());
     } else if (i instanceof BN) {
       newA.push(i.toString());

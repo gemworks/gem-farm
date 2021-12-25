@@ -140,6 +140,68 @@ export class GemFarmClient extends GemBankClient {
   // --------------------------------------- get all PDAs by type
   //https://project-serum.github.io/anchor/ts/classes/accountclient.html#all
 
+  async fetchAllFarmPDAs(manager?: PublicKey) {
+    const filter = manager
+      ? [
+          {
+            memcmp: {
+              offset: 10, //need to prepend 8 bytes for anchor's disc
+              bytes: manager.toBase58(),
+            },
+          },
+        ]
+      : [];
+    const pdas = await this.farmProgram.account.farm.all(filter);
+    console.log(`found a total of ${pdas.length} farm PDAs`);
+    return pdas;
+  }
+
+  async fetchAllFarmerPDAs(farm?: PublicKey, identity?: PublicKey) {
+    const filter: any = [];
+    if (farm) {
+      filter.push({
+        memcmp: {
+          offset: 8, //need to prepend 8 bytes for anchor's disc
+          bytes: farm.toBase58(),
+        },
+      });
+    }
+    if (identity) {
+      filter.push({
+        memcmp: {
+          offset: 40, //need to prepend 8 bytes for anchor's disc
+          bytes: identity.toBase58(),
+        },
+      });
+    }
+    const pdas = await this.farmProgram.account.farmer.all(filter);
+    console.log(`found a total of ${pdas.length} farmer PDAs`);
+    return pdas;
+  }
+
+  async fetchAllAuthProofPDAs(farm?: PublicKey, funder?: PublicKey) {
+    const filter: any = [];
+    if (farm) {
+      filter.push({
+        memcmp: {
+          offset: 40, //need to prepend 8 bytes for anchor's disc
+          bytes: farm.toBase58(),
+        },
+      });
+    }
+    if (funder) {
+      filter.push({
+        memcmp: {
+          offset: 8, //need to prepend 8 bytes for anchor's disc
+          bytes: funder.toBase58(),
+        },
+      });
+    }
+    const pdas = await this.farmProgram.account.authorizationProof.all(filter);
+    console.log(`found a total of ${pdas.length} authorization proof PDAs`);
+    return pdas;
+  }
+
   // --------------------------------------- core ixs
 
   async initFarm(

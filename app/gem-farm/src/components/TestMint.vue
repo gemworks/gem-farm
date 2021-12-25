@@ -29,6 +29,7 @@ export default defineComponent({
       gf = await initGemFarm(getConnection(), getWallet()!);
     });
 
+    // --------------------------------------- test mint
     const mint = ref(undefined);
 
     const createTestReward = async () => {
