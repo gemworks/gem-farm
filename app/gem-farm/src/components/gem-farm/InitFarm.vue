@@ -106,10 +106,7 @@ export default defineComponent({
       console.log('new farm started!', farm.publicKey.toBase58());
       console.log('bank is', bank.publicKey.toBase58());
 
-      ctx.emit('new-farm-bank', {
-        farm: farm.publicKey.toBase58(),
-        bank: bank.publicKey.toBase58(),
-      });
+      ctx.emit('new-farm', farm.publicKey.toBase58());
     };
 
     return {

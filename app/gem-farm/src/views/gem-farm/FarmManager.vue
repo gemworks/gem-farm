@@ -6,7 +6,8 @@
     <div v-if="foundFarms && foundFarms.length">
       <!--farm selector-->
       <div class="nes-container with-title mb-10">
-        <p class="title">Farms found</p>
+        <p class="title">Farm Details</p>
+        <p class="mb-2">Choose farm:</p>
         <div class="nes-select mb-5">
           <select v-model="farm">
             <option v-for="f in foundFarms" :key="f.publicKey.toBase58()">
@@ -14,16 +15,27 @@
             </option>
           </select>
         </div>
-        <div class="mb-5">Selected farm: {{ farm }}</div>
-        <div class="mb-5">Associated bank: {{ bank }}</div>
+        <div class="mb-2">Associated bank: {{ farmAcc.bank }}</div>
+        <div class="mb-2">
+          Initialized farmer count: {{ farmAcc.farmerCount }}
+        </div>
+        <div class="mb-2">
+          Staked farmer count: {{ farmAcc.stakedFarmerCount }}
+        </div>
+        <div class="mb-2">Gems staked: {{ farmAcc.gemsStaked }}</div>
+        <!--<div class="mb-2">Config: {{ farmAcc.config }}</div>-->
+        <div class="mb-2">Reward A: {{ parseRewardType(farmAcc.rewardA) }}</div>
+        <div class="mb-2">Reward B: {{ parseRewardType(farmAcc.rewardB) }}</div>
       </div>
-      <!--authorize funder-->
-      <AuthorizeFunder :farm="farm" />
+      <!--manage funders-->
+      <AuthorizeFunder :farm="farm" class="mb-10" />
+      <!--manage funding-->
+      <FundCancelLock :farm="farm" :farmAcc="farmAcc" class="mb-10" />
     </div>
     <!--when it's not-->
     <div v-else>
       <TestMint class="mb-10" />
-      <InitFarm class="mb-10" @new-farm-bank="handleNewFarmBank" />
+      <InitFarm class="mb-10" @new-farm="handleNewFarmBank" />
     </div>
   </div>
 </template>
@@ -39,9 +51,16 @@ import InitFarm from '@/components/gem-farm/InitFarm.vue';
 import { PublicKey } from '@solana/web3.js';
 import { stringifyPubkeysAndBNInArray } from '../../../../../tests/utils/types';
 import AuthorizeFunder from '@/components/gem-farm/AuthorizeFunder.vue';
+import FundCancelLock from '@/components/gem-farm/FundCancelLock.vue';
 
 export default defineComponent({
-  components: { AuthorizeFunder, InitFarm, TestMint, ConfigPane },
+  components: {
+    FundCancelLock,
+    AuthorizeFunder,
+    InitFarm,
+    TestMint,
+    ConfigPane,
+  },
   setup() {
     const { wallet, getWallet } = useWallet();
     const { cluster, getConnection } = useCluster();
@@ -52,14 +71,14 @@ export default defineComponent({
       await findFarmsByManager(getWallet()!.publicKey!);
     });
 
+    // --------------------------------------- farm locator
     const foundFarms = ref<any[]>([]);
-    const farm = ref(undefined);
-    const bank = ref(undefined);
+    const farm = ref();
+    const farmAcc = ref();
 
     watch(farm, (newFarm: any) => {
-      console.log('new farm is', newFarm);
       let ff = filterFoundFarmsByPk(newFarm);
-      bank.value = ff.account.bank.toBase58();
+      farmAcc.value = ff.account;
     });
 
     const filterFoundFarmsByPk = (farm: string) => {
@@ -75,24 +94,29 @@ export default defineComponent({
           foundFarms.value.length
         } farms for manager ${manager.toBase58()}`
       );
-      console.log(stringifyPubkeysAndBNInArray([foundFarms.value[0]]));
+      console.log('PDAs are:', stringifyPubkeysAndBNInArray(foundFarms.value));
 
-      //start by assinging the 1st one
+      //start by assigning the 1st one
       farm.value = foundFarms.value[0].publicKey.toBase58();
-      bank.value = foundFarms.value[0].account.bank.toBase58();
     };
 
-    const handleNewFarmBank = (obj: any) => {
-      farm.value = obj.farm;
-      bank.value = obj.bank;
+    // --------------------------------------- rest
+    const handleNewFarmBank = async (newFarm: string) => {
+      farm.value = newFarm;
+      await findFarmsByManager(getWallet()!.publicKey!);
+    };
+
+    const parseRewardType = (reward: any) => {
+      return gf.parseRewardType(reward);
     };
 
     return {
       wallet,
       foundFarms,
       farm,
-      bank,
+      farmAcc,
       handleNewFarmBank,
+      parseRewardType,
     };
   },
 });

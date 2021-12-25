@@ -54,8 +54,8 @@ export default defineComponent({
     });
 
     // --------------------------------------- funders
-    const toAuthorize = ref(undefined);
-    const toDeauthorize = ref(undefined);
+    const toAuthorize = ref();
+    const toDeauthorize = ref();
     const funders = ref<any[]>();
 
     watch(

@@ -7,7 +7,10 @@ import { createFakeWallet } from '@/common/gem-bank';
 import {
   GemFarmClient,
   FarmConfig,
+  VariableRateConfig,
+  FixedRateConfig,
 } from '../../../../../tests/gem-farm/gem-farm.client';
+import { toBN } from '../../../../../tests/utils/types';
 
 export async function initGemFarm(
   conn: Connection,
@@ -70,5 +73,72 @@ export class GemFarm extends GemFarmClient {
 
   async deauthorizeFunderWallet(farm: PublicKey, funder: PublicKey) {
     return this.deauthorizeFunder(farm, this.wallet.publicKey, funder);
+  }
+
+  async fundVariableRewardWallet(
+    farm: PublicKey,
+    rewardMint: PublicKey,
+    amount: number,
+    duration: number
+  ) {
+    const rewardSource = await this.findATA(rewardMint, this.wallet.publicKey);
+
+    const config: VariableRateConfig = {
+      amount: toBN(amount),
+      durationSec: toBN(duration),
+    };
+
+    return this.fundReward(
+      farm,
+      rewardMint,
+      this.wallet.publicKey,
+      rewardSource,
+      config
+    );
+  }
+
+  async fundFixedRewardWallet(
+    farm: PublicKey,
+    rewardMint: PublicKey,
+    baseRate: number,
+    t1RewardRate: number,
+    t1RequiredTenure: number,
+    t2RewardRate: number,
+    t2RequiredTenure: number,
+    t3RewardRate: number,
+    t3RequiredTenure: number,
+    amount: number,
+    duration: number
+  ) {
+    const rewardSource = await this.findATA(rewardMint, this.wallet.publicKey);
+
+    const config: FixedRateConfig = {
+      schedule: {
+        baseRate: toBN(baseRate),
+        tier1: {
+          rewardRate: toBN(t1RewardRate),
+          requiredTenure: toBN(t1RequiredTenure),
+        },
+        tier2: {
+          rewardRate: toBN(t2RewardRate),
+          requiredTenure: toBN(t2RequiredTenure),
+        },
+        tier3: {
+          rewardRate: toBN(t3RewardRate),
+          requiredTenure: toBN(t3RequiredTenure),
+        },
+      },
+      amount: toBN(amount),
+      durationSec: toBN(duration),
+    };
+
+    return this.fundReward(
+      farm,
+      rewardMint,
+      this.wallet.publicKey,
+      rewardSource,
+      undefined,
+      config
+    );
   }
 }

@@ -820,4 +820,11 @@ export class GemFarmClient extends GemBankClient {
 
     return { txSig };
   }
+
+  // --------------------------------------- helpers
+
+  parseRewardType(reward: any): string {
+    //returns "variable" or "fixed"
+    return Object.keys(reward.rewardType)[0];
+  }
 }
