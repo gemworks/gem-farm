@@ -79,7 +79,7 @@
 <script lang="ts">
 import { computed, defineComponent, ref, watch } from 'vue';
 import ConfigPane from '@/components/ConfigPane.vue';
-import NFTGrid from '@/components/NFTGrid.vue';
+import NFTGrid from '@/components/gem-bank/NFTGrid.vue';
 import ArrowButton from '@/components/ArrowButton.vue';
 import useWallet from '@/composables/wallet';
 import useCluster from '@/composables/cluster';
@@ -92,7 +92,7 @@ import { initGemBank } from '@/common/gem-bank';
 import { PublicKey } from '@solana/web3.js';
 import { getListDiffBasedOnMints, removeManyFromList } from '@/common/util';
 import { BN } from '@project-serum/anchor';
-import TheWhitelist from '@/components/TheWhitelist.vue';
+import TheWhitelist from '@/components/gem-bank/TheWhitelist.vue';
 
 export default defineComponent({
   components: { TheWhitelist, ArrowButton, NFTGrid, ConfigPane },

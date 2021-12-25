@@ -60,7 +60,7 @@ import { getNFTMetadataForMany, INFT } from '@/common/web3/NFTget';
 import { initGemBank } from '@/common/gem-bank';
 import useCluster from '@/composables/cluster';
 import { PublicKey } from '@solana/web3.js';
-import NFTGrid from '@/components/NFTGrid.vue';
+import NFTGrid from '@/components/gem-bank/NFTGrid.vue';
 export default defineComponent({
   components: { NFTGrid },
   setup() {

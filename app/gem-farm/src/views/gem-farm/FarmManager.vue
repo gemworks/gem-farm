@@ -33,12 +33,12 @@ import { defineComponent, onMounted, ref, watch } from 'vue';
 import ConfigPane from '@/components/ConfigPane.vue';
 import useWallet from '@/composables/wallet';
 import useCluster from '@/composables/cluster';
-import TestMint from '@/components/TestMint.vue';
+import TestMint from '@/components/gem-farm/TestMint.vue';
 import { initGemFarm } from '@/common/gem-farm';
-import InitFarm from '@/components/InitFarm.vue';
+import InitFarm from '@/components/gem-farm/InitFarm.vue';
 import { PublicKey } from '@solana/web3.js';
-import { stringifyPubkeysAndBNInArray } from '../../../../tests/utils/types';
-import AuthorizeFunder from '@/components/AuthorizeFunder.vue';
+import { stringifyPubkeysAndBNInArray } from '../../../../../tests/utils/types';
+import AuthorizeFunder from '@/components/gem-farm/AuthorizeFunder.vue';
 
 export default defineComponent({
   components: { AuthorizeFunder, InitFarm, TestMint, ConfigPane },

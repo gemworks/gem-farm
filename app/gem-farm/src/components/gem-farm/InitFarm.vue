@@ -64,12 +64,12 @@
 
 <script lang="ts">
 import { defineComponent, ref, watch } from 'vue';
-import useWallet from '../composables/wallet';
-import useCluster from '../composables/cluster';
+import useWallet from '../../composables/wallet';
+import useCluster from '../../composables/cluster';
 import { initGemFarm } from '@/common/gem-farm';
 import { PublicKey } from '@solana/web3.js';
 import { BN } from '@project-serum/anchor';
-import { RewardType } from '../../../../tests/gem-farm/gem-farm.client';
+import { RewardType } from '../../../../../tests/gem-farm/gem-farm.client';
 
 export default defineComponent({
   setup(props, ctx) {

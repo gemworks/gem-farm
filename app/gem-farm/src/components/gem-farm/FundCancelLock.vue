@@ -9,7 +9,7 @@ import { defineComponent, watch } from 'vue';
 import useWallet from '@/composables/wallet';
 import useCluster from '@/composables/cluster';
 import { initGemFarm } from '@/common/gem-farm';
-import { GemFarmClient } from '../../../../tests/gem-farm/gem-farm.client';
+import { GemFarmClient } from '../../../../../tests/gem-farm/gem-farm.client';
 
 export default defineComponent({
   setup() {

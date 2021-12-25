@@ -6,7 +6,7 @@
 
 <script lang="ts">
 import { defineComponent, onMounted, ref } from 'vue';
-import NFTGrid from '@/components/NFTGrid.vue';
+import NFTGrid from '@/components/gem-bank/NFTGrid.vue';
 import useCluster from '@/composables/cluster';
 import { initGemBank } from '@/common/gem-bank';
 import { getNFTMetadataForMany, INFT } from '@/common/web3/NFTget';

@@ -15,7 +15,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import NFTCard from '@/components/NFTCard.vue';
+import NFTCard from '@/components/gem-bank/NFTCard.vue';
 
 export default defineComponent({
   components: { NFTCard },

@@ -1,6 +1,6 @@
 <template>
   <div class="nes-container with-title">
-    <p class="title">Refresh Farmer</p>
+    <p class="title">Treasury Payout</p>
   </div>
 </template>
 
@@ -9,7 +9,7 @@ import { defineComponent, watch } from 'vue';
 import useWallet from '@/composables/wallet';
 import useCluster from '@/composables/cluster';
 import { initGemFarm } from '@/common/gem-farm';
-import { RewardType } from '../../../../tests/gem-farm/gem-farm.client';
+import { RewardType } from '../../../../../tests/gem-farm/gem-farm.client';
 
 export default defineComponent({
   setup() {
@@ -20,8 +20,6 @@ export default defineComponent({
     watch([wallet, cluster], async () => {
       gf = await initGemFarm(getConnection(), getWallet()!);
     });
-
-    // --------------------------------------- refresh farmer
 
     return {};
   },
