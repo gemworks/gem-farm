@@ -3,47 +3,84 @@
     <p class="title">Farmer Details</p>
     <div class="mb-2">
       state:
-      <p class="inline-block bg-yellow-200">{{ parseFarmerState(farmer) }}</p>
+      <p class="inline-block bg-yellow-200">
+        {{ parseFarmerState(farmerAcc) }}
+      </p>
     </div>
-    <div class="mb-2">Associated vault: {{ farmer.vault.toBase58() }}</div>
-    <div class="mb-2">Gems staked: {{ farmer.gemsStaked }}</div>
-    <div class="mb-2">Min staking ends: {{ farmer.minStakingEndsTs }}</div>
-    <div class="mb-2">Cooldown ends: {{ farmer.cooldownEndsTs }}</div>
+    <div class="mb-2">Associated vault: {{ farmerAcc.vault.toBase58() }}</div>
+    <div class="mb-2">Gems staked: {{ farmerAcc.gemsStaked }}</div>
+    <div class="mb-2">Min staking ends: {{ farmerAcc.minStakingEndsTs }}</div>
+    <div class="mb-2">Cooldown ends: {{ farmerAcc.cooldownEndsTs }}</div>
 
-    <div class="flex">
+    <div class="flex mb-5">
       <div class="flex-1 mr-5">
         <FarmerRewardDisplay
-          :farmReward="farm.rewardA"
-          :reward="farmer.rewardA"
+          :farmReward="farmAcc.rewardA"
+          :reward="farmerAcc.rewardA"
           title="Reward A"
         />
       </div>
       <div class="flex-1">
         <FarmerRewardDisplay
-          :farmReward="farm.rewardB"
-          :reward="farmer.rewardB"
+          :farmReward="farmAcc.rewardB"
+          :reward="farmerAcc.rewardB"
           title="Reward B"
         />
       </div>
     </div>
+    <button class="nes-btn is-primary mb-5" @click="refreshFarmer">
+      Refresh farmer
+    </button>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
+import { defineComponent, onMounted, watch } from 'vue';
 import FarmerRewardDisplay from '@/components/gem-farm/FarmerRewardDisplay.vue';
+import useWallet from '@/composables/wallet';
+import useCluster from '@/composables/cluster';
+import { initGemFarm } from '@/common/gem-farm';
+import { PublicKey } from '@solana/web3.js';
 export default defineComponent({
   components: { FarmerRewardDisplay },
   props: {
-    farmer: Object,
-    farm: Object,
+    farm: String,
+    farmAcc: Object,
+    farmer: String,
+    farmerAcc: Object,
   },
-  setup() {
+  setup(props, ctx) {
+    const { wallet, getWallet } = useWallet();
+    const { cluster, getConnection } = useCluster();
+
+    let gf: any;
+    watch([wallet, cluster], async () => {
+      gf = await initGemFarm(getConnection(), getWallet()!);
+    });
+
+    // --------------------------------------- refresh farmer
+    const refreshFarmer = () => {
+      return gf.refreshFarmerWallet(
+        new PublicKey(props.farm!),
+        new PublicKey(props.farmer!)
+      );
+    };
+
+    // --------------------------------------- display farmer
     const parseFarmerState = (farmer: any): string => {
       return Object.keys(farmer.state)[0];
     };
 
+    // --------------------------------------- mounted
+    //need an onmounted hook because this component isn't yet mounted when wallet/cluster are set
+    onMounted(async () => {
+      if (getWallet() && getConnection()) {
+        gf = await initGemFarm(getConnection(), getWallet()!);
+      }
+    });
+
     return {
+      refreshFarmer,
       parseFarmerState,
     };
   },

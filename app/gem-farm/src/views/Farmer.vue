@@ -15,7 +15,13 @@
     </div>
 
     <div v-if="farmerAcc">
-      <FarmerDisplay :farm="farmAcc" :farmer="farmerAcc" class="mb-10" />
+      <FarmerDisplay
+        :farm="farm"
+        :farmAcc="farmAcc"
+        :farmer="farmer"
+        :farmerAcc="farmerAcc"
+        class="mb-10"
+      />
       <Vault class="mb-10" :vault="farmerAcc.vault.toBase58()" />
     </div>
   </div>

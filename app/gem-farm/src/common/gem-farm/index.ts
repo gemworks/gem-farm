@@ -200,6 +200,8 @@ export class GemFarm extends GemFarmClient {
   }
 
   async refreshFarmerWallet(farm: PublicKey, farmerIdentity: PublicKey) {
+    console.log('farm is', farm.toBase58());
+    console.log('id is', farmerIdentity.toBase58());
     const result = await this.refreshFarmer(farm, farmerIdentity);
 
     console.log('refreshed farmer', farmerIdentity.toBase58());
