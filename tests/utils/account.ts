@@ -80,7 +80,10 @@ export class AccountUtils {
       })
     );
 
-    await this.sendAndConfirmTx({ tx, signers: [this.wallet.payer] });
+    await this.sendAndConfirmTx(
+      { tx, signers: [this.wallet.payer] },
+      this.wallet.payer.publicKey
+    );
     return wallet;
   }
 
@@ -347,13 +350,17 @@ export class AccountUtils {
 
   async sendTxWithWallet(wallet: Wallet, tx: TxWithSigners) {
     await wallet.signTransaction(tx.tx);
-    return this.sendAndConfirmTx(tx);
+    return this.sendAndConfirmTx(tx, wallet.publicKey);
   }
 
-  async sendAndConfirmTx(tx: TxWithSigners): Promise<string> {
+  async sendAndConfirmTx(tx: TxWithSigners, payer: PublicKey): Promise<string> {
+    //these need to be done manually for a raw tx
+    tx.tx.recentBlockhash = (await this.conn.getRecentBlockhash()).blockhash;
+    tx.tx.feePayer = payer;
     tx.signers.forEach((s) => {
       tx.tx.partialSign(s);
     });
+
     const txSig = await sendAndConfirmRawTransaction(
       this.conn,
       tx.tx.serialize()
@@ -390,13 +397,16 @@ export class AccountUtils {
   // (!) does NOT merge - will fail if one tx depends on another
   async sendTxsSetWithWallet(wallet: Wallet, txs: TxWithSigners[]) {
     await wallet.signAllTransactions(txs.map((t) => t.tx));
-    return this.sendAndConfirmTxsSet(txs);
+    return this.sendAndConfirmTxsSet(txs, wallet.publicKey);
   }
 
-  async sendAndConfirmTxsSet(txs: TxWithSigners[]): Promise<string[]> {
+  async sendAndConfirmTxsSet(
+    txs: TxWithSigners[],
+    payer: PublicKey
+  ): Promise<string[]> {
     console.log(`attempting to send ${txs.length} transactions`);
     const signatures = await Promise.all(
-      txs.map((t) => this.sendAndConfirmTx(t))
+      txs.map((t) => this.sendAndConfirmTx(t, payer))
     );
     const result = await Promise.all(
       signatures.map((s) => this.conn.confirmTransaction(s))
