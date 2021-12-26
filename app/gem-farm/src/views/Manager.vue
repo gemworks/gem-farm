@@ -75,7 +75,7 @@ import TestMint from '@/components/gem-farm/TestMint.vue';
 import { initGemFarm } from '@/common/gem-farm';
 import InitFarm from '@/components/gem-farm/InitFarm.vue';
 import { PublicKey } from '@solana/web3.js';
-import { stringifyPubkeysAndBNInArray } from '../../../../../tests/utils/types';
+import { stringifyPubkeysAndBNInArray } from '../../../../tests/utils/types';
 import AuthorizeFunder from '@/components/gem-farm/AuthorizeFunder.vue';
 import FundCancelLock from '@/components/gem-farm/FundCancelLock.vue';
 import RewardDisplay from '@/components/gem-farm/RewardDisplay.vue';
@@ -105,8 +105,8 @@ export default defineComponent({
 
     // --------------------------------------- farm locator
     const foundFarms = ref<any[]>([]);
-    const farm = ref();
-    const farmAcc = ref();
+    const farm = ref<string>();
+    const farmAcc = ref<any>();
 
     watch(farm, (newFarm: any) => {
       let ff = filterFoundFarmsByPk(newFarm);
@@ -134,7 +134,7 @@ export default defineComponent({
     };
 
     // --------------------------------------- rest
-    const showNewFarm = ref(false);
+    const showNewFarm = ref<boolean>(false);
 
     const handleNewFarm = async (newFarm: string) => {
       farm.value = newFarm;

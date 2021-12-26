@@ -141,20 +141,20 @@ export default defineComponent({
     });
 
     // --------------------------------------- fund / cancel / lock
-    const selectedReward = ref('rewardA');
-    const activeRewardType = ref();
+    const selectedReward = ref<string>('rewardA');
+    const activeRewardType = ref<string>();
 
     //fixed reward
-    const baseRate = ref();
-    const t1RewardRate = ref();
-    const t1RequiredTenure = ref();
-    const t2RewardRate = ref();
-    const t2RequiredTenure = ref();
-    const t3RewardRate = ref();
-    const t3RequiredTenure = ref();
+    const baseRate = ref<string>();
+    const t1RewardRate = ref<string>();
+    const t1RequiredTenure = ref<string>();
+    const t2RewardRate = ref<string>();
+    const t2RequiredTenure = ref<string>();
+    const t3RewardRate = ref<string>();
+    const t3RequiredTenure = ref<string>();
 
-    const amount = ref();
-    const duration = ref();
+    const amount = ref<string>();
+    const duration = ref<string>();
 
     const setRewardType = (selectedReward: string) => {
       activeRewardType.value = gf.parseRewardType(

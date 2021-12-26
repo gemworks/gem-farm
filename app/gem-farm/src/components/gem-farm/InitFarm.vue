@@ -82,14 +82,14 @@ export default defineComponent({
     });
 
     // --------------------------------------- init farm
-    const mintA = ref('HpoWeaMWCNwveUmXqryG3EnUJ3UacBCKqJEA7pG9EHhV');
-    const typeA = ref(RewardType.Variable);
-    const mintB = ref('CUaxcHnWqmsJjegT1EYXfVA3m76sbSRmFJGy4k5EgGgS');
-    const typeB = ref(RewardType.Fixed);
+    const mintA = ref<string>('HpoWeaMWCNwveUmXqryG3EnUJ3UacBCKqJEA7pG9EHhV');
+    const typeA = ref<any>(RewardType.Variable);
+    const mintB = ref<string>('CUaxcHnWqmsJjegT1EYXfVA3m76sbSRmFJGy4k5EgGgS');
+    const typeB = ref<any>(RewardType.Fixed);
 
-    const minStakingPeriodSec = ref(0);
-    const cooldownPeriodSec = ref(0);
-    const unstakingFeeLamp = ref(0);
+    const minStakingPeriodSec = ref<string>();
+    const cooldownPeriodSec = ref<string>();
+    const unstakingFeeLamp = ref<string>();
 
     const initFarm = async () => {
       const { farm } = await gf.initFarmWallet(
@@ -98,9 +98,9 @@ export default defineComponent({
         new PublicKey(mintB.value),
         typeB.value,
         {
-          minStakingPeriodSec: new BN(minStakingPeriodSec.value),
-          cooldownPeriodSec: new BN(cooldownPeriodSec.value),
-          unstakingFeeLamp: new BN(unstakingFeeLamp.value),
+          minStakingPeriodSec: new BN(minStakingPeriodSec.value!),
+          cooldownPeriodSec: new BN(cooldownPeriodSec.value!),
+          unstakingFeeLamp: new BN(unstakingFeeLamp.value!),
         }
       );
 

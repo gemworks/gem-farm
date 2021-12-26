@@ -30,7 +30,7 @@ export default defineComponent({
     });
 
     // --------------------------------------- test mint
-    const mint = ref();
+    const mint = ref<string>();
 
     const createTestReward = async () => {
       const { mint: rewardMint } = await gf.createTestReward(1000000);

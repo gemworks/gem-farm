@@ -34,15 +34,15 @@ export default defineComponent({
     });
 
     // --------------------------------------- payout
-    const destination = ref();
-    const lamports = ref();
-    const balance = ref();
+    const destination = ref<string>();
+    const lamports = ref<string>();
+    const balance = ref<string>();
 
     const payoutFromTreasury = () => {
       return gf.treasuryPayoutWallet(
         new PublicKey(props.farm!),
-        new PublicKey(destination.value),
-        lamports.value
+        new PublicKey(destination.value!),
+        lamports.value!
       );
     };
 

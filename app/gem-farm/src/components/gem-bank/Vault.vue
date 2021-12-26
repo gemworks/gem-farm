@@ -1,84 +1,57 @@
 <template>
-  <ConfigPane />
+  <!--control buttons-->
+  <div class="m-5 flex justify-center">
+    <!--<button v-if="vault" class="nes-btn is-primary my-x" @click="setVaultLock">-->
+    <!--  {{ vaultLocked ? 'Unlock' : 'Lock' }} vault-->
+    <!--</button>-->
+    <button
+      v-if="
+        (toWalletNFTs && toWalletNFTs.length) ||
+        (toVaultNFTs && toVaultNFTs.length)
+      "
+      class="nes-btn is-primary mx-5"
+      @click="moveNFTsOnChain"
+    >
+      Move Gems!
+    </button>
+  </div>
 
-  <div v-if="!wallet" class="text-center">Pls connect (burner) wallet</div>
-  <div v-else>
-    <TheWhitelist :bank="bank ? bank.toBase58() : undefined" />
+  <!--wallet + vault view-->
+  <div class="flex items-stretch">
+    <!--left-->
+    <NFTGrid
+      title="Your wallet"
+      class="flex-1"
+      :nfts="desiredWalletNFTs"
+      @selected="handleWalletSelected"
+    />
 
-    <!--control buttons-->
-    <div class="m-5 flex justify-center">
-      <button
-        v-if="vault"
-        class="nes-btn is-primary my-x"
-        @click="setVaultLock"
-      >
-        {{ vaultLocked ? 'Unlock' : 'Lock' }} vault
-      </button>
-      <button
-        v-if="
-          (toWalletNFTs && toWalletNFTs.length) ||
-          (toVaultNFTs && toVaultNFTs.length)
-        "
-        class="nes-btn is-primary mx-5"
-        @click="moveNFTsOnChain"
-      >
-        Move Gems!
-      </button>
+    <!--mid-->
+    <div class="m-2 flex flex-col justify-center items-center align-center">
+      <ArrowButton class="my-2" @click="moveNFTsFE(false)" />
+      <ArrowButton class="my-2" :left="true" @click="moveNFTsFE(true)" />
     </div>
 
-    <!--wallet + vault view-->
-    <div class="flex items-stretch">
-      <!--left-->
-      <NFTGrid
-        title="Your wallet"
-        class="flex-1"
-        :nfts="desiredWalletNFTs"
-        @selected="handleWalletSelected"
-      />
-
-      <!--mid-->
-      <div class="m-2 flex flex-col justify-center items-center align-center">
-        <ArrowButton class="my-2" @click="moveNFTsFE(false)" />
-        <ArrowButton class="my-2" :left="true" @click="moveNFTsFE(true)" />
-      </div>
-
-      <!--right-->
-      <NFTGrid
-        v-if="bank && vault"
-        title="Your vault"
-        class="flex-1"
-        :nfts="desiredVaultNFTs"
-        @selected="handleVaultSelected"
+    <!--right-->
+    <NFTGrid
+      v-if="bank && vault"
+      title="Your vault"
+      class="flex-1"
+      :nfts="desiredVaultNFTs"
+      @selected="handleVaultSelected"
+    >
+      <div
+        v-if="vaultLocked"
+        class="locked flex-col justify-center items-center align-center"
       >
-        <div
-          v-if="vaultLocked"
-          class="locked flex-col justify-center items-center align-center"
-        >
-          <p class="mt-10">This vault is locked!</p>
-        </div>
-      </NFTGrid>
-      <div v-else class="flex-1 nes-container with-title">
-        <p class="title">Your vault</p>
-        <!--create bank if doesn't exist-->
-        <button v-if="!bank" class="m-2 nes-btn is-primary" @click="startBank">
-          Start bank
-        </button>
-        <!--create vault if doesn't exist-->
-        <button
-          v-else-if="!vault"
-          class="m-2 nes-btn is-primary"
-          @click="createVault"
-        >
-          Create vault
-        </button>
+        <p class="mt-10">This vault is locked!</p>
       </div>
-    </div>
+    </NFTGrid>
   </div>
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, ref, watch } from 'vue';
-import ConfigPane from '@/components/ConfigPane.vue';
+import { defineComponent, onMounted, ref, watch } from 'vue';
 import NFTGrid from '@/components/gem-bank/NFTGrid.vue';
 import ArrowButton from '@/components/ArrowButton.vue';
 import useWallet from '@/composables/wallet';
@@ -92,11 +65,13 @@ import { initGemBank } from '@/common/gem-bank';
 import { PublicKey } from '@solana/web3.js';
 import { getListDiffBasedOnMints, removeManyFromList } from '@/common/util';
 import { BN } from '@project-serum/anchor';
-import TheWhitelist from '@/components/gem-bank/TheWhitelist.vue';
 
 export default defineComponent({
-  components: { TheWhitelist, ArrowButton, NFTGrid, ConfigPane },
-  setup() {
+  components: { ArrowButton, NFTGrid },
+  props: {
+    vault: String,
+  },
+  setup(props, ctx) {
     const { wallet, getWallet } = useWallet();
     const { cluster, getConnection } = useCluster();
 
@@ -167,6 +142,20 @@ export default defineComponent({
       //populate gembank nfts
       gb = await initGemBank(getConnection(), getWallet()!);
       await populateGemBankNFTs();
+    });
+
+    onMounted(async () => {
+      //populate gembank nfts
+      gb = await initGemBank(getConnection(), getWallet()!);
+      await populateGemBankNFTs();
+
+      //prep vault + bank variables
+      vault.value = new PublicKey(props.vault!);
+      const vaultAcc = await gb.fetchVaultAcc(vault.value);
+      bank.value = vaultAcc.bank;
+
+      //populate wallet nfts
+      await populateWalletNFTs();
     });
 
     // --------------------------------------- moving nfts
@@ -255,20 +244,8 @@ export default defineComponent({
     let gb: any;
     const bank = ref<PublicKey>();
     const vault = ref<PublicKey>();
-    const gdrs = ref([]);
+    const gdrs = ref<PublicKey[]>([]);
     const vaultLocked = ref<boolean>(false);
-
-    const startBank = async () => {
-      const { bank: fetchedBank } = await gb.initBankWallet();
-      bank.value = fetchedBank.publicKey;
-      console.log('bank created', fetchedBank.publicKey.toBase58());
-    };
-
-    const createVault = async () => {
-      const { vault: fetchedVault } = await gb.initVaultWallet(bank.value);
-      vault.value = fetchedVault;
-      console.log('vault created', fetchedVault.toBase58());
-    };
 
     const setVaultLock = async () => {
       await gb.setVaultLockWallet(bank.value, vault.value, !vaultLocked.value);
@@ -317,8 +294,6 @@ export default defineComponent({
       bank,
       vault,
       vaultLocked,
-      startBank,
-      createVault,
       setVaultLock,
     };
   },

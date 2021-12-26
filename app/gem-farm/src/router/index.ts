@@ -1,23 +1,23 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
-import FarmFarmer from '@/views/gem-farm/FarmFarmer.vue';
-import FarmManager from '@/views/gem-farm/FarmManager.vue';
-import FarmHome from '@/views/gem-farm/FarmHome.vue';
+import Farmer from '@/views/Farmer.vue';
+import Manager from '@/views/Manager.vue';
+import Home from '@/views/Home.vue';
 
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
     name: 'Home',
-    component: FarmHome,
+    component: Home,
   },
   {
     path: '/manager',
     name: 'Farm Manager',
-    component: FarmManager,
+    component: Manager,
   },
   {
     path: '/farmer',
     name: 'Farmer',
-    component: FarmFarmer,
+    component: Farmer,
   },
 ];
 

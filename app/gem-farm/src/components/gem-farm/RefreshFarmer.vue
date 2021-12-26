@@ -32,12 +32,12 @@ export default defineComponent({
     });
 
     // --------------------------------------- refresh farmer
-    const farmer = ref();
+    const farmer = ref<string>();
 
     const refreshFarmer = () => {
       return gf.refreshFarmerWallet(
         new PublicKey(props.farm!),
-        new PublicKey(farmer.value)
+        new PublicKey(farmer.value!)
       );
     };
 

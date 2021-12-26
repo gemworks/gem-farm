@@ -14,12 +14,10 @@
       </button>
     </div>
 
-    <FarmerDisplay
-      v-if="farmerAcc"
-      :farm="farmAcc"
-      :farmer="farmerAcc"
-      class="mb-10"
-    />
+    <div v-if="farmerAcc">
+      <FarmerDisplay :farm="farmAcc" :farmer="farmerAcc" class="mb-10" />
+      <Vault class="mb-10" :vault="farmerAcc.vault.toBase58()" />
+    </div>
   </div>
 </template>
 
@@ -31,8 +29,9 @@ import { initGemFarm } from '@/common/gem-farm';
 import { PublicKey } from '@solana/web3.js';
 import ConfigPane from '@/components/ConfigPane.vue';
 import FarmerDisplay from '@/components/gem-farm/FarmerDisplay.vue';
+import Vault from '@/components/gem-bank/Vault.vue';
 export default defineComponent({
-  components: { FarmerDisplay, ConfigPane },
+  components: { Vault, FarmerDisplay, ConfigPane },
   setup() {
     const { wallet, getWallet } = useWallet();
     const { cluster, getConnection } = useCluster();
@@ -40,21 +39,21 @@ export default defineComponent({
     let gf: any;
     watch([wallet, cluster], async () => {
       gf = await initGemFarm(getConnection(), getWallet()!);
-      farmer.value = getWallet()!.publicKey;
+      farmer.value = getWallet()!.publicKey?.toBase58();
     });
 
     // --------------------------------------- farmer
-    const farm = ref('4PcJxZEDkVs5bdHVtRMSoLZYvqKdaBoFP9s9VLzNWWPR');
-    const farmAcc = ref();
-    const farmer = ref();
-    const farmerAcc = ref();
+    const farm = ref<string>('4PcJxZEDkVs5bdHVtRMSoLZYvqKdaBoFP9s9VLzNWWPR');
+    const farmAcc = ref<any>();
+    const farmer = ref<string>();
+    const farmerAcc = ref<any>();
 
     const findFarmer = async () => {
       const [farmerPDA] = await gf.findFarmerPDA(
         new PublicKey(farm.value!),
-        new PublicKey(getWallet()!.publicKey)
+        getWallet()!.publicKey
       );
-      farmer.value = getWallet()!.publicKey;
+      farmer.value = getWallet()!.publicKey?.toBase58();
       farmerAcc.value = await gf.fetchFarmerAcc(farmerPDA);
       console.log('farmer is', farmerAcc.value);
     };

@@ -73,7 +73,7 @@ export default defineComponent({
 
     let gb: any;
 
-    const proofs = ref([]);
+    const proofs = ref<PublicKey[]>([]);
 
     onMounted(async () => {
       gb = await initGemBank(getConnection(), getWallet()!);
