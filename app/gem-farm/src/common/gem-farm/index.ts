@@ -223,4 +223,16 @@ export class GemFarm extends GemFarmClient {
 
     return result;
   }
+
+  async initFarmerWallet(farm: PublicKey) {
+    const result = await this.initFarmer(
+      farm,
+      this.wallet.publicKey,
+      this.wallet.publicKey
+    );
+
+    console.log('initialized new farmer', this.wallet.publicKey.toBase58());
+
+    return result;
+  }
 }

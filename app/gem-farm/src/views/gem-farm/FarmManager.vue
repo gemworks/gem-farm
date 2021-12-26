@@ -2,12 +2,15 @@
   <ConfigPane />
   <div v-if="!wallet" class="text-center">Pls connect (burner) wallet</div>
   <div v-else>
-    <button
-      class="nes-btn is-primary mb-10"
-      @click="showNewFarm = !showNewFarm"
-    >
-      New farm
-    </button>
+    <div class="flex mb-10">
+      <button
+        class="nes-btn is-primary mr-5"
+        @click="showNewFarm = !showNewFarm"
+      >
+        New farm
+      </button>
+      <button class="nes-btn is-primary" @click="loadFarms">Load farms</button>
+    </div>
     <!--new farms-->
     <div v-if="showNewFarm">
       <TestMint class="mb-10" />
@@ -142,6 +145,18 @@ export default defineComponent({
       await findFarmsByManager(getWallet()!.publicKey!);
     };
 
+    const loadFarms = async () => {
+      await findFarmsByManager(getWallet()!.publicKey!);
+    };
+
+    // --------------------------------------- mounted
+    //needed in case we switch in from another window
+    onMounted(async () => {
+      if (getWallet() && getConnection()) {
+        gf = await initGemFarm(getConnection(), getWallet()!);
+      }
+    });
+
     return {
       wallet,
       foundFarms,
@@ -150,6 +165,7 @@ export default defineComponent({
       handleNewFarm,
       handleUpdateFarm,
       showNewFarm,
+      loadFarms,
     };
   },
 });
