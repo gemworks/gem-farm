@@ -92,7 +92,7 @@ export default defineComponent({
     const unstakingFeeLamp = ref(0);
 
     const initFarm = async () => {
-      const { farm, bank } = await gf.initFarmWallet(
+      const { farm } = await gf.initFarmWallet(
         new PublicKey(mintA.value),
         typeA.value,
         new PublicKey(mintB.value),
@@ -103,8 +103,6 @@ export default defineComponent({
           unstakingFeeLamp: new BN(unstakingFeeLamp.value),
         }
       );
-      console.log('new farm started!', farm.publicKey.toBase58());
-      console.log('bank is', bank.publicKey.toBase58());
 
       ctx.emit('new-farm', farm.publicKey.toBase58());
     };

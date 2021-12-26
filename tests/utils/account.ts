@@ -254,7 +254,8 @@ export class AccountUtils {
   async createMintAndFundATAWithWallet(
     wallet: Wallet,
     decimals: number,
-    amount: number
+    amount: number,
+    isAssociated = true,
   ) {
     //create mint
     const [mint, newMintTx] = await this.createMintTx(
@@ -267,7 +268,7 @@ export class AccountUtils {
       mint,
       wallet.publicKey,
       wallet.publicKey,
-      true
+      isAssociated,
     );
     //fund ATA
     const mintToTx = await this.mintToTx(

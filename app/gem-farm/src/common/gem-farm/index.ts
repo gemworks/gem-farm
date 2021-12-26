@@ -10,7 +10,10 @@ import {
   VariableRateConfig,
   FixedRateConfig,
 } from '../../../../../tests/gem-farm/gem-farm.client';
-import { toBN } from '../../../../../tests/utils/types';
+import {
+  stringifyPubkeysAndBNsInObject,
+  toBN,
+} from '../../../../../tests/utils/types';
 
 export async function initGemFarm(
   conn: Connection,
@@ -52,7 +55,7 @@ export class GemFarm extends GemFarmClient {
     const farm = Keypair.generate();
     const bank = Keypair.generate();
 
-    const stuff = await this.initFarm(
+    const result = await this.initFarm(
       farm,
       this.wallet.publicKey,
       this.wallet.publicKey,
@@ -64,15 +67,34 @@ export class GemFarm extends GemFarmClient {
       farmConfig
     );
 
-    return { farm, bank, ...stuff };
+    console.log('new farm started!', farm.publicKey.toBase58());
+    console.log('bank is:', bank.publicKey.toBase58());
+
+    return { farm, bank, ...result };
   }
 
   async authorizeFunderWallet(farm: PublicKey, funder: PublicKey) {
-    return this.authorizeFunder(farm, this.wallet.publicKey, funder);
+    const result = await this.authorizeFunder(
+      farm,
+      this.wallet.publicKey,
+      funder
+    );
+
+    console.log('authorized funder', funder.toBase58());
+
+    return result;
   }
 
   async deauthorizeFunderWallet(farm: PublicKey, funder: PublicKey) {
-    return this.deauthorizeFunder(farm, this.wallet.publicKey, funder);
+    const result = await this.deauthorizeFunder(
+      farm,
+      this.wallet.publicKey,
+      funder
+    );
+
+    console.log('DEauthorized funder', funder.toBase58());
+
+    return result;
   }
 
   async fundVariableRewardWallet(
@@ -88,51 +110,61 @@ export class GemFarm extends GemFarmClient {
       durationSec: toBN(duration),
     };
 
-    return this.fundReward(
+    const result = this.fundReward(
       farm,
       rewardMint,
       this.wallet.publicKey,
       rewardSource,
       config
     );
+
+    console.log('funded variable reward with mint:', rewardMint.toBase58());
+
+    return result;
   }
 
   async fundFixedRewardWallet(
     farm: PublicKey,
     rewardMint: PublicKey,
-    baseRate: number,
-    t1RewardRate: number,
-    t1RequiredTenure: number,
-    t2RewardRate: number,
-    t2RequiredTenure: number,
-    t3RewardRate: number,
-    t3RequiredTenure: number,
     amount: number,
-    duration: number
+    duration: number,
+    baseRate: number,
+    t1RewardRate?: number,
+    t1RequiredTenure?: number,
+    t2RewardRate?: number,
+    t2RequiredTenure?: number,
+    t3RewardRate?: number,
+    t3RequiredTenure?: number
   ) {
     const rewardSource = await this.findATA(rewardMint, this.wallet.publicKey);
 
     const config: FixedRateConfig = {
       schedule: {
         baseRate: toBN(baseRate),
-        tier1: {
-          rewardRate: toBN(t1RewardRate),
-          requiredTenure: toBN(t1RequiredTenure),
-        },
-        tier2: {
-          rewardRate: toBN(t2RewardRate),
-          requiredTenure: toBN(t2RequiredTenure),
-        },
-        tier3: {
-          rewardRate: toBN(t3RewardRate),
-          requiredTenure: toBN(t3RequiredTenure),
-        },
+        tier1: t1RewardRate
+          ? {
+              rewardRate: toBN(t1RewardRate),
+              requiredTenure: toBN(t1RequiredTenure),
+            }
+          : null,
+        tier2: t2RewardRate
+          ? {
+              rewardRate: toBN(t2RewardRate),
+              requiredTenure: toBN(t2RequiredTenure),
+            }
+          : null,
+        tier3: t3RewardRate
+          ? {
+              rewardRate: toBN(t3RewardRate),
+              requiredTenure: toBN(t3RequiredTenure),
+            }
+          : null,
       },
       amount: toBN(amount),
       durationSec: toBN(duration),
     };
 
-    return this.fundReward(
+    const result = await this.fundReward(
       farm,
       rewardMint,
       this.wallet.publicKey,
@@ -140,5 +172,34 @@ export class GemFarm extends GemFarmClient {
       undefined,
       config
     );
+
+    console.log('funded fixed reward with mint:', rewardMint.toBase58());
+
+    return result;
+  }
+
+  async cancelRewardWallet(farm: PublicKey, rewardMint: PublicKey) {
+    const result = await this.cancelReward(
+      farm,
+      this.wallet.publicKey,
+      rewardMint,
+      this.wallet.publicKey
+    );
+
+    console.log('cancelled reward', rewardMint.toBase58());
+
+    return result;
+  }
+
+  async lockRewardWallet(farm: PublicKey, rewardMint: PublicKey) {
+    const result = await this.lockReward(
+      farm,
+      this.wallet.publicKey,
+      rewardMint
+    );
+
+    console.log('locked reward', rewardMint.toBase58());
+
+    return result;
   }
 }

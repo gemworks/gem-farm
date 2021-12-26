@@ -24,18 +24,41 @@
         </div>
         <div class="mb-2">Gems staked: {{ farmAcc.gemsStaked }}</div>
         <!--<div class="mb-2">Config: {{ farmAcc.config }}</div>-->
-        <div class="mb-2">Reward A: {{ parseRewardType(farmAcc.rewardA) }}</div>
-        <div class="mb-2">Reward B: {{ parseRewardType(farmAcc.rewardB) }}</div>
+        <div class="flex">
+          <!--reward A-->
+          <div class="flex-1 mr-5 nes-container with-title">
+            <p class="title">Reward A</p>
+            <div class="mb-2">Type: {{ parseRewardType(farmAcc.rewardA) }}</div>
+            <div class="mb-2">Mint: {{ parseRewardMint(farmAcc.rewardA) }}</div>
+            <div class="mb-2">
+              Config: {{ parseRewardConfig(farmAcc.rewardA) }}
+            </div>
+          </div>
+          <!--reward B-->
+          <div class="flex-1 nes-container with-title">
+            <p class="title">Reward B</p>
+            <div class="mb-2">Type: {{ parseRewardType(farmAcc.rewardB) }}</div>
+            <div class="mb-2">Mint: {{ parseRewardMint(farmAcc.rewardB) }}</div>
+            <div class="mb-2">
+              Config: {{ parseRewardConfig(farmAcc.rewardB) }}
+            </div>
+          </div>
+        </div>
       </div>
       <!--manage funders-->
       <AuthorizeFunder :farm="farm" class="mb-10" />
       <!--manage funding-->
-      <FundCancelLock :farm="farm" :farmAcc="farmAcc" class="mb-10" />
+      <FundCancelLock
+        :farm="farm"
+        :farmAcc="farmAcc"
+        class="mb-10"
+        @update-farm="handleUpdateFarm"
+      />
     </div>
     <!--when it's not-->
     <div v-else>
       <TestMint class="mb-10" />
-      <InitFarm class="mb-10" @new-farm="handleNewFarmBank" />
+      <InitFarm class="mb-10" @new-farm="handleNewFarm" />
     </div>
   </div>
 </template>
@@ -101,8 +124,12 @@ export default defineComponent({
     };
 
     // --------------------------------------- rest
-    const handleNewFarmBank = async (newFarm: string) => {
+    const handleNewFarm = async (newFarm: string) => {
       farm.value = newFarm;
+      await findFarmsByManager(getWallet()!.publicKey!);
+    };
+
+    const handleUpdateFarm = async () => {
       await findFarmsByManager(getWallet()!.publicKey!);
     };
 
@@ -110,13 +137,29 @@ export default defineComponent({
       return gf.parseRewardType(reward);
     };
 
+    const parseRewardConfig = (reward: any) => {
+      const type = parseRewardType(reward);
+      if (type === 'variable') {
+        return reward.variableRate;
+      } else {
+        return reward.fixedRate;
+      }
+    };
+
+    const parseRewardMint = (reward?: any) => {
+      return `${reward.rewardMint.toBase58().substr(0, 10)}...`;
+    };
+
     return {
       wallet,
       foundFarms,
       farm,
       farmAcc,
-      handleNewFarmBank,
+      handleNewFarm,
+      handleUpdateFarm,
       parseRewardType,
+      parseRewardConfig,
+      parseRewardMint,
     };
   },
 });
