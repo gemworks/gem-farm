@@ -26,22 +26,12 @@
         <!--<div class="mb-2">Config: {{ farmAcc.config }}</div>-->
         <div class="flex">
           <!--reward A-->
-          <div class="flex-1 mr-5 nes-container with-title">
-            <p class="title">Reward A</p>
-            <div class="mb-2">Type: {{ parseRewardType(farmAcc.rewardA) }}</div>
-            <div class="mb-2">Mint: {{ parseRewardMint(farmAcc.rewardA) }}</div>
-            <div class="mb-2">
-              Config: {{ parseRewardConfig(farmAcc.rewardA) }}
-            </div>
+          <div class="flex-1 mr-5">
+            <RewardDisplay :reward="farmAcc.rewardA" title="Reward A" />
           </div>
           <!--reward B-->
-          <div class="flex-1 nes-container with-title">
-            <p class="title">Reward B</p>
-            <div class="mb-2">Type: {{ parseRewardType(farmAcc.rewardB) }}</div>
-            <div class="mb-2">Mint: {{ parseRewardMint(farmAcc.rewardB) }}</div>
-            <div class="mb-2">
-              Config: {{ parseRewardConfig(farmAcc.rewardB) }}
-            </div>
+          <div class="flex-1">
+            <RewardDisplay :reward="farmAcc.rewardB" title="Reward B" />
           </div>
         </div>
       </div>
@@ -75,9 +65,11 @@ import { PublicKey } from '@solana/web3.js';
 import { stringifyPubkeysAndBNInArray } from '../../../../../tests/utils/types';
 import AuthorizeFunder from '@/components/gem-farm/AuthorizeFunder.vue';
 import FundCancelLock from '@/components/gem-farm/FundCancelLock.vue';
+import RewardDisplay from '@/components/gem-farm/RewardDisplay.vue';
 
 export default defineComponent({
   components: {
+    RewardDisplay,
     FundCancelLock,
     AuthorizeFunder,
     InitFarm,
@@ -121,6 +113,7 @@ export default defineComponent({
 
       //start by assigning the 1st one
       farm.value = foundFarms.value[0].publicKey.toBase58();
+      farmAcc.value = foundFarms.value[0].account;
     };
 
     // --------------------------------------- rest
@@ -133,23 +126,6 @@ export default defineComponent({
       await findFarmsByManager(getWallet()!.publicKey!);
     };
 
-    const parseRewardType = (reward: any) => {
-      return gf.parseRewardType(reward);
-    };
-
-    const parseRewardConfig = (reward: any) => {
-      const type = parseRewardType(reward);
-      if (type === 'variable') {
-        return reward.variableRate;
-      } else {
-        return reward.fixedRate;
-      }
-    };
-
-    const parseRewardMint = (reward?: any) => {
-      return `${reward.rewardMint.toBase58().substr(0, 10)}...`;
-    };
-
     return {
       wallet,
       foundFarms,
@@ -157,9 +133,6 @@ export default defineComponent({
       farmAcc,
       handleNewFarm,
       handleUpdateFarm,
-      parseRewardType,
-      parseRewardConfig,
-      parseRewardMint,
     };
   },
 });
