@@ -2,7 +2,18 @@
   <ConfigPane />
   <div v-if="!wallet" class="text-center">Pls connect (burner) wallet</div>
   <div v-else>
-    <!--when farm initialized-->
+    <button
+      class="nes-btn is-primary mb-10"
+      @click="showNewFarm = !showNewFarm"
+    >
+      New farm
+    </button>
+    <!--new farms-->
+    <div v-if="showNewFarm">
+      <TestMint class="mb-10" />
+      <InitFarm class="mb-10" @new-farm="handleNewFarm" />
+    </div>
+    <!--existing farms-->
     <div v-if="foundFarms && foundFarms.length">
       <!--farm selector-->
       <div class="nes-container with-title mb-10">
@@ -44,11 +55,10 @@
         class="mb-10"
         @update-farm="handleUpdateFarm"
       />
-    </div>
-    <!--when it's not-->
-    <div v-else>
-      <TestMint class="mb-10" />
-      <InitFarm class="mb-10" @new-farm="handleNewFarm" />
+      <!--refresh farmer-->
+      <RefreshFarmer :farm="farm" class="mb-10" />
+      <!--treasury payout-->
+      <TreasuryPayout :farm="farm" class="mb-10" />
     </div>
   </div>
 </template>
@@ -66,9 +76,13 @@ import { stringifyPubkeysAndBNInArray } from '../../../../../tests/utils/types';
 import AuthorizeFunder from '@/components/gem-farm/AuthorizeFunder.vue';
 import FundCancelLock from '@/components/gem-farm/FundCancelLock.vue';
 import RewardDisplay from '@/components/gem-farm/RewardDisplay.vue';
+import RefreshFarmer from '@/components/gem-farm/RefreshFarmer.vue';
+import TreasuryPayout from '@/components/gem-farm/TreasuryPayout.vue';
 
 export default defineComponent({
   components: {
+    TreasuryPayout,
+    RefreshFarmer,
     RewardDisplay,
     FundCancelLock,
     AuthorizeFunder,
@@ -117,6 +131,8 @@ export default defineComponent({
     };
 
     // --------------------------------------- rest
+    const showNewFarm = ref(false);
+
     const handleNewFarm = async (newFarm: string) => {
       farm.value = newFarm;
       await findFarmsByManager(getWallet()!.publicKey!);
@@ -133,6 +149,7 @@ export default defineComponent({
       farmAcc,
       handleNewFarm,
       handleUpdateFarm,
+      showNewFarm,
     };
   },
 });

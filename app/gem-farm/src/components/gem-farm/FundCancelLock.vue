@@ -21,7 +21,7 @@
           <label for="baseRate">Base rate (tokens/gem/s):</label>
           <input
             id="baseRate"
-            type="number"
+            type="text"
             class="nes-input"
             v-model="baseRate"
           />
@@ -32,7 +32,7 @@
             <label for="t1RewardRate">Tier 1 reward rate (tokens/gem/s):</label>
             <input
               id="t1RewardRate"
-              type="number"
+              type="text"
               class="nes-input"
               v-model="t1RewardRate"
             />
@@ -41,7 +41,7 @@
             <label for="t1RequiredTenure">Tier 1 required tenure (sec):</label>
             <input
               id="t1RequiredTenure"
-              type="number"
+              type="text"
               class="nes-input"
               v-model="t1RequiredTenure"
             />
@@ -53,7 +53,7 @@
             <label for="t2RewardRate">Tier 2 reward rate (tokens/gem/s):</label>
             <input
               id="t2RewardRate"
-              type="number"
+              type="text"
               class="nes-input"
               v-model="t2RewardRate"
             />
@@ -62,7 +62,7 @@
             <label for="t2RequiredTenure">Tier 2 required tenure (sec):</label>
             <input
               id="t2RequiredTenure"
-              type="number"
+              type="text"
               class="nes-input"
               v-model="t2RequiredTenure"
             />
@@ -74,7 +74,7 @@
             <label for="t3RewardRate">Tier 3 reward rate (tokens/gem/s):</label>
             <input
               id="t3RewardRate"
-              type="number"
+              type="text"
               class="nes-input"
               v-model="t3RewardRate"
             />
@@ -83,7 +83,7 @@
             <label for="t3RequiredTenure">Tier 3 required tenure (sec):</label>
             <input
               id="t3RequiredTenure"
-              type="number"
+              type="text"
               class="nes-input"
               v-model="t3RequiredTenure"
             />
@@ -93,16 +93,11 @@
 
       <div class="nes-field mb-5">
         <label for="amount">Amount (total tokens):</label>
-        <input id="amount" type="number" class="nes-input" v-model="amount" />
+        <input id="amount" type="text" class="nes-input" v-model="amount" />
       </div>
       <div class="nes-field mb-5">
         <label for="duration">Duration (sec):</label>
-        <input
-          id="duration"
-          type="number"
-          class="nes-input"
-          v-model="duration"
-        />
+        <input id="duration" type="text" class="nes-input" v-model="duration" />
       </div>
       <!--buttons-->
       <div class="flex mb-5">

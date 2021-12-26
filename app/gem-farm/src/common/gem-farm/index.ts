@@ -1,7 +1,7 @@
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import { SignerWalletAdapter } from '@solana/wallet-adapter-base';
 import * as anchor from '@project-serum/anchor';
-import { Idl } from '@project-serum/anchor';
+import { BN, Idl } from '@project-serum/anchor';
 import { DEFAULTS } from '@/globals';
 import { createFakeWallet } from '@/common/gem-bank';
 import {
@@ -10,10 +10,6 @@ import {
   VariableRateConfig,
   FixedRateConfig,
 } from '../../../../../tests/gem-farm/gem-farm.client';
-import {
-  stringifyPubkeysAndBNsInObject,
-  toBN,
-} from '../../../../../tests/utils/types';
 
 export async function initGemFarm(
   conn: Connection,
@@ -100,14 +96,14 @@ export class GemFarm extends GemFarmClient {
   async fundVariableRewardWallet(
     farm: PublicKey,
     rewardMint: PublicKey,
-    amount: number,
-    duration: number
+    amount: string,
+    duration: string
   ) {
     const rewardSource = await this.findATA(rewardMint, this.wallet.publicKey);
 
     const config: VariableRateConfig = {
-      amount: toBN(amount),
-      durationSec: toBN(duration),
+      amount: new BN(amount),
+      durationSec: new BN(duration),
     };
 
     const result = this.fundReward(
@@ -126,42 +122,42 @@ export class GemFarm extends GemFarmClient {
   async fundFixedRewardWallet(
     farm: PublicKey,
     rewardMint: PublicKey,
-    amount: number,
-    duration: number,
-    baseRate: number,
-    t1RewardRate?: number,
-    t1RequiredTenure?: number,
-    t2RewardRate?: number,
-    t2RequiredTenure?: number,
-    t3RewardRate?: number,
-    t3RequiredTenure?: number
+    amount: string,
+    duration: string,
+    baseRate: string,
+    t1RewardRate?: string,
+    t1RequiredTenure?: string,
+    t2RewardRate?: string,
+    t2RequiredTenure?: string,
+    t3RewardRate?: string,
+    t3RequiredTenure?: string
   ) {
     const rewardSource = await this.findATA(rewardMint, this.wallet.publicKey);
 
     const config: FixedRateConfig = {
       schedule: {
-        baseRate: toBN(baseRate),
+        baseRate: new BN(baseRate),
         tier1: t1RewardRate
           ? {
-              rewardRate: toBN(t1RewardRate),
-              requiredTenure: toBN(t1RequiredTenure),
+              rewardRate: new BN(t1RewardRate),
+              requiredTenure: new BN(t1RequiredTenure!),
             }
           : null,
         tier2: t2RewardRate
           ? {
-              rewardRate: toBN(t2RewardRate),
-              requiredTenure: toBN(t2RequiredTenure),
+              rewardRate: new BN(t2RewardRate),
+              requiredTenure: new BN(t2RequiredTenure!),
             }
           : null,
         tier3: t3RewardRate
           ? {
-              rewardRate: toBN(t3RewardRate),
-              requiredTenure: toBN(t3RequiredTenure),
+              rewardRate: new BN(t3RewardRate),
+              requiredTenure: new BN(t3RequiredTenure!),
             }
           : null,
       },
-      amount: toBN(amount),
-      durationSec: toBN(duration),
+      amount: new BN(amount),
+      durationSec: new BN(duration),
     };
 
     const result = await this.fundReward(
@@ -199,6 +195,31 @@ export class GemFarm extends GemFarmClient {
     );
 
     console.log('locked reward', rewardMint.toBase58());
+
+    return result;
+  }
+
+  async refreshFarmerWallet(farm: PublicKey, farmerIdentity: PublicKey) {
+    const result = await this.refreshFarmer(farm, farmerIdentity);
+
+    console.log('refreshed farmer', farmerIdentity.toBase58());
+
+    return result;
+  }
+
+  async treasuryPayoutWallet(
+    farm: PublicKey,
+    destination: PublicKey,
+    lamports: string
+  ) {
+    const result = await this.payoutFromTreasury(
+      farm,
+      this.wallet.publicKey,
+      destination,
+      new BN(lamports)
+    );
+
+    console.log('paid out from treasury', lamports);
 
     return result;
   }

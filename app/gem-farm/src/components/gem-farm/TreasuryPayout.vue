@@ -1,18 +1,30 @@
 <template>
   <div class="nes-container with-title">
     <p class="title">Treasury Payout</p>
+    <div class="mb-5">Treasury balance: {{ balance }}</div>
+
+    <form @submit.prevent="payoutFromTreasury">
+      <div class="nes-field mb-5">
+        <label for="destination">Payout destination:</label>
+        <input id="destination" v-model="destination" class="nes-input" />
+      </div>
+      <button class="mb-5 nes-btn is-primary" type="submit">Payout</button>
+    </form>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, watch } from 'vue';
+import { defineComponent, onMounted, ref, watch } from 'vue';
 import useWallet from '@/composables/wallet';
 import useCluster from '@/composables/cluster';
 import { initGemFarm } from '@/common/gem-farm';
-import { RewardType } from '../../../../../tests/gem-farm/gem-farm.client';
+import { PublicKey } from '@solana/web3.js';
 
 export default defineComponent({
-  setup() {
+  props: {
+    farm: String,
+  },
+  setup(props, ctx) {
     const { wallet, getWallet } = useWallet();
     const { cluster, getConnection } = useCluster();
 
@@ -21,7 +33,41 @@ export default defineComponent({
       gf = await initGemFarm(getConnection(), getWallet()!);
     });
 
-    return {};
+    // --------------------------------------- payout
+    const destination = ref();
+    const lamports = ref();
+    const balance = ref();
+
+    const payoutFromTreasury = () => {
+      return gf.treasuryPayoutWallet(
+        new PublicKey(props.farm!),
+        new PublicKey(destination.value),
+        lamports.value
+      );
+    };
+
+    const getTresauryBalance = async () => {
+      const [treasury] = await gf.findFarmTreasuryPDA(
+        new PublicKey(props.farm!)
+      );
+      console.log('treasury', treasury);
+      balance.value = await gf.getBalance(treasury);
+    };
+
+    // --------------------------------------- mounted
+    //need an onmounted hook because this component isn't yet mounted when wallet/cluster are set
+    onMounted(async () => {
+      if (getWallet() && getConnection()) {
+        gf = await initGemFarm(getConnection(), getWallet()!);
+        await getTresauryBalance();
+      }
+    });
+
+    return {
+      balance,
+      destination,
+      payoutFromTreasury,
+    };
   },
 });
 </script>
