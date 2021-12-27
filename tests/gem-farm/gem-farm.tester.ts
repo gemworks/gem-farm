@@ -258,8 +258,8 @@ export class GemFarmTester extends GemFarmClient {
     );
   }
 
-  async callRefreshFarmer(identity: Keypair) {
-    return this.refreshFarmer(this.farm.publicKey, identity);
+  async callRefreshFarmer(identity: Keypair | PublicKey, reenroll?: boolean) {
+    return this.refreshFarmer(this.farm.publicKey, identity, reenroll);
   }
 
   // ----------------- funder

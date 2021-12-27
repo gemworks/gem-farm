@@ -696,22 +696,46 @@ export class GemFarmClient extends GemBankClient {
     };
   }
 
-  async refreshFarmer(farm: PublicKey, farmerIdentity: PublicKey | Keypair) {
+  async refreshFarmer(
+    farm: PublicKey,
+    farmerIdentity: PublicKey | Keypair,
+    reenroll?: boolean
+  ) {
     const identityPk = isKp(farmerIdentity)
       ? (<Keypair>farmerIdentity).publicKey
       : <PublicKey>farmerIdentity;
 
     const [farmer, farmerBump] = await this.findFarmerPDA(farm, identityPk);
 
-    console.log('refreshing farmer', identityPk.toBase58());
-    const txSig = await this.farmProgram.rpc.refreshFarmer(farmerBump, {
-      accounts: {
-        farm,
-        farmer,
-        identity: identityPk,
-      },
-      signers: [],
-    });
+    let txSig;
+    if (reenroll !== null && reenroll !== undefined) {
+      const signers = [];
+      if (isKp(farmerIdentity)) signers.push(<Keypair>farmerIdentity);
+
+      console.log('refreshing farmer (SIGNED)', identityPk.toBase58());
+      txSig = await this.farmProgram.rpc.refreshFarmerSigned(
+        farmerBump,
+        reenroll,
+        {
+          accounts: {
+            farm,
+            farmer,
+            identity: identityPk,
+          },
+          signers,
+        }
+      );
+    } else {
+      console.log('refreshing farmer', identityPk.toBase58());
+      txSig = await this.farmProgram.rpc.refreshFarmer(farmerBump, {
+        accounts: {
+          farm,
+          farmer,
+          identity: identityPk,
+        },
+        signers: [],
+      });
+    }
 
     return {
       farmer,

@@ -52,6 +52,20 @@ describe('misc', () => {
     await gf.callInitFarmer(gf.farmer2Identity);
   });
 
+  it('refreshes farmer (signed)', async () => {
+    //as long as it succeeds - test's ok
+    await gf.callRefreshFarmer(gf.farmer1Identity, false);
+  });
+
+  it('FAILS to refresh farmer (signed)', async () => {
+    //w/o reenrolling we're calling the normal one
+    await gf.callRefreshFarmer(gf.farmer1Identity.publicKey);
+    //now we're calling the signed one, and this should fail
+    await expect(
+      gf.callRefreshFarmer(gf.farmer1Identity.publicKey, false)
+    ).to.be.rejectedWith('Signature verification failed');
+  });
+
   // --------------------------------------- whitelisting
 
   it('whitelists a creator', async () => {

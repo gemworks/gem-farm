@@ -104,6 +104,18 @@ pub mod gem_farm {
         instructions::refresh_farmer::handler(ctx)
     }
 
+    /// this one needs to be called by the farmer themselves
+    /// it's useful if for some reason they can't re-enroll in another fixed reward cycle (eg reward exhausted)
+    /// but they want to be able to refresh themselves and claim their earned rewards up to this point
+    pub fn refresh_farmer_signed(
+        ctx: Context<RefreshFarmerSigned>,
+        _bump: u8,
+        reenroll: bool,
+    ) -> ProgramResult {
+        msg!("refresh farmer");
+        instructions::refresh_farmer_signed::handler(ctx, reenroll)
+    }
+
     // --------------------------------------- funder ops
 
     pub fn authorize_funder(ctx: Context<AuthorizeFunder>, _bump: u8) -> ProgramResult {
