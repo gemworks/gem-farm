@@ -98,7 +98,7 @@ export default defineComponent({
     });
 
     // --------------------------------------- farmer details
-    const farm = ref<string>('4PcJxZEDkVs5bdHVtRMSoLZYvqKdaBoFP9s9VLzNWWPR');
+    const farm = ref<string>('CkgZGhXnthqkATu5UTVa4CEhGWcfTBLMoHRd1demNv3a');
     const farmAcc = ref<any>();
 
     const farmerIdentity = ref<string>();

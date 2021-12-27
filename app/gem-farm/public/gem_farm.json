@@ -1141,6 +1141,10 @@
                 "defined": "TierConfig"
               }
             }
+          },
+          {
+            "name": "denominator",
+            "type": "u64"
           }
         ]
       }
@@ -1290,6 +1294,6 @@
     }
   ],
   "metadata": {
-    "address": "3bUquvD6S8EQbqGnMLhK9DXA1Pxn4D3mUtPE67rfJXZd"
+    "address": "2VMTQBkVcwaYj2VJH1EB1hSa8bv8Dij5sCEtfWJMoFGK"
   }
 }

@@ -37,7 +37,7 @@
 import { defineComponent, onMounted, ref, watch } from 'vue';
 import useWallet from '@/composables/wallet';
 import useCluster from '@/composables/cluster';
-import { GemFarm, initGemFarm } from '@/common/gem-farm';
+import { initGemFarm } from '@/common/gem-farm';
 import { PublicKey } from '@solana/web3.js';
 
 export default defineComponent({

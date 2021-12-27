@@ -63,7 +63,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, watch } from 'vue';
+import { defineComponent, onMounted, ref, watch } from 'vue';
 import useWallet from '../../composables/wallet';
 import useCluster from '../../composables/cluster';
 import { initGemFarm } from '@/common/gem-farm';
@@ -80,6 +80,13 @@ export default defineComponent({
     let gf: any;
     watch([wallet, cluster], async () => {
       gf = await initGemFarm(getConnection(), getWallet()!);
+    });
+
+    //needed coz mounts later
+    onMounted(async () => {
+      if (getWallet() && getConnection()) {
+        gf = await initGemFarm(getConnection(), getWallet()!);
+      }
     });
 
     // --------------------------------------- init farm

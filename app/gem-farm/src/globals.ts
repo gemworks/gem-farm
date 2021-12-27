@@ -3,9 +3,9 @@ import { PublicKey } from '@solana/web3.js';
 export const DEFAULTS = {
   CLUSTER: 'devnet',
   GEM_BANK_PROG_ID: new PublicKey(
-    'BE5PZ53K8uprkbySXbpeQxiAWgD6xFCCw8rJCUPkrUib'
+    '2Kezyz4zLTv8wDoD2t2KKsb76p5KTC3MjVpquoAxTY5V'
   ),
   GEM_FARM_PROG_ID: new PublicKey(
-    '3bUquvD6S8EQbqGnMLhK9DXA1Pxn4D3mUtPE67rfJXZd'
+    '2VMTQBkVcwaYj2VJH1EB1hSa8bv8Dij5sCEtfWJMoFGK'
   ),
 };

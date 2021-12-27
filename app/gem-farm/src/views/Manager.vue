@@ -133,11 +133,16 @@ export default defineComponent({
           foundFarms.value.length
         } farms for manager ${manager.toBase58()}`
       );
-      console.log('PDAs are:', stringifyPubkeysAndBNInArray(foundFarms.value));
+      console.log(
+        'Found farms:',
+        stringifyPubkeysAndBNInArray(foundFarms.value)
+      );
 
-      //start by assigning the 1st one
-      farm.value = foundFarms.value[0].publicKey.toBase58();
-      farmAcc.value = foundFarms.value[0].account;
+      if (foundFarms.value.length) {
+        //start by assigning the 1st one
+        farm.value = foundFarms.value[0].publicKey.toBase58();
+        farmAcc.value = foundFarms.value[0].account;
+      }
     };
 
     // --------------------------------------- rest
