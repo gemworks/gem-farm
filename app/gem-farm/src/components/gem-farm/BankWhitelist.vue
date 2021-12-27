@@ -1,6 +1,6 @@
 <template>
   <div class="nes-container with-title">
-    <p class="title">Whitelist settings</p>
+    <p class="title">Whitelist Mints / Creators</p>
     <form @submit.prevent="updateWhitelist">
       <label>
         <input type="radio" class="nes-radio" value="add" v-model="action" />
@@ -56,63 +56,65 @@ import { defineComponent, onMounted, ref, watch } from 'vue';
 import { WhitelistType } from '../../../../../tests/gem-bank/gem-bank.client';
 import useCluster from '@/composables/cluster';
 import useWallet from '@/composables/wallet';
-import { initGemBank } from '@/common/gem-bank';
 import { PublicKey } from '@solana/web3.js';
+import { initGemFarm } from '@/common/gem-farm';
 
 export default defineComponent({
   props: {
+    farm: { type: String, required: true },
     bank: { type: String, required: true },
   },
   setup(props, ctx) {
-    const action = ref<string>('add');
-    const address = ref<string>('75ErM1QcGjHiPMX7oLsf9meQdGSUs4ZrwS2X8tBpsZhA');
-    const type = ref<WhitelistType>(WhitelistType.Creator);
+    const { wallet, getWallet } = useWallet();
+    const { cluster, getConnection } = useCluster();
 
-    const { getConnection } = useCluster();
-    const { getWallet } = useWallet();
-
-    let gb: any;
-
-    const proofs = ref<PublicKey[]>([]);
-
-    onMounted(async () => {
-      gb = await initGemBank(getConnection(), getWallet()!);
+    let gf: any;
+    watch([wallet, cluster], async () => {
+      gf = await initGemFarm(getConnection(), getWallet()!);
     });
+
+    //need an onmounted hook because this component isn't yet mounted when wallet/cluster are set
+    onMounted(async () => {
+      if (getWallet() && getConnection()) {
+        gf = await initGemFarm(getConnection(), getWallet()!);
+      }
+    });
+
+    // --------------------------------------- whitelist
+    const action = ref<string>('add');
+    const address = ref<string>('AGsJu1jZmFcVDPdm6bbaP54S3sMEinxmdiYWhaBBDNVX');
+    const type = ref<WhitelistType>(WhitelistType.Creator);
+    const proofs = ref<PublicKey[]>([]);
 
     //todo doesn't work
     watch(
       () => props.bank,
       async () => {
-        const r = await gb.fetchAllWhitelistProofPDAs(
-          new PublicKey(props.bank)
-        );
-        console.log(`found a total of ${r.length} whitelist proofs`);
-        proofs.value = r;
+        await fetchProofs();
       }
     );
 
-    const updateWhitelist = async () => {
-      console.log(props.bank);
+    const fetchProofs = async () => {
+      proofs.value = await gf.fetchAllWhitelistProofPDAs(
+        new PublicKey(props.bank)
+      );
+      console.log(`found a total of ${proofs.value.length} whitelist proofs`);
+    };
 
+    const updateWhitelist = async () => {
       if (action.value === 'add') {
-        const { txSig } = await gb.addToWhitelistWallet(
-          new PublicKey(props.bank),
+        await gf.addToBankWhitelistWallet(
+          new PublicKey(props.farm),
           new PublicKey(address.value),
           type.value
         );
-        console.log('added', txSig);
-        proofs.value = await gb.fetchAllWhitelistProofPDAs(
-          new PublicKey(props.bank)
-        );
+        await fetchProofs();
       } else {
-        const { txSig } = await gb.removeFromWhitelistWallet(
-          new PublicKey(props.bank),
+        await gf.removeFromBankWhitelistWallet(
+          new PublicKey(props.farm),
           new PublicKey(address.value)
         );
-        console.log('removed', txSig);
-        proofs.value = await gb.fetchAllWhitelistProofPDAs(
-          new PublicKey(props.bank)
-        );
+        await fetchProofs();
       }
     };
 

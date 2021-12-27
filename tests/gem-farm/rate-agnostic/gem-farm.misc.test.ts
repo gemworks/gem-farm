@@ -6,9 +6,10 @@ import {
   GemFarmTester,
 } from '../gem-farm.tester';
 import { BN } from '@project-serum/anchor';
-import { LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import { pause } from '../../utils/types';
 import { RewardType } from '../gem-farm.client';
+import { WhitelistType } from '../../gem-bank/gem-bank.client';
 
 chai.use(chaiAsPromised);
 
@@ -47,6 +48,29 @@ describe('misc', () => {
 
     //farmer 2
     await gf.callInitFarmer(gf.farmer2Identity);
+  });
+
+  // --------------------------------------- whitelisting
+
+  const creator = new PublicKey('75ErM1QcGjHiPMX7oLsf9meQdGSUs4ZrwS2X8tBpsZhA');
+
+  it('whitelists a creator', async () => {
+    let { whitelistProof } = await gf.callAddToBankWhitelist(
+      creator,
+      WhitelistType.Creator
+    );
+
+    const proofAcc = await gf.fetchWhitelistProofAcc(whitelistProof);
+    assert.equal(proofAcc.whitelistedAddress.toBase58(), creator.toBase58());
+    assert.equal(proofAcc.whitelistType, WhitelistType.Creator);
+  });
+
+  it('removes a whitelisted creator', async () => {
+    let { whitelistProof } = await gf.callRemoveFromBankWhitelist(creator);
+
+    await expect(gf.fetchWhitelistProofAcc(whitelistProof)).to.be.rejectedWith(
+      'Account does not exist'
+    );
   });
 
   // --------------------------------------- authorization

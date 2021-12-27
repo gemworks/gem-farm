@@ -17,6 +17,7 @@ import { Token } from '@solana/spl-token';
 import { ITokenData } from '../utils/account';
 import { prepGem } from '../utils/gem-common';
 import { assert } from 'chai';
+import { WhitelistType } from '../gem-bank/gem-bank.client';
 
 // --------------------------------------- configs
 
@@ -158,6 +159,26 @@ export class GemFarmTester extends GemFarmClient {
       this.farmManager,
       destination,
       toBN(lamports)
+    );
+  }
+
+  async callAddToBankWhitelist(
+    addressToWhitelist: PublicKey,
+    whitelistType: WhitelistType
+  ) {
+    return this.addToBankWhitelist(
+      this.farm.publicKey,
+      this.farmManager,
+      addressToWhitelist,
+      whitelistType
+    );
+  }
+
+  async callRemoveFromBankWhitelist(addressToRemove: PublicKey) {
+    return this.removeFromBankWhitelist(
+      this.farm.publicKey,
+      this.farmManager,
+      addressToRemove
     );
   }
 

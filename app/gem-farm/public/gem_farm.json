@@ -159,6 +159,115 @@
       ]
     },
     {
+      "name": "addToBankWhitelist",
+      "accounts": [
+        {
+          "name": "farm",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "farmManager",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "farmAuthority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "bank",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "addressToWhitelist",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "whitelistProof",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "gemBank",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "bumpAuth",
+          "type": "u8"
+        },
+        {
+          "name": "bumpWl",
+          "type": "u8"
+        },
+        {
+          "name": "whitelistType",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "removeFromBankWhitelist",
+      "accounts": [
+        {
+          "name": "farm",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "farmManager",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "farmAuthority",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "bank",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "addressToRemove",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "whitelistProof",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gemBank",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "bumpAuth",
+          "type": "u8"
+        },
+        {
+          "name": "bumpWl",
+          "type": "u8"
+        }
+      ]
+    },
+    {
       "name": "initFarmer",
       "accounts": [
         {

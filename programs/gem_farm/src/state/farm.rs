@@ -29,7 +29,8 @@ pub struct Farm {
     // used for collecting any fees earned by the farm
     pub farm_treasury: Pubkey,
 
-    // signs off on any bank operations related to the farm
+    // signs off on treasury payouts and on any operations related to the bank
+    // (configured as bank manager)
     pub farm_authority: Pubkey,
 
     pub farm_authority_seed: Pubkey,

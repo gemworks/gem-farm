@@ -199,7 +199,7 @@ export default defineComponent({
         const creator = new PublicKey(
           (nft.onchainMetadata as any).data.creators[0].address
         );
-        console.log('creator is', creator);
+        console.log('creator is', creator.toBase58());
         await depositGem(nft.mint, creator, nft.pubkey!);
       }
       for (const nft of toWalletNFTs.value) {

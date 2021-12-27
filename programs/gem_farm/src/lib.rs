@@ -37,6 +37,25 @@ pub mod gem_farm {
         instructions::treasury_payout::handler(ctx, bump, lamports)
     }
 
+    pub fn add_to_bank_whitelist(
+        ctx: Context<AddToBankWhitelist>,
+        _bump_auth: u8,
+        bump_wl: u8,
+        whitelist_type: u8,
+    ) -> ProgramResult {
+        msg!("add to bank whitelist");
+        instructions::add_to_bank_whitelist::handler(ctx, bump_wl, whitelist_type)
+    }
+
+    pub fn remove_from_bank_whitelist(
+        ctx: Context<RemoveFromBankWhitelist>,
+        _bump_auth: u8,
+        bump_wl: u8,
+    ) -> ProgramResult {
+        msg!("remove from bank whitelist");
+        instructions::remove_from_bank_whitelist::handler(ctx, bump_wl)
+    }
+
     // --------------------------------------- farmer ops
 
     pub fn init_farmer(

@@ -1,3 +1,4 @@
+pub mod add_to_bank_whitelist;
 pub mod authorize_funder;
 pub mod cancel_reward;
 pub mod claim;
@@ -8,10 +9,12 @@ pub mod init_farm;
 pub mod init_farmer;
 pub mod lock_reward;
 pub mod refresh_farmer;
+pub mod remove_from_bank_whitelist;
 pub mod stake;
 pub mod treasury_payout;
 pub mod unstake;
 
+pub use add_to_bank_whitelist::*;
 pub use authorize_funder::*;
 pub use cancel_reward::*;
 pub use claim::*;
@@ -22,6 +25,7 @@ pub use init_farm::*;
 pub use init_farmer::*;
 pub use lock_reward::*;
 pub use refresh_farmer::*;
+pub use remove_from_bank_whitelist::*;
 pub use stake::*;
 pub use treasury_payout::*;
 pub use unstake::*;

@@ -466,8 +466,13 @@ export class GemBankClient extends AccountUtils {
     bank: PublicKey,
     bankManager: PublicKey | Keypair,
     addressToWhitelist: PublicKey,
-    whitelistType: WhitelistType
+    whitelistType: WhitelistType,
+    payer?: PublicKey
   ) {
+    const managerPk = isKp(bankManager)
+      ? (<Keypair>bankManager).publicKey
+      : <PublicKey>bankManager;
+
     const [whitelistProof, whitelistBump] = await this.findWhitelistProofPDA(
       bank,
       addressToWhitelist
@@ -482,12 +487,11 @@ export class GemBankClient extends AccountUtils {
       {
         accounts: {
           bank,
-          bankManager: isKp(bankManager)
-            ? (<Keypair>bankManager).publicKey
-            : bankManager,
+          bankManager: managerPk,
           addressToWhitelist,
           whitelistProof,
           systemProgram: SystemProgram.programId,
+          payer: payer ?? managerPk,
         },
         signers,
       }

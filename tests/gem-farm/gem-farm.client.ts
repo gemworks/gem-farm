@@ -4,7 +4,7 @@ import { Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
 import { GemFarm } from '../../target/types/gem_farm';
 import { Connection } from '@metaplex/js';
 import { isKp } from '../utils/types';
-import { GemBankClient } from '../gem-bank/gem-bank.client';
+import { GemBankClient, WhitelistType } from '../gem-bank/gem-bank.client';
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
@@ -316,6 +316,95 @@ export class GemFarmClient extends GemBankClient {
       farmAuthBump,
       farmTreasury,
       farmTreasuryBump,
+      txSig,
+    };
+  }
+
+  async addToBankWhitelist(
+    farm: PublicKey,
+    farmManager: PublicKey | Keypair,
+    addressToWhitelist: PublicKey,
+    whitelistType: WhitelistType
+  ) {
+    const farmAcc = await this.fetchFarmAcc(farm);
+
+    const [farmAuth, farmAuthBump] = await this.findFarmAuthorityPDA(farm);
+    const [whitelistProof, whitelistProofBump] =
+      await this.findWhitelistProofPDA(farmAcc.bank, addressToWhitelist);
+
+    const signers = [];
+    if (isKp(farmManager)) signers.push(<Keypair>farmManager);
+
+    console.log(`adding ${addressToWhitelist.toBase58()} to whitelist`);
+    const txSig = await this.farmProgram.rpc.addToBankWhitelist(
+      farmAuthBump,
+      whitelistProofBump,
+      whitelistType,
+      {
+        accounts: {
+          farm,
+          farmManager: isKp(farmManager)
+            ? (<Keypair>farmManager).publicKey
+            : farmManager,
+          farmAuthority: farmAuth,
+          bank: farmAcc.bank,
+          addressToWhitelist,
+          whitelistProof,
+          systemProgram: SystemProgram.programId,
+          gemBank: this.bankProgram.programId,
+        },
+        signers,
+      }
+    );
+
+    return {
+      farmAuth,
+      farmAuthBump,
+      whitelistProof,
+      whitelistProofBump,
+      txSig,
+    };
+  }
+
+  async removeFromBankWhitelist(
+    farm: PublicKey,
+    farmManager: PublicKey | Keypair,
+    addressToRemove: PublicKey
+  ) {
+    const farmAcc = await this.fetchFarmAcc(farm);
+
+    const [farmAuth, farmAuthBump] = await this.findFarmAuthorityPDA(farm);
+    const [whitelistProof, whitelistProofBump] =
+      await this.findWhitelistProofPDA(farmAcc.bank, addressToRemove);
+
+    const signers = [];
+    if (isKp(farmManager)) signers.push(<Keypair>farmManager);
+
+    console.log(`removing ${addressToRemove.toBase58()} from whitelist`);
+    const txSig = await this.farmProgram.rpc.removeFromBankWhitelist(
+      farmAuthBump,
+      whitelistProofBump,
+      {
+        accounts: {
+          farm,
+          farmManager: isKp(farmManager)
+            ? (<Keypair>farmManager).publicKey
+            : farmManager,
+          farmAuthority: farmAuth,
+          bank: farmAcc.bank,
+          addressToRemove,
+          whitelistProof,
+          gemBank: this.bankProgram.programId,
+        },
+        signers,
+      }
+    );
+
+    return {
+      farmAuth,
+      farmAuthBump,
+      whitelistProof,
+      whitelistProofBump,
       txSig,
     };
   }

@@ -8,6 +8,8 @@ pub struct SetVaultLock<'info> {
     // bank
     #[account(has_one = bank_manager)]
     pub bank: Account<'info, Bank>,
+    // vaults are locked / unlocked by THE MANAGER
+    // (depositing / withdrawing doesn't require them)
     pub bank_manager: Signer<'info>,
 
     // vault

@@ -30,7 +30,6 @@
           </select>
         </div>
         <div class="mb-2">Associated bank: {{ farmAcc.bank }}</div>
-
         <!--config-->
         <div class="mb-2">Farm config:</div>
         <div class="mb-2 ml-5">
@@ -42,7 +41,6 @@
         <div class="mb-2 ml-5">
           Unstaking fee: {{ farmAcc.config.unstakingFeeLamp }} lamp
         </div>
-
         <!--participating farmers/gems-->
         <div class="mb-2">
           Initialized farmer count: {{ farmAcc.farmerCount }}
@@ -63,6 +61,8 @@
           </div>
         </div>
       </div>
+      <!--manage NFT types-->
+      <TheWhitelist :farm="farm" :bank="farmAcc.bank" class="mb-10" />
       <!--manage funders-->
       <AuthorizeFunder :farm="farm" class="mb-10" />
       <!--manage funding-->
@@ -95,9 +95,11 @@ import FundCancelLock from '@/components/gem-farm/FundCancelLock.vue';
 import RewardDisplay from '@/components/gem-farm/RewardDisplay.vue';
 import RefreshFarmer from '@/components/gem-farm/RefreshFarmer.vue';
 import TreasuryPayout from '@/components/gem-farm/TreasuryPayout.vue';
+import TheWhitelist from '@/components/gem-farm/BankWhitelist.vue';
 
 export default defineComponent({
   components: {
+    TheWhitelist,
     TreasuryPayout,
     RefreshFarmer,
     RewardDisplay,

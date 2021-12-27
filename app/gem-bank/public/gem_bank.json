@@ -309,7 +309,7 @@
         },
         {
           "name": "bankManager",
-          "isMut": true,
+          "isMut": false,
           "isSigner": true
         },
         {
@@ -326,6 +326,11 @@
           "name": "systemProgram",
           "isMut": false,
           "isSigner": false
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true
         }
       ],
       "args": [

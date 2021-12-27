@@ -10,6 +10,7 @@ import {
   VariableRateConfig,
   FixedRateConfig,
 } from '../../../../../tests/gem-farm/gem-farm.client';
+import { WhitelistType } from '../../../../../tests/gem-bank/gem-bank.client';
 
 export async function initGemFarm(
   conn: Connection,
@@ -202,8 +203,6 @@ export class GemFarm extends GemFarmClient {
   }
 
   async refreshFarmerWallet(farm: PublicKey, farmerIdentity: PublicKey) {
-    console.log('farm is', farm.toBase58());
-    console.log('id is', farmerIdentity.toBase58());
     const result = await this.refreshFarmer(farm, farmerIdentity);
 
     console.log('refreshed farmer', farmerIdentity.toBase58());
@@ -288,6 +287,38 @@ export class GemFarm extends GemFarmClient {
     );
 
     console.log('added extra gem for farmer', this.wallet.publicKey.toBase58());
+
+    return result;
+  }
+
+  async addToBankWhitelistWallet(
+    farm: PublicKey,
+    addressToWhitelist: PublicKey,
+    whitelistType: WhitelistType
+  ) {
+    const result = await this.addToBankWhitelist(
+      farm,
+      this.wallet.publicKey,
+      addressToWhitelist,
+      whitelistType
+    );
+
+    console.log(`${addressToWhitelist.toBase58()} added to whitelist`);
+
+    return result;
+  }
+
+  async removeFromBankWhitelistWallet(
+    farm: PublicKey,
+    addressToRemove: PublicKey
+  ) {
+    const result = await this.removeFromBankWhitelist(
+      farm,
+      this.wallet.publicKey,
+      addressToRemove
+    );
+
+    console.log(`${addressToRemove.toBase58()} removed from whitelist`);
 
     return result;
   }
