@@ -119,7 +119,7 @@ pub fn handler(
     let farmer = &mut ctx.accounts.farmer;
     let now_ts = now_ts()?;
 
-    farm.update_rewards(now_ts, Some(farmer))?;
+    farm.update_rewards(now_ts, Some(farmer), true)?;
 
     // stake extra gems
     ctx.accounts.vault.reload()?;

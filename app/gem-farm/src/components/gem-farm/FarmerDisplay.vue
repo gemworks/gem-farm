@@ -49,6 +49,7 @@ export default defineComponent({
     farmer: String,
     farmerAcc: Object,
   },
+  emits: ['refresh-farmer'],
   setup(props, ctx) {
     const { wallet, getWallet } = useWallet();
     const { cluster, getConnection } = useCluster();
@@ -71,11 +72,12 @@ export default defineComponent({
       return Object.keys(farmer.state)[0];
     };
 
-    const refreshFarmer = () => {
-      return gf.refreshFarmerWallet(
+    const refreshFarmer = async () => {
+      await gf.refreshFarmerWallet(
         new PublicKey(props.farm!),
         new PublicKey(props.farmer!)
       );
+      ctx.emit('refresh-farmer');
     };
 
     return {

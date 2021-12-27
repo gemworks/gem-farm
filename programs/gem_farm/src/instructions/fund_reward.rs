@@ -67,7 +67,7 @@ pub fn handler(
     let farm = &mut ctx.accounts.farm;
     let now_ts = now_ts()?;
 
-    farm.update_rewards(now_ts, None)?;
+    farm.update_rewards(now_ts, None, true)?;
 
     farm.fund_reward_by_mint(
         now_ts,

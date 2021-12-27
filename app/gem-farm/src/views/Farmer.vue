@@ -21,6 +21,7 @@
         :farmer="farmer"
         :farmerAcc="farmerAcc"
         class="mb-10"
+        @refresh-farmer="handleRefreshFarmer"
       />
       <Vault
         v-if="renderVault"
@@ -178,6 +179,19 @@ export default defineComponent({
       await fetchFarmer();
     };
 
+    const renderVault = ref<boolean>(true);
+
+    const refreshVault = async () => {
+      renderVault.value = false;
+      await nextTick();
+      renderVault.value = true;
+    };
+
+    const handleRefreshFarmer = async () => {
+      await fetchFarmer();
+    };
+
+    // --------------------------------------- adding extra gem
     const selectedNFTs = ref<INFT[]>([]);
 
     const handleNewSelectedNFT = (newSelectedNFTs: INFT[]) => {
@@ -207,14 +221,6 @@ export default defineComponent({
       );
     };
 
-    const renderVault = ref<boolean>(true);
-
-    const refreshVault = async () => {
-      renderVault.value = false;
-      await nextTick();
-      renderVault.value = true;
-    };
-
     return {
       wallet,
       farm,
@@ -228,6 +234,7 @@ export default defineComponent({
       beginStaking,
       endStaking,
       claim,
+      handleRefreshFarmer,
       selectedNFTs,
       handleNewSelectedNFT,
       addGems,

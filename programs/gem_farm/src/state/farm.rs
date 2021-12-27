@@ -111,6 +111,7 @@ impl Farm {
         &mut self,
         now_ts: u64,
         mut farmer: Option<&mut Account<Farmer>>,
+        reenroll: bool, //relevant for fixed only
     ) -> ProgramResult {
         // reward a
         let (farmer_gems_staked, farmer_reward_a) = match farmer {
@@ -123,6 +124,7 @@ impl Farm {
             self.gems_staked,
             farmer_gems_staked,
             farmer_reward_a,
+            reenroll,
         )?;
 
         // reward b
@@ -136,6 +138,7 @@ impl Farm {
             self.gems_staked,
             farmer_gems_staked,
             farmer_reward_b,
+            reenroll,
         )
     }
 
@@ -396,6 +399,7 @@ impl FarmReward {
         farm_gems_staked: u64,
         farmer_gems_staked: Option<u64>,
         farmer_reward: Option<&mut FarmerReward>,
+        reenroll: bool,
     ) -> ProgramResult {
         match self.reward_type {
             RewardType::Variable => self.variable_rate.update_accrued_reward(
@@ -418,6 +422,7 @@ impl FarmReward {
                     &mut self.funds,
                     farmer_gems_staked.unwrap(),
                     farmer_reward.unwrap(),
+                    reenroll,
                 )
             }
         }

@@ -41,7 +41,7 @@ export default defineComponent({
     // --------------------------------------- refresh farmer
     const farmer = ref<string>();
 
-    const refreshFarmer = () => {
+    const refreshFarmer = async () => {
       return gf.refreshFarmerWallet(
         new PublicKey(props.farm!),
         new PublicKey(farmer.value!)

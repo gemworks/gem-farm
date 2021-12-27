@@ -61,7 +61,7 @@ pub fn handler(ctx: Context<CancelReward>) -> ProgramResult {
     let farm = &mut ctx.accounts.farm;
     let now_ts = now_ts()?;
 
-    farm.update_rewards(now_ts, None)?;
+    farm.update_rewards(now_ts, None, true)?;
 
     // calculate cancellation amount while recording cancellation
     let cancel_amount = farm.cancel_reward_by_mint(now_ts, ctx.accounts.reward_mint.key())?;

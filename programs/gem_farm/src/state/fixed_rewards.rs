@@ -251,6 +251,7 @@ impl FixedRateReward {
         funds: &mut FundsTracker,
         farmer_gems_staked: u64,
         farmer_reward: &mut FarmerReward,
+        reenroll: bool,
     ) -> ProgramResult {
         let newly_accrued_reward = farmer_reward
             .fixed_rate
@@ -272,15 +273,17 @@ impl FixedRateReward {
 
             self.graduate_farmer(now_ts, farmer_gems_staked, farmer_reward)?;
 
-            // we roll them forward with original staking time
-            self.enroll_farmer(
-                now_ts,
-                times,
-                funds,
-                farmer_gems_staked,
-                farmer_reward,
-                Some(original_staking_start),
-            )?;
+            // if desired, we roll them forward with original staking time
+            if reenroll {
+                self.enroll_farmer(
+                    now_ts,
+                    times,
+                    funds,
+                    farmer_gems_staked,
+                    farmer_reward,
+                    Some(original_staking_start),
+                )?;
+            }
         }
 
         msg!("updated reward as of {}", now_ts);

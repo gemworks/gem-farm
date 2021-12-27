@@ -85,7 +85,7 @@ pub fn handler(ctx: Context<Unstake>) -> ProgramResult {
     let farmer = &mut ctx.accounts.farmer;
     let now_ts = now_ts()?;
 
-    farm.update_rewards(now_ts, Some(farmer))?;
+    farm.update_rewards(now_ts, Some(farmer), false)?;
 
     // end staking (will cycle through state on repeated calls)
     farm.end_staking(now_ts, farmer)?;
