@@ -197,6 +197,7 @@ export default defineComponent({
       for (const nft of toVaultNFTs.value) {
         console.log(nft);
         const creator = new PublicKey(
+          //todo currently simply taking the 1st creator
           (nft.onchainMetadata as any).data.creators[0].address
         );
         console.log('creator is', creator.toBase58());

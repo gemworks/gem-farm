@@ -627,7 +627,7 @@ export class GemFarmClient extends GemBankClient {
     const [GDR, GDRBump] = await this.findGdrPDA(vault, gemMint);
     const [vaultAuth, vaultAuthBump] = await this.findVaultAuthorityPDA(vault);
 
-    const remainingAccounts = []; //todo
+    const remainingAccounts = [];
     if (mintProof)
       remainingAccounts.push({
         pubkey: mintProof,
@@ -674,6 +674,7 @@ export class GemFarmClient extends GemBankClient {
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
           gemBank: this.bankProgram.programId,
         },
+        remainingAccounts,
         signers,
       }
     );

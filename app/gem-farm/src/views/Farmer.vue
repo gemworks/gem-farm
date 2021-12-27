@@ -199,12 +199,17 @@ export default defineComponent({
       selectedNFTs.value = newSelectedNFTs;
     };
 
-    const addSingleGem = async (gemMint: PublicKey, gemSource: PublicKey) => {
+    const addSingleGem = async (
+      gemMint: PublicKey,
+      gemSource: PublicKey,
+      creator: PublicKey
+    ) => {
       await gf.flashDepositWallet(
         new PublicKey(farm.value!),
         '1',
         gemMint,
-        gemSource
+        gemSource,
+        creator
       );
       await refreshVault();
       await fetchFarmer();
@@ -213,7 +218,13 @@ export default defineComponent({
     const addGems = async () => {
       await Promise.all(
         selectedNFTs.value.map((nft) => {
-          addSingleGem(nft.mint, nft.pubkey!);
+          const creator = new PublicKey(
+            //todo currently simply taking the 1st creator
+            (nft.onchainMetadata as any).data.creators[0].address
+          );
+          console.log('creator is', creator.toBase58());
+
+          addSingleGem(nft.mint, nft.pubkey!, creator);
         })
       );
       console.log(

@@ -46,6 +46,10 @@ pub struct FlashDeposit<'info> {
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
     pub gem_bank: Program<'info, GemBank>,
+    // remaining accounts could be passed, in this order:
+    // - mint_whitelist_proof
+    // - gem_metadata <- if we got to this point we can assume gem = NFT, not a fungible token
+    // - creator_whitelist_proof
 }
 
 impl<'info> FlashDeposit<'info> {
@@ -75,15 +79,14 @@ impl<'info> FlashDeposit<'info> {
                 token_program: self.token_program.to_account_info(),
                 system_program: self.system_program.to_account_info(),
                 rent: self.rent.to_account_info(),
-                //     todo creator proofs and shit
             },
         )
     }
 }
 
 // todo I'll defo want a good sec review on this one
-pub fn handler(
-    ctx: Context<FlashDeposit>,
+pub fn handler<'a, 'b, 'c, 'info>(
+    ctx: Context<'a, 'b, 'c, 'info, FlashDeposit<'info>>,
     bump_gem_box: u8,
     bump_gdr: u8,
     amount: u64,
@@ -101,7 +104,9 @@ pub fn handler(
     )?;
 
     gem_bank::cpi::deposit_gem(
-        ctx.accounts.deposit_gem_ctx(),
+        ctx.accounts
+            .deposit_gem_ctx()
+            .with_remaining_accounts(ctx.remaining_accounts.to_vec()),
         bump_gem_box,
         bump_gdr,
         amount,

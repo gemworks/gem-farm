@@ -11,6 +11,7 @@ import {
   FixedRateConfig,
 } from '../../../../../tests/gem-farm/gem-farm.client';
 import { WhitelistType } from '../../../../../tests/gem-bank/gem-bank.client';
+import { programs } from '@metaplex/js';
 
 export async function initGemFarm(
   conn: Connection,
@@ -276,14 +277,28 @@ export class GemFarm extends GemFarmClient {
     farm: PublicKey,
     gemAmount: string,
     gemMint: PublicKey,
-    gemSource: PublicKey
+    gemSource: PublicKey,
+    creator: PublicKey
   ) {
+    const farmAcc = await this.fetchFarmAcc(farm);
+    const bank = farmAcc.bank;
+
+    const [mintProof, bump] = await this.findWhitelistProofPDA(bank, gemMint);
+    const [creatorProof, bump2] = await this.findWhitelistProofPDA(
+      bank,
+      creator
+    );
+    const metadata = await programs.metadata.Metadata.getPDA(gemMint);
+
     const result = await this.flashDeposit(
       farm,
       this.wallet.publicKey,
       new BN(gemAmount),
       gemMint,
-      gemSource
+      gemSource,
+      mintProof,
+      metadata,
+      creatorProof
     );
 
     console.log('added extra gem for farmer', this.wallet.publicKey.toBase58());

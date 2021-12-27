@@ -225,10 +225,6 @@ impl Farm {
         extra_gems: u64,
         farmer: &mut Account<Farmer>,
     ) -> ProgramResult {
-        if self.gems_staked.try_add(extra_gems)? != gems_in_vault {
-            return Err(ErrorCode::AmountMismatch.into());
-        }
-
         // update farmer
         farmer.begin_staking(self.config.min_staking_period_sec, now_ts, gems_in_vault)?;
 

@@ -13,6 +13,8 @@ import { WhitelistType } from '../../gem-bank/gem-bank.client';
 
 chai.use(chaiAsPromised);
 
+const creator = new PublicKey('75ErM1QcGjHiPMX7oLsf9meQdGSUs4ZrwS2X8tBpsZhA');
+
 describe('misc', () => {
   let gf = new GemFarmTester();
 
@@ -51,8 +53,6 @@ describe('misc', () => {
   });
 
   // --------------------------------------- whitelisting
-
-  const creator = new PublicKey('75ErM1QcGjHiPMX7oLsf9meQdGSUs4ZrwS2X8tBpsZhA');
 
   it('whitelists a creator', async () => {
     let { whitelistProof } = await gf.callAddToBankWhitelist(
@@ -137,7 +137,7 @@ describe('misc', () => {
     //flash deposit after vault locked
     const flashDeposit = new BN(1);
 
-    await gf.callFlashDeposit(flashDeposit);
+    await gf.callFlashDeposit(flashDeposit, gf.farmer1Identity);
     // await printStructs('FLASH DEPOSITS');
 
     vaultAcc = await gf.fetchVaultAcc(vault);
@@ -152,6 +152,28 @@ describe('misc', () => {
     assert(farmerAcc.gemsStaked.eq(initialDeposit.add(flashDeposit)));
     //flash deposits resets staking time, which means it should be higher
     assert(farmerAcc.minStakingEndsTs.gt(oldEndTs));
+  });
+
+  it('flash deposits a gem (whitelisted)', async () => {
+    //prep - use the 2nd farmer this itme
+    const initialDeposit = new BN(1); //drop 1 existing gem, need to lock the vault
+    await gf.callDeposit(initialDeposit, gf.farmer2Identity);
+    const { vault } = await gf.callStake(gf.farmer2Identity);
+
+    //whitelist mint
+    const { whitelistProof } = await gf.callAddToBankWhitelist(
+      gf.gem2.tokenMint,
+      WhitelistType.Mint
+    );
+
+    //flash deposit after vault locked
+    const flashDeposit = new BN(1);
+    await gf.callFlashDeposit(flashDeposit, gf.farmer2Identity, whitelistProof);
+
+    //this is enough to verify it worked
+    const vaultAcc = await gf.fetchVaultAcc(vault);
+    assert(vaultAcc.gemCount.eq(initialDeposit.add(flashDeposit)));
+    assert.isTrue(vaultAcc.locked);
   });
 
   // --------------------------------------- treasury payout

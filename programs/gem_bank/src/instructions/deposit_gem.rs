@@ -213,6 +213,7 @@ pub fn handler(ctx: Context<DepositGem>, amount: u64) -> ProgramResult {
 
     // this check is semi-useless but won't hurt
     if gdr.gem_count != gem_box.amount + amount {
+        msg!("{} {}", gdr.gem_count, gem_box.amount);
         return Err(ErrorCode::AmountMismatch.into());
     }
 

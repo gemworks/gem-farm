@@ -88,8 +88,8 @@ pub mod gem_farm {
         instructions::claim::handler(ctx)
     }
 
-    pub fn flash_deposit(
-        ctx: Context<FlashDeposit>,
+    pub fn flash_deposit<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, FlashDeposit<'info>>,
         _bump_farmer: u8,
         bump_gem_box: u8,
         bump_gdr: u8,

@@ -235,13 +235,26 @@ export class GemFarmTester extends GemFarmClient {
     );
   }
 
-  async callFlashDeposit(gems: Numerical) {
+  async callFlashDeposit(
+    gems: Numerical,
+    identity: Keypair,
+    mintProof?: PublicKey,
+    metadata?: PublicKey,
+    creatorProof?: PublicKey
+  ) {
+    const isFarmer1 =
+      identity.publicKey.toBase58() ===
+      this.farmer1Identity.publicKey.toBase58();
+
     return this.flashDeposit(
       this.farm.publicKey,
-      this.farmer1Identity,
+      identity,
       toBN(gems),
-      this.gem1.tokenMint,
-      this.gem1.tokenAcc
+      isFarmer1 ? this.gem1.tokenMint : this.gem2.tokenMint,
+      isFarmer1 ? this.gem1.tokenAcc : this.gem2.tokenAcc,
+      mintProof,
+      metadata,
+      creatorProof
     );
   }
 
