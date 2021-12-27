@@ -45,7 +45,7 @@
       "args": [
         {
           "name": "flags",
-          "type": "u8"
+          "type": "u32"
         }
       ]
     },
@@ -102,14 +102,14 @@
           "isSigner": false
         },
         {
-          "name": "vault",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "bankManager",
           "isMut": false,
           "isSigner": true
+        },
+        {
+          "name": "vault",
+          "isMut": true,
+          "isSigner": false
         }
       ],
       "args": [
@@ -160,7 +160,7 @@
         },
         {
           "name": "owner",
-          "isMut": false,
+          "isMut": true,
           "isSigner": true
         },
         {
@@ -187,11 +187,6 @@
           "name": "gemMint",
           "isMut": false,
           "isSigner": false
-        },
-        {
-          "name": "depositor",
-          "isMut": true,
-          "isSigner": true
         },
         {
           "name": "tokenProgram",
@@ -353,14 +348,14 @@
           "isSigner": false
         },
         {
-          "name": "addressToRemove",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
           "name": "bankManager",
           "isMut": true,
           "isSigner": true
+        },
+        {
+          "name": "addressToRemove",
+          "isMut": false,
+          "isSigner": false
         },
         {
           "name": "whitelistProof",
@@ -413,7 +408,7 @@
           },
           {
             "name": "flags",
-            "type": "u8"
+            "type": "u32"
           },
           {
             "name": "whitelistedCreators",
@@ -448,7 +443,7 @@
             "type": "publicKey"
           },
           {
-            "name": "gemAmount",
+            "name": "gemCount",
             "type": "u64"
           }
         ]
@@ -504,6 +499,10 @@
           {
             "name": "gemBoxCount",
             "type": "u64"
+          },
+          {
+            "name": "gemCount",
+            "type": "u64"
           }
         ]
       }
@@ -528,5 +527,8 @@
         ]
       }
     }
-  ]
+  ],
+  "metadata": {
+    "address": "BE5PZ53K8uprkbySXbpeQxiAWgD6xFCCw8rJCUPkrUib"
+  }
 }

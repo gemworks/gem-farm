@@ -82,7 +82,7 @@ describe('misc', () => {
 
   // --------------------------------------- flash deposit
 
-  it('flash deposits a gems', async () => {
+  it('flash deposits a gem', async () => {
     const initialDeposit = new BN(1); //drop 1 existing gem, need to lock the vault
     await gf.callDeposit(initialDeposit, gf.farmer1Identity);
 

@@ -4,7 +4,7 @@ use gem_bank::{
     self,
     cpi::accounts::{DepositGem, SetVaultLock},
     program::GemBank,
-    state::{Bank, GemDepositReceipt, Vault},
+    state::{Bank, Vault},
 };
 use gem_common::*;
 
@@ -36,9 +36,9 @@ pub struct FlashDeposit<'info> {
     pub vault: Box<Account<'info, Vault>>,
     pub vault_authority: AccountInfo<'info>,
     #[account(mut)]
-    pub gem_box: Box<Account<'info, TokenAccount>>,
+    pub gem_box: AccountInfo<'info>,
     #[account(mut)]
-    pub gem_deposit_receipt: Box<Account<'info, GemDepositReceipt>>,
+    pub gem_deposit_receipt: AccountInfo<'info>,
     #[account(mut)]
     pub gem_source: Box<Account<'info, TokenAccount>>,
     pub gem_mint: Box<Account<'info, Mint>>,
@@ -68,8 +68,8 @@ impl<'info> FlashDeposit<'info> {
                 vault: self.vault.to_account_info(),
                 owner: self.identity.to_account_info(),
                 authority: self.vault_authority.clone(),
-                gem_box: self.gem_box.to_account_info(),
-                gem_deposit_receipt: self.gem_deposit_receipt.to_account_info(),
+                gem_box: self.gem_box.clone(),
+                gem_deposit_receipt: self.gem_deposit_receipt.clone(),
                 gem_source: self.gem_source.to_account_info(),
                 gem_mint: self.gem_mint.to_account_info(),
                 token_program: self.token_program.to_account_info(),

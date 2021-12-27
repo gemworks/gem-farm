@@ -74,6 +74,8 @@ import ConfigPane from '@/components/ConfigPane.vue';
 import FarmerDisplay from '@/components/gem-farm/FarmerDisplay.vue';
 import Vault from '@/components/gem-bank/Vault.vue';
 import { INFT } from '@/common/web3/NFTget';
+import { stringifyPubkeysAndBNsInObject } from '../../../../tests/utils/types';
+
 export default defineComponent({
   components: { Vault, FarmerDisplay, ConfigPane },
   setup() {
@@ -83,14 +85,14 @@ export default defineComponent({
     let gf: any;
     watch([wallet, cluster], async () => {
       gf = await initGemFarm(getConnection(), getWallet()!);
-      farmer.value = getWallet()!.publicKey?.toBase58();
+      farmerIdentity.value = getWallet()!.publicKey?.toBase58();
     });
 
     //needed in case we switch in from another window
     onMounted(async () => {
       if (getWallet() && getConnection()) {
         gf = await initGemFarm(getConnection(), getWallet()!);
-        farmer.value = getWallet()!.publicKey?.toBase58();
+        farmerIdentity.value = getWallet()!.publicKey?.toBase58();
       }
     });
 
@@ -98,7 +100,7 @@ export default defineComponent({
     const farm = ref<string>('4PcJxZEDkVs5bdHVtRMSoLZYvqKdaBoFP9s9VLzNWWPR');
     const farmAcc = ref<any>();
 
-    const farmer = ref<string>();
+    const farmerIdentity = ref<string>();
     const farmerAcc = ref<any>();
     const farmerState = ref<string>();
 
@@ -116,7 +118,10 @@ export default defineComponent({
 
     const fetchFarn = async () => {
       farmAcc.value = await gf.fetchFarmAcc(new PublicKey(farm.value!));
-      console.log('farm found:', farmAcc.value);
+      console.log(
+        `farm found at ${farm.value}:`,
+        stringifyPubkeysAndBNsInObject(farmAcc.value)
+      );
     };
 
     const fetchFarmer = async () => {
@@ -124,11 +129,15 @@ export default defineComponent({
         new PublicKey(farm.value!),
         getWallet()!.publicKey
       );
-      farmer.value = getWallet()!.publicKey?.toBase58();
+      console.log('farmer PDA', farmerPDA.toBase58());
+      farmerIdentity.value = getWallet()!.publicKey?.toBase58();
       farmerAcc.value = await gf.fetchFarmerAcc(farmerPDA);
       farmerState.value = gf.parseFarmerState(farmerAcc.value);
       await updateAvailableRewards();
-      console.log('farmer found:', farmerAcc.value);
+      console.log(
+        `farmer found at ${farmerIdentity.value}:`,
+        stringifyPubkeysAndBNsInObject(farmerAcc.value)
+      );
     };
 
     const initFarmer = async () => {
@@ -210,7 +219,7 @@ export default defineComponent({
       wallet,
       farm,
       farmAcc,
-      farmer,
+      farmer: farmerIdentity,
       farmerAcc,
       farmerState,
       availableA,

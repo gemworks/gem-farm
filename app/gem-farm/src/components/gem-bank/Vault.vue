@@ -142,6 +142,12 @@ export default defineComponent({
       vault.value = new PublicKey(props.vault!);
       await updateVaultState();
 
+      //check how many proofs there are for this bank
+      const proofs = await gb.fetchAllWhitelistProofPDAs(
+        new PublicKey(bank.value!)
+      );
+      console.log('proofs', proofs);
+
       //populate wallet + vault nfts
       await populateVaultNFTs();
       await populateWalletNFTs();
