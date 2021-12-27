@@ -31,6 +31,13 @@ export default defineComponent({
       gf = await initGemFarm(getConnection(), getWallet()!);
     });
 
+    //need an onmounted hook because this component isn't yet mounted when wallet/cluster are set
+    onMounted(async () => {
+      if (getWallet() && getConnection()) {
+        gf = await initGemFarm(getConnection(), getWallet()!);
+      }
+    });
+
     // --------------------------------------- refresh farmer
     const farmer = ref<string>();
 
@@ -40,14 +47,6 @@ export default defineComponent({
         new PublicKey(farmer.value!)
       );
     };
-
-    // --------------------------------------- mounted
-    //need an onmounted hook because this component isn't yet mounted when wallet/cluster are set
-    onMounted(async () => {
-      if (getWallet() && getConnection()) {
-        gf = await initGemFarm(getConnection(), getWallet()!);
-      }
-    });
 
     return {
       farmer,

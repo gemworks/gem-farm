@@ -823,8 +823,13 @@ export class GemFarmClient extends GemBankClient {
 
   // --------------------------------------- helpers
 
+  //returns "variable" or "fixed"
   parseRewardType(reward: any): string {
-    //returns "variable" or "fixed"
     return Object.keys(reward.rewardType)[0];
+  }
+
+  //returns "staked" / "unstaked" / "pendingCooldown"
+  parseFarmerState(farmer: any): string {
+    return Object.keys(farmer.state)[0];
   }
 }

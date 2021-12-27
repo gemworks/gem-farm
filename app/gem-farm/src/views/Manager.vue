@@ -103,6 +103,13 @@ export default defineComponent({
       await findFarmsByManager(getWallet()!.publicKey!);
     });
 
+    //needed in case we switch in from another window
+    onMounted(async () => {
+      if (getWallet() && getConnection()) {
+        gf = await initGemFarm(getConnection(), getWallet()!);
+      }
+    });
+
     // --------------------------------------- farm locator
     const foundFarms = ref<any[]>([]);
     const farm = ref<string>();
@@ -148,14 +155,6 @@ export default defineComponent({
     const loadFarms = async () => {
       await findFarmsByManager(getWallet()!.publicKey!);
     };
-
-    // --------------------------------------- mounted
-    //needed in case we switch in from another window
-    onMounted(async () => {
-      if (getWallet() && getConnection()) {
-        gf = await initGemFarm(getConnection(), getWallet()!);
-      }
-    });
 
     return {
       wallet,

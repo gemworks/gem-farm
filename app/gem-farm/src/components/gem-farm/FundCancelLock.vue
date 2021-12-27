@@ -140,6 +140,14 @@ export default defineComponent({
       }
     });
 
+    //need an onmounted hook because this component isn't yet mounted when wallet/cluster are set
+    onMounted(async () => {
+      if (getWallet() && getConnection()) {
+        gf = await initGemFarm(getConnection(), getWallet()!);
+        setRewardType(selectedReward.value);
+      }
+    });
+
     // --------------------------------------- fund / cancel / lock
     const selectedReward = ref<string>('rewardA');
     const activeRewardType = ref<string>();
@@ -207,15 +215,6 @@ export default defineComponent({
       );
       ctx.emit('update-farm');
     };
-
-    // --------------------------------------- mounted
-    //need an onmounted hook because this component isn't yet mounted when wallet/cluster are set
-    onMounted(async () => {
-      if (getWallet() && getConnection()) {
-        gf = await initGemFarm(getConnection(), getWallet()!);
-        setRewardType(selectedReward.value);
-      }
-    });
 
     return {
       selectedReward,

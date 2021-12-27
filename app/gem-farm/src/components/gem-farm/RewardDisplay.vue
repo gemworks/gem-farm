@@ -77,6 +77,7 @@ export default defineComponent({
     title: String,
   },
   setup() {
+    // todo ideally should be using one from client, but n/a during render
     const parseRewardType = (reward: any): string => {
       //returns "variable" or "fixed"
       return Object.keys(reward.rewardType)[0];

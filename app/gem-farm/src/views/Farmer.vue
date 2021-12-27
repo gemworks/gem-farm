@@ -22,13 +22,40 @@
         :farmerAcc="farmerAcc"
         class="mb-10"
       />
-      <Vault class="mb-10" :vault="farmerAcc.vault.toBase58()" />
+      <Vault
+        v-if="renderVault"
+        class="mb-10"
+        :vault="farmerAcc.vault.toBase58()"
+      >
+        <button
+          v-if="farmerState === 'unstaked'"
+          class="nes-btn is-success mr-5"
+          @click="beginStaking"
+        >
+          Begin staking
+        </button>
+        <button
+          v-if="farmerState === 'staked'"
+          class="nes-btn is-error mr-5"
+          @click="endStaking"
+        >
+          End staking
+        </button>
+        <button
+          v-if="farmerState === 'pendingCooldown'"
+          class="nes-btn is-error mr-5"
+          @click="endStaking"
+        >
+          End cooldown
+        </button>
+        <button class="nes-btn is-warning" @click="claim">Claim</button>
+      </Vault>
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, ref, watch } from 'vue';
+import { defineComponent, nextTick, onMounted, ref, watch } from 'vue';
 import useWallet from '@/composables/wallet';
 import useCluster from '@/composables/cluster';
 import { initGemFarm } from '@/common/gem-farm';
@@ -48,49 +75,83 @@ export default defineComponent({
       farmer.value = getWallet()!.publicKey?.toBase58();
     });
 
-    // --------------------------------------- farmer
+    //needed in case we switch in from another window
+    onMounted(async () => {
+      if (getWallet() && getConnection()) {
+        gf = await initGemFarm(getConnection(), getWallet()!);
+        farmer.value = getWallet()!.publicKey?.toBase58();
+      }
+    });
+
+    // --------------------------------------- farmer details
     const farm = ref<string>('4PcJxZEDkVs5bdHVtRMSoLZYvqKdaBoFP9s9VLzNWWPR');
     const farmAcc = ref<any>();
     const farmer = ref<string>();
     const farmerAcc = ref<any>();
+    const farmerState = ref<string>();
 
-    const findFarmer = async () => {
+    const fetchFarn = async () => {
+      farmAcc.value = await gf.fetchFarmAcc(new PublicKey(farm.value!));
+      console.log('farm found:', farmAcc.value);
+    };
+
+    const fetchFarmer = async () => {
       const [farmerPDA] = await gf.findFarmerPDA(
         new PublicKey(farm.value!),
         getWallet()!.publicKey
       );
       farmer.value = getWallet()!.publicKey?.toBase58();
       farmerAcc.value = await gf.fetchFarmerAcc(farmerPDA);
-      console.log('farmer is', farmerAcc.value);
+      farmerState.value = gf.parseFarmerState(farmerAcc.value);
+      console.log('farmer found:', farmerAcc.value);
     };
 
     const initFarmer = async () => {
       return gf.initFarmerWallet(new PublicKey(farm.value!));
     };
 
-    const fetchFarn = async () => {
-      farmAcc.value = await gf.fetchFarmAcc(new PublicKey(farm.value!));
-      console.log('farm is', farmAcc.value);
-    };
-
     const findOrInitFarmer = async () => {
       //fetch the farm first - we'll need it for reward type determination later
       await fetchFarn();
       try {
-        await findFarmer();
+        await fetchFarmer();
       } catch (e) {
+        console.log('uh oh there was an error when finding farmer:', e);
         await initFarmer();
-        await findFarmer();
+        await fetchFarmer();
       }
     };
 
-    // --------------------------------------- mounted
-    //needed in case we switch in from another window
-    onMounted(async () => {
-      if (getWallet() && getConnection()) {
-        gf = await initGemFarm(getConnection(), getWallet()!);
-      }
-    });
+    // --------------------------------------- staking
+
+    const beginStaking = async () => {
+      await gf.stakeWallet(new PublicKey(farm.value!));
+      await refreshVault();
+      await fetchFarmer();
+    };
+
+    const endStaking = async () => {
+      await gf.unstakeWallet(new PublicKey(farm.value!));
+      await refreshVault();
+      await fetchFarmer();
+    };
+
+    const claim = async () => {
+      await gf.claimWallet(
+        new PublicKey(farm.value!),
+        new PublicKey(farmAcc.value.rewardA.rewardMint!),
+        new PublicKey(farmAcc.value.rewardB.rewardMint!)
+      );
+      await fetchFarmer();
+    };
+
+    const renderVault = ref<boolean>(true);
+
+    const refreshVault = async () => {
+      renderVault.value = false;
+      await nextTick();
+      renderVault.value = true;
+    };
 
     return {
       wallet,
@@ -98,7 +159,12 @@ export default defineComponent({
       farmAcc,
       farmer,
       farmerAcc,
+      farmerState,
       findOrInitFarmer,
+      beginStaking,
+      endStaking,
+      claim,
+      renderVault,
     };
   },
 });

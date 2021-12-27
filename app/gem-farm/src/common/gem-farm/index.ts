@@ -237,4 +237,56 @@ export class GemFarm extends GemFarmClient {
 
     return result;
   }
+
+  async stakeWallet(farm: PublicKey) {
+    const result = await this.stake(farm, this.wallet.publicKey);
+
+    console.log('begun staking for farmer', this.wallet.publicKey.toBase58());
+
+    return result;
+  }
+
+  async unstakeWallet(farm: PublicKey) {
+    const result = await this.unstake(farm, this.wallet.publicKey);
+
+    console.log('ended staking for farmer', this.wallet.publicKey.toBase58());
+
+    return result;
+  }
+
+  async claimWallet(
+    farm: PublicKey,
+    rewardAMint: PublicKey,
+    rewardBMint: PublicKey
+  ) {
+    const result = await this.claim(
+      farm,
+      this.wallet.publicKey,
+      rewardAMint,
+      rewardBMint
+    );
+
+    console.log('claimed rewards for farmer', this.wallet.publicKey.toBase58());
+
+    return result;
+  }
+
+  async flashDepositWallet(
+    farm: PublicKey,
+    gemAmount: string,
+    gemMint: PublicKey,
+    gemSource: PublicKey
+  ) {
+    const result = await this.flashDeposit(
+      farm,
+      this.wallet.publicKey,
+      new BN(gemAmount),
+      gemMint,
+      gemSource
+    );
+
+    console.log('added extra gem for farmer', this.wallet.publicKey.toBase58());
+
+    return result;
+  }
 }

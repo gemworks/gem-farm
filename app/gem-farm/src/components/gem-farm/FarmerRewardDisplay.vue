@@ -40,7 +40,6 @@ export default defineComponent({
   setup() {
     const parseRewardType = (reward: any): string => {
       //returns "variable" or "fixed"
-      console.log('passed reward is', reward);
       return Object.keys(reward.rewardType)[0];
     };
 

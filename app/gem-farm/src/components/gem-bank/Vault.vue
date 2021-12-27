@@ -1,19 +1,17 @@
 <template>
   <!--control buttons-->
-  <div class="m-5 flex justify-center">
-    <!--<button v-if="vault" class="nes-btn is-primary my-x" @click="setVaultLock">-->
-    <!--  {{ vaultLocked ? 'Unlock' : 'Lock' }} vault-->
-    <!--</button>-->
+  <div class="mb-10 flex justify-center">
     <button
       v-if="
         (toWalletNFTs && toWalletNFTs.length) ||
         (toVaultNFTs && toVaultNFTs.length)
       "
-      class="nes-btn is-primary mx-5"
+      class="nes-btn is-primary mr-5"
       @click="moveNFTsOnChain"
     >
       Move Gems!
     </button>
+    <slot />
   </div>
 
   <!--wallet + vault view-->
@@ -102,59 +100,49 @@ export default defineComponent({
       }
     };
 
-    const populateGemBankNFTs = async () => {
-      const banks = await gb.fetchAllBankPDAs(getWallet()!.publicKey!);
-      if (banks && banks.length) {
-        bank.value = banks[0].publicKey;
-        console.log('bank is', bank.value!.toBase58());
+    const populateVaultNFTs = async () => {
+      const foundGDRs = await gb.fetchAllGdrPDAs(vault.value);
+      if (foundGDRs && foundGDRs.length) {
+        gdrs.value = foundGDRs;
+        console.log(`found a total of ${foundGDRs.length} gdrs`);
 
-        const vaults = await gb.fetchAllVaultPDAs(bank.value);
-        if (vaults && vaults.length) {
-          vault.value = vaults[0].publicKey;
-          vaultLocked.value = vaults[0].account.locked;
-          console.log('vault is', vault.value!.toBase58());
-
-          const foundGDRs = await gb.fetchAllGdrPDAs(vault.value);
-          if (foundGDRs && foundGDRs.length) {
-            gdrs.value = foundGDRs;
-            console.log(`found a total of ${foundGDRs.length} gdrs`);
-
-            const mints = foundGDRs.map((gdr: any) => {
-              return { mint: gdr.account.gemMint };
-            });
-            currentVaultNFTs.value = await getNFTMetadataForMany(
-              mints,
-              getConnection()
-            );
-            desiredVaultNFTs.value = [...currentVaultNFTs.value];
-            console.log(
-              `populated a total of ${currentVaultNFTs.value.length} vault NFTs`
-            );
-          }
-        }
+        const mints = foundGDRs.map((gdr: any) => {
+          return { mint: gdr.account.gemMint };
+        });
+        currentVaultNFTs.value = await getNFTMetadataForMany(
+          mints,
+          getConnection()
+        );
+        desiredVaultNFTs.value = [...currentVaultNFTs.value];
+        console.log(
+          `populated a total of ${currentVaultNFTs.value.length} vault NFTs`
+        );
       }
     };
 
-    watch([wallet, cluster], async () => {
-      //populate wallet nfts
-      await populateWalletNFTs();
+    const updateVaultState = async () => {
+      vaultAcc.value = await gb.fetchVaultAcc(vault.value);
+      bank.value = vaultAcc.value.bank;
+      vaultLocked.value = vaultAcc.value.locked;
+    };
 
-      //populate gembank nfts
+    watch([wallet, cluster], async () => {
       gb = await initGemBank(getConnection(), getWallet()!);
-      await populateGemBankNFTs();
+
+      //populate wallet + vault nfts
+      await populateWalletNFTs();
+      await populateVaultNFTs();
     });
 
     onMounted(async () => {
-      //populate gembank nfts
       gb = await initGemBank(getConnection(), getWallet()!);
-      await populateGemBankNFTs();
 
       //prep vault + bank variables
       vault.value = new PublicKey(props.vault!);
-      const vaultAcc = await gb.fetchVaultAcc(vault.value);
-      bank.value = vaultAcc.bank;
+      await updateVaultState();
 
-      //populate wallet nfts
+      //populate wallet + vault nfts
+      await populateVaultNFTs();
       await populateWalletNFTs();
     });
 
@@ -210,7 +198,7 @@ export default defineComponent({
         await withdrawGem(nft.mint);
       }
       await populateWalletNFTs();
-      await populateGemBankNFTs();
+      await populateVaultNFTs();
     };
 
     //to vault = vault desired - vault current
@@ -244,14 +232,9 @@ export default defineComponent({
     let gb: any;
     const bank = ref<PublicKey>();
     const vault = ref<PublicKey>();
+    const vaultAcc = ref<any>();
     const gdrs = ref<PublicKey[]>([]);
     const vaultLocked = ref<boolean>(false);
-
-    const setVaultLock = async () => {
-      await gb.setVaultLockWallet(bank.value, vault.value, !vaultLocked.value);
-      vaultLocked.value = !vaultLocked.value;
-      console.log('vault lock value changed to ', vaultLocked.value);
-    };
 
     const depositGem = async (
       mint: PublicKey,
@@ -294,7 +277,6 @@ export default defineComponent({
       bank,
       vault,
       vaultLocked,
-      setVaultLock,
     };
   },
 });

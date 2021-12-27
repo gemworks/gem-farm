@@ -33,6 +33,14 @@ export default defineComponent({
       gf = await initGemFarm(getConnection(), getWallet()!);
     });
 
+    //need an onmounted hook because this component isn't yet mounted when wallet/cluster are set
+    onMounted(async () => {
+      if (getWallet() && getConnection()) {
+        gf = await initGemFarm(getConnection(), getWallet()!);
+        await getTresauryBalance();
+      }
+    });
+
     // --------------------------------------- payout
     const destination = ref<string>();
     const lamports = ref<string>();
@@ -53,15 +61,6 @@ export default defineComponent({
       console.log('treasury', treasury);
       balance.value = await gf.getBalance(treasury);
     };
-
-    // --------------------------------------- mounted
-    //need an onmounted hook because this component isn't yet mounted when wallet/cluster are set
-    onMounted(async () => {
-      if (getWallet() && getConnection()) {
-        gf = await initGemFarm(getConnection(), getWallet()!);
-        await getTresauryBalance();
-      }
-    });
 
     return {
       balance,

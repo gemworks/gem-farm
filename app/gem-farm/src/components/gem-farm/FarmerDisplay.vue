@@ -35,7 +35,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, watch } from 'vue';
+import { defineComponent, onBeforeMount, onMounted, watch } from 'vue';
 import FarmerRewardDisplay from '@/components/gem-farm/FarmerRewardDisplay.vue';
 import useWallet from '@/composables/wallet';
 import useCluster from '@/composables/cluster';
@@ -58,26 +58,25 @@ export default defineComponent({
       gf = await initGemFarm(getConnection(), getWallet()!);
     });
 
-    // --------------------------------------- refresh farmer
+    //need an onmounted hook because this component isn't yet mounted when wallet/cluster are set
+    onBeforeMount(async () => {
+      if (getWallet() && getConnection()) {
+        gf = await initGemFarm(getConnection(), getWallet()!);
+      }
+    });
+
+    // --------------------------------------- display farmer
+    // todo ideally should be using one from client, but n/a during render
+    const parseFarmerState = (farmer: any): string => {
+      return Object.keys(farmer.state)[0];
+    };
+
     const refreshFarmer = () => {
       return gf.refreshFarmerWallet(
         new PublicKey(props.farm!),
         new PublicKey(props.farmer!)
       );
     };
-
-    // --------------------------------------- display farmer
-    const parseFarmerState = (farmer: any): string => {
-      return Object.keys(farmer.state)[0];
-    };
-
-    // --------------------------------------- mounted
-    //need an onmounted hook because this component isn't yet mounted when wallet/cluster are set
-    onMounted(async () => {
-      if (getWallet() && getConnection()) {
-        gf = await initGemFarm(getConnection(), getWallet()!);
-      }
-    });
 
     return {
       refreshFarmer,

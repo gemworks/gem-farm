@@ -53,6 +53,14 @@ export default defineComponent({
       gf = await initGemFarm(getConnection(), getWallet()!);
     });
 
+    //need an onmounted hook because this component isn't yet mounted when wallet/cluster are set
+    onMounted(async () => {
+      if (getWallet() && getConnection()) {
+        gf = await initGemFarm(getConnection(), getWallet()!);
+      }
+      await getCurrentFunders(props.farm!);
+    });
+
     // --------------------------------------- funders
     const toAuthorize = ref<string>();
     const toDeauthorize = ref<string>();
@@ -85,15 +93,6 @@ export default defineComponent({
       );
       await getCurrentFunders(props.farm!);
     };
-
-    // --------------------------------------- mounted
-    //need an onmounted hook because this component isn't yet mounted when wallet/cluster are set
-    onMounted(async () => {
-      if (getWallet() && getConnection()) {
-        gf = await initGemFarm(getConnection(), getWallet()!);
-      }
-      await getCurrentFunders(props.farm!);
-    });
 
     return {
       funders,
