@@ -125,6 +125,7 @@ export class GemFarm extends GemFarmClient {
     amount: string,
     duration: string,
     baseRate: string,
+    denominator: string,
     t1RewardRate?: string,
     t1RequiredTenure?: string,
     t2RewardRate?: string,
@@ -155,6 +156,7 @@ export class GemFarm extends GemFarmClient {
               requiredTenure: new BN(t3RequiredTenure!),
             }
           : null,
+        denominator: new BN(denominator),
       },
       amount: new BN(amount),
       durationSec: new BN(duration),

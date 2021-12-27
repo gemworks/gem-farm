@@ -11,7 +11,7 @@ import { RewardType } from '../gem-farm.client';
 
 chai.use(chaiAsPromised);
 
-describe('funding (fixed rate)', () => {
+describe.only('funding (fixed rate)', () => {
   let gf = new GemFarmTester();
 
   let totalGems: BN;

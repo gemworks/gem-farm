@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="mb-2">Base rate: {{ schedule.baseRate }}</div>
+    <div class="mb-2">Base rate: {{ schedule.baseRate }} tokens/gem/s</div>
     <div class="mb-2" v-if="schedule.tier1">
       T1 reward rate:
       {{ schedule.tier1.rewardRate }} tokens/gem/s
@@ -26,6 +26,10 @@
     <div class="mb-2" v-if="schedule.tier3">
       T3 required tenure:
       {{ schedule.tier3.requiredTenure }} sec
+    </div>
+    <div class="mb-2">
+      Denominator:
+      {{ schedule.denominator }}
     </div>
   </div>
 </template>

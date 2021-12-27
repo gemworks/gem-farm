@@ -255,6 +255,7 @@ mod tests {
                         reward_rate: 11,
                         required_tenure: 75,
                     }),
+                    denominator: 1,
                 },
                 promised_duration: 60,
             }
@@ -303,7 +304,8 @@ mod tests {
         let mut r = FarmerReward::new();
         assert_eq!(123, r.outstanding_reward().unwrap());
 
-        r.update_variable_reward(10, Number128::from(50u64));
+        r.update_variable_reward(10, Number128::from(50u64))
+            .unwrap();
         assert_eq!(133, r.outstanding_reward().unwrap());
         assert_eq!(
             Number128::from(50u64),
@@ -316,11 +318,12 @@ mod tests {
         let mut r = FarmerReward::new();
         assert_eq!(123, r.outstanding_reward().unwrap());
 
-        r.update_fixed_reward(9999, 10);
+        r.update_fixed_reward(9999, 10).unwrap();
         assert_eq!(133, r.outstanding_reward().unwrap());
         assert_eq!(210, r.fixed_rate.last_updated_ts);
     }
 
+    #[test]
     fn test_farmer_reward_claim() {
         let mut r = FarmerReward::new();
         assert_eq!(123, r.outstanding_reward().unwrap());

@@ -32,6 +32,7 @@ export interface FixedRateSchedule {
   tier1: TierConfig | null;
   tier2: TierConfig | null;
   tier3: TierConfig | null;
+  denominator: BN;
 }
 
 export interface FixedRateConfig {

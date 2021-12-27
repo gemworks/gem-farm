@@ -94,10 +94,12 @@ pub fn handler(
     farm.reward_a.reward_mint = ctx.accounts.reward_a_mint.key();
     farm.reward_a.reward_pot = ctx.accounts.reward_a_pot.key();
     farm.reward_a.reward_type = reward_type_a;
+    farm.reward_a.fixed_rate.schedule = FixedRateSchedule::default(); //denom to 1
 
     farm.reward_b.reward_mint = ctx.accounts.reward_b_mint.key();
     farm.reward_b.reward_pot = ctx.accounts.reward_b_pot.key();
     farm.reward_b.reward_type = reward_type_b;
+    farm.reward_b.fixed_rate.schedule = FixedRateSchedule::default(); //denom to 1
 
     // todo worth manually init'ing all the variables at 0s?
 

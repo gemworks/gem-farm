@@ -17,7 +17,7 @@ pub enum FixedRateRewardTier {
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct TierConfig {
-    // tokens / sec
+    // tokens/denominator / sec
     pub reward_rate: u64,
 
     pub required_tenure: u64,
@@ -31,8 +31,9 @@ impl TierConfig {
 }
 
 #[repr(C)]
-#[derive(Debug, Copy, Clone, Default, AnchorSerialize, AnchorDeserialize)]
+#[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FixedRateSchedule {
+    // tokens/denominator / sec
     pub base_rate: u64,
 
     pub tier1: Option<TierConfig>,
@@ -40,6 +41,21 @@ pub struct FixedRateSchedule {
     pub tier2: Option<TierConfig>,
 
     pub tier3: Option<TierConfig>,
+
+    pub denominator: u64,
+}
+
+// need the discriminator to be 1 by default, else get div /0 errors
+impl Default for FixedRateSchedule {
+    fn default() -> Self {
+        Self {
+            base_rate: 0,
+            tier1: None,
+            tier2: None,
+            tier3: None,
+            denominator: 1,
+        }
+    }
 }
 
 #[repr(C)]
@@ -75,6 +91,9 @@ impl FixedRateSchedule {
             let t1_tenure = self.tier1.unwrap().required_tenure;
             assert!(t2.required_tenure >= t1_tenure);
         };
+
+        // denominator can't be 0
+        assert_ne!(self.denominator, 0);
     }
 
     pub fn extract_tenure(&self, tier: &str) -> (Option<u64>, Option<TierConfig>) {
@@ -188,7 +207,8 @@ impl FixedRateSchedule {
             }
         }?;
 
-        gems.try_mul(per_gem)
+        // for v0 performing basic floor division
+        gems.try_mul(per_gem)?.try_div(self.denominator)
     }
 }
 
@@ -358,12 +378,13 @@ mod tests {
     use super::*;
 
     impl FixedRateSchedule {
-        pub fn new_base(base_rate: u64) -> Self {
+        pub fn new_base(base_rate: u64, denominator: u64) -> Self {
             Self {
                 base_rate,
                 tier1: None,
                 tier2: None,
                 tier3: None,
+                denominator,
             }
         }
         pub fn new_t1(reward_rate: u64, required_tenure: u64) -> Self {
@@ -376,6 +397,7 @@ mod tests {
                 }),
                 tier2: None,
                 tier3: None,
+                denominator: 1,
             }
         }
         pub fn new_t2(reward_rate: u64, required_tenure: u64) -> Self {
@@ -391,6 +413,7 @@ mod tests {
                     required_tenure,
                 }),
                 tier3: None,
+                denominator: 1,
             }
         }
         pub fn new_t3(
@@ -414,6 +437,7 @@ mod tests {
                     reward_rate: reward_rate3,
                     required_tenure: required_tenure3,
                 }),
+                denominator: 1,
             }
         }
         pub fn bad_t2() -> Self {
@@ -425,6 +449,7 @@ mod tests {
                     required_tenure: 20,
                 }),
                 tier3: None,
+                denominator: 1,
             }
         }
         pub fn bad_t3_gap_t1() -> Self {
@@ -439,6 +464,7 @@ mod tests {
                     reward_rate: 11,
                     required_tenure: 30,
                 }),
+                denominator: 1,
             }
         }
         pub fn bad_t3_gap_t2() -> Self {
@@ -453,13 +479,14 @@ mod tests {
                     reward_rate: 11,
                     required_tenure: 30,
                 }),
+                denominator: 1,
             }
         }
     }
 
     #[test]
     fn test_good_schedule_invariants() {
-        let base = FixedRateSchedule::new_base(3);
+        let base = FixedRateSchedule::new_base(3, 1);
         base.verify_schedule_invariants();
 
         let t1 = FixedRateSchedule::new_t1(5, 10);
@@ -518,14 +545,21 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn test_t2_bad_gap_t2() {
+    fn test_t3_bad_gap_t2() {
         let t3 = FixedRateSchedule::bad_t3_gap_t2();
         t3.verify_schedule_invariants();
     }
 
     #[test]
+    #[should_panic]
+    fn test_base_bad_denominator() {
+        let base = FixedRateSchedule::new_base(1, 0);
+        base.verify_schedule_invariants();
+    }
+
+    #[test]
     fn test_base_reward_amounts() {
-        let base = FixedRateSchedule::new_base(3);
+        let base = FixedRateSchedule::new_base(3, 1);
 
         // zero case
         let amount = base.reward_amount(0, 0, 10).unwrap();
@@ -536,6 +570,44 @@ mod tests {
 
         let amount = base.reward_amount(3, 5, 10).unwrap();
         assert_eq!(amount, 3 * 2 * 10);
+
+        // max out case
+        let amount = base.reward_amount(5, 5, 10).unwrap();
+        assert_eq!(amount, 0);
+    }
+
+    #[test]
+    fn test_base_reward_amounts_with_denominator() {
+        let base = FixedRateSchedule::new_base(3, 10);
+
+        // zero case
+        let amount = base.reward_amount(0, 0, 10).unwrap();
+        assert_eq!(amount, 0);
+
+        let amount = base.reward_amount(0, 5, 10).unwrap();
+        assert_eq!(amount, 3 * 5);
+
+        let amount = base.reward_amount(3, 5, 10).unwrap();
+        assert_eq!(amount, 3 * 2);
+
+        // max out case
+        let amount = base.reward_amount(5, 5, 10).unwrap();
+        assert_eq!(amount, 0);
+    }
+
+    #[test]
+    fn test_base_reward_amounts_with_inconvenient_denominator() {
+        let base = FixedRateSchedule::new_base(3, 7);
+
+        // zero case
+        let amount = base.reward_amount(0, 0, 10).unwrap();
+        assert_eq!(amount, 0);
+
+        let amount = base.reward_amount(0, 5, 10).unwrap();
+        assert_eq!(amount, 21); //floor division
+
+        let amount = base.reward_amount(3, 5, 10).unwrap();
+        assert_eq!(amount, 8); //floor division
 
         // max out case
         let amount = base.reward_amount(5, 5, 10).unwrap();

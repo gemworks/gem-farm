@@ -17,14 +17,25 @@
     <form @submit.prevent="fundReward">
       <!--fixed only-->
       <div v-if="activeRewardType === 'fixed'">
-        <div class="nes-field mb-5">
-          <label for="baseRate">Base rate (tokens/gem/s):</label>
-          <input
-            id="baseRate"
-            type="text"
-            class="nes-input"
-            v-model="baseRate"
-          />
+        <div class="flex mb-5">
+          <div class="nes-field mr-5 flex-1">
+            <label for="baseRate">Base rate (tokens/gem/s):</label>
+            <input
+              id="baseRate"
+              type="text"
+              class="nes-input"
+              v-model="baseRate"
+            />
+          </div>
+          <div class="nes-field flex-1">
+            <label for="denominator">Denominator (divides all rates):</label>
+            <input
+              id="denominator"
+              type="text"
+              class="nes-input"
+              v-model="denominator"
+            />
+          </div>
         </div>
         <!--t1-->
         <div class="flex mb-5">
@@ -155,6 +166,7 @@ export default defineComponent({
 
     //fixed reward
     const baseRate = ref<string>();
+    const denominator = ref<string>();
     const t1RewardRate = ref<string>();
     const t1RequiredTenure = ref<string>();
     const t2RewardRate = ref<string>();
@@ -190,6 +202,7 @@ export default defineComponent({
           amount.value,
           duration.value,
           baseRate.value,
+          denominator.value,
           t1RewardRate.value,
           t1RequiredTenure.value,
           t2RewardRate.value,
@@ -221,6 +234,7 @@ export default defineComponent({
       selectedReward,
       activeRewardType,
       baseRate,
+      denominator,
       t1RewardRate,
       t1RequiredTenure,
       t2RewardRate,

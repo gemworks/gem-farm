@@ -50,6 +50,7 @@ export const defaultFixedConfig = <FixedRateConfig>{
       rewardRate: toBN(0),
       requiredTenure: toBN(6),
     },
+    denominator: toBN(1),
   },
   amount: new BN(30000), //fund 1000 gems
   durationSec: new BN(100),

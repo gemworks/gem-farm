@@ -17,12 +17,13 @@ const shortFixedConfig = <FixedRateConfig>{
     tier1: null,
     tier2: null,
     tier3: null,
+    denominator: toBN(1),
   },
   amount: new BN(30000),
   durationSec: new BN(5), //5s only
 };
 
-describe('staking (fixed rate)', () => {
+describe.only('staking (fixed rate)', () => {
   let gf = new GemFarmTester();
 
   beforeEach('preps accs', async () => {
