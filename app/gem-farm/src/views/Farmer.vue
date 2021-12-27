@@ -4,13 +4,13 @@
   <div v-else>
     <!--farm address-->
     <div class="nes-container with-title mb-10">
-      <p class="title">Manage Farmer</p>
+      <p class="title">Find / Create Your Account</p>
       <div class="nes-field mb-5">
         <label for="farm">Farm:</label>
         <input id="farm" class="nes-input" v-model="farm" />
       </div>
       <button class="nes-btn is-primary mb-5" @click="findOrInitFarmer">
-        Find/create Farmer
+        Find / create account
       </button>
     </div>
 

@@ -32,7 +32,7 @@
       <div class="nes-field mb-5">
         <label for="minStakingPeriodSec">Min staking period (sec)</label>
         <input
-          type="number"
+          type="text"
           id="minStakingPeriodSec"
           class="nes-input"
           v-model="minStakingPeriodSec"
@@ -41,7 +41,7 @@
       <div class="nes-field mb-5">
         <label for="cooldownPeriodSec">Cooldown period (sec)</label>
         <input
-          type="number"
+          type="text"
           id="cooldownPeriodSec"
           class="nes-input"
           v-model="cooldownPeriodSec"
@@ -50,7 +50,7 @@
       <div class="nes-field mb-5">
         <label for="unstakingFeeLamp">Unstaking fee (lamports)</label>
         <input
-          type="number"
+          type="text"
           id="unstakingFeeLamp"
           class="nes-input"
           v-model="unstakingFeeLamp"

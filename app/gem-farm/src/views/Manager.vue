@@ -30,6 +30,20 @@
           </select>
         </div>
         <div class="mb-2">Associated bank: {{ farmAcc.bank }}</div>
+
+        <!--config-->
+        <div class="mb-2">Farm config:</div>
+        <div class="mb-2 ml-5">
+          Min staking period: {{ farmAcc.config.minStakingPeriodSec }} sec
+        </div>
+        <div class="mb-2 ml-5">
+          Cooldown period: {{ farmAcc.config.cooldownPeriodSec }} sec
+        </div>
+        <div class="mb-2 ml-5">
+          Unstaking fee: {{ farmAcc.config.unstakingFeeLamp }} lamp
+        </div>
+
+        <!--participating farmers/gems-->
         <div class="mb-2">
           Initialized farmer count: {{ farmAcc.farmerCount }}
         </div>
@@ -37,7 +51,7 @@
           Staked farmer count: {{ farmAcc.stakedFarmerCount }}
         </div>
         <div class="mb-2">Gems staked: {{ farmAcc.gemsStaked }}</div>
-        <!--<div class="mb-2">Config: {{ farmAcc.config }}</div>-->
+
         <div class="flex">
           <!--reward A-->
           <div class="flex-1 mr-5">
@@ -117,7 +131,9 @@ export default defineComponent({
 
     watch(farm, (newFarm: any) => {
       let ff = filterFoundFarmsByPk(newFarm);
-      farmAcc.value = ff.account;
+      if (ff) {
+        farmAcc.value = ff.account;
+      }
     });
 
     const filterFoundFarmsByPk = (farm: string) => {

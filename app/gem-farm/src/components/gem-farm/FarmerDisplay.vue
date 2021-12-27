@@ -1,6 +1,6 @@
 <template>
   <div class="nes-container with-title">
-    <p class="title">Farmer Details</p>
+    <p class="title">Your Staking Account</p>
     <div class="mb-2">
       state:
       <p class="inline-block bg-yellow-200">
@@ -29,13 +29,13 @@
       </div>
     </div>
     <button class="nes-btn is-primary mb-5" @click="refreshFarmer">
-      Refresh farmer
+      Refresh account
     </button>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, onBeforeMount, onMounted, watch } from 'vue';
+import { defineComponent, onMounted, watch } from 'vue';
 import FarmerRewardDisplay from '@/components/gem-farm/FarmerRewardDisplay.vue';
 import useWallet from '@/composables/wallet';
 import useCluster from '@/composables/cluster';
@@ -60,7 +60,7 @@ export default defineComponent({
     });
 
     //need an onmounted hook because this component isn't yet mounted when wallet/cluster are set
-    onBeforeMount(async () => {
+    onMounted(async () => {
       if (getWallet() && getConnection()) {
         gf = await initGemFarm(getConnection(), getWallet()!);
       }

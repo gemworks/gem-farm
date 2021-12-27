@@ -1,12 +1,21 @@
 <template>
   <div class="nes-container with-title">
     <p class="title">Treasury Payout</p>
-    <div class="mb-5">Treasury balance: {{ balance }}</div>
+    <div class="mb-5">Treasury balance: {{ balance }} lamports</div>
 
     <form @submit.prevent="payoutFromTreasury">
       <div class="nes-field mb-5">
         <label for="destination">Payout destination:</label>
-        <input id="destination" v-model="destination" class="nes-input" />
+        <input
+          id="destination"
+          type="text"
+          v-model="destination"
+          class="nes-input"
+        />
+      </div>
+      <div class="nes-field mb-5">
+        <label for="lamports">Amount to pay out (lamp):</label>
+        <input id="lamports" type="text" v-model="lamports" class="nes-input" />
       </div>
       <button class="mb-5 nes-btn is-primary" type="submit">Payout</button>
     </form>
@@ -41,6 +50,13 @@ export default defineComponent({
       }
     });
 
+    watch(
+      () => props.farm,
+      async () => {
+        await getTresauryBalance();
+      }
+    );
+
     // --------------------------------------- payout
     const destination = ref<string>();
     const lamports = ref<string>();
@@ -58,13 +74,14 @@ export default defineComponent({
       const [treasury] = await gf.findFarmTreasuryPDA(
         new PublicKey(props.farm!)
       );
-      console.log('treasury', treasury);
+      console.log('treasury', treasury.toBase58());
       balance.value = await gf.getBalance(treasury);
     };
 
     return {
       balance,
       destination,
+      lamports,
       payoutFromTreasury,
     };
   },
