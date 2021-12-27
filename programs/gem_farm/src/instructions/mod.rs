@@ -14,6 +14,7 @@ pub mod remove_from_bank_whitelist;
 pub mod stake;
 pub mod treasury_payout;
 pub mod unstake;
+pub mod update_farm;
 
 pub use add_to_bank_whitelist::*;
 pub use authorize_funder::*;
@@ -31,3 +32,4 @@ pub use remove_from_bank_whitelist::*;
 pub use stake::*;
 pub use treasury_payout::*;
 pub use unstake::*;
+pub use update_farm::*;

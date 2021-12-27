@@ -8,14 +8,20 @@ import {
 import { BN } from '@project-serum/anchor';
 import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import { pause } from '../../utils/types';
-import { RewardType } from '../gem-farm.client';
+import { FarmConfig, RewardType } from '../gem-farm.client';
 import { WhitelistType } from '../../gem-bank/gem-bank.client';
 
 chai.use(chaiAsPromised);
 
+const updatedFarmConfig = <FarmConfig>{
+  minStakingPeriodSec: new BN(0),
+  cooldownPeriodSec: new BN(0),
+  unstakingFeeLamp: new BN(LAMPORTS_PER_SOL / 2),
+};
+
 const creator = new PublicKey('75ErM1QcGjHiPMX7oLsf9meQdGSUs4ZrwS2X8tBpsZhA');
 
-describe('misc', () => {
+describe.only('misc', () => {
   let gf = new GemFarmTester();
 
   before('preps accs', async () => {
@@ -30,6 +36,16 @@ describe('misc', () => {
     assert.equal(
       farmAcc[gf.reward].rewardMint.toBase58(),
       gf.rewardMint.publicKey.toBase58()
+    );
+  });
+
+  it('updates the farm', async () => {
+    await gf.callUpdateFarm(updatedFarmConfig);
+
+    const farmAcc = await gf.fetchFarm();
+    assert.equal(
+      farmAcc.config.unstakingFeeLamp.toNumber(),
+      LAMPORTS_PER_SOL / 2
     );
   });
 
@@ -198,9 +214,9 @@ describe('misc', () => {
 
     const destination = await gf.createWallet(0);
 
-    await gf.callPayout(destination.publicKey, new BN(LAMPORTS_PER_SOL));
+    await gf.callPayout(destination.publicKey, new BN(LAMPORTS_PER_SOL / 2));
 
     const balance = await gf.getBalance(destination.publicKey);
-    assert.equal(balance, LAMPORTS_PER_SOL);
+    assert.equal(balance, LAMPORTS_PER_SOL / 2);
   });
 });

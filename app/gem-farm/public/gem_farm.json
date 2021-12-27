@@ -114,6 +114,37 @@
       ]
     },
     {
+      "name": "updateFarm",
+      "accounts": [
+        {
+          "name": "farm",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "farmManager",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "config",
+          "type": {
+            "option": {
+              "defined": "FarmConfig"
+            }
+          }
+        },
+        {
+          "name": "manager",
+          "type": {
+            "option": "publicKey"
+          }
+        }
+      ]
+    },
+    {
       "name": "payoutFromTreasury",
       "accounts": [
         {
@@ -642,6 +673,36 @@
         {
           "name": "bump",
           "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "refreshFarmerSigned",
+      "accounts": [
+        {
+          "name": "farm",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "farmer",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "identity",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "bump",
+          "type": "u8"
+        },
+        {
+          "name": "reenroll",
+          "type": "bool"
         }
       ]
     },

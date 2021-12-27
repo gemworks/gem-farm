@@ -71,6 +71,23 @@ export class GemFarm extends GemFarmClient {
     return { farm, bank, ...result };
   }
 
+  async updateFarmWallet(
+    farm: PublicKey,
+    newConfig?: FarmConfig,
+    newManager?: PublicKey
+  ) {
+    const result = await this.updateFarm(
+      farm,
+      this.wallet.publicKey,
+      newConfig,
+      newManager
+    );
+
+    console.log('updated the farm');
+
+    return result;
+  }
+
   async authorizeFunderWallet(farm: PublicKey, funder: PublicKey) {
     const result = await this.authorizeFunder(
       farm,

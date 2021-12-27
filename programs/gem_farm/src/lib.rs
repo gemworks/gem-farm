@@ -28,6 +28,14 @@ pub mod gem_farm {
         instructions::init_farm::handler(ctx, bump_auth, reward_type_a, reward_type_b, farm_config)
     }
 
+    pub fn update_farm(
+        ctx: Context<UpdateFarm>,
+        config: Option<FarmConfig>,
+        manager: Option<Pubkey>,
+    ) -> ProgramResult {
+        instructions::update_farm::handler(ctx, config, manager)
+    }
+
     pub fn payout_from_treasury(
         ctx: Context<TreasuryPayout>,
         bump: u8,

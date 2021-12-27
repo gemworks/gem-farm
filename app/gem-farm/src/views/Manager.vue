@@ -61,6 +61,8 @@
           </div>
         </div>
       </div>
+      <!--update farm-->
+      <UpdateFarm :farm="farm" @update-farm="handleUpdateFarm" class="mb-10" />
       <!--manage NFT types-->
       <TheWhitelist :farm="farm" :bank="farmAcc.bank" class="mb-10" />
       <!--manage funders-->
@@ -96,9 +98,11 @@ import RewardDisplay from '@/components/gem-farm/RewardDisplay.vue';
 import RefreshFarmer from '@/components/gem-farm/RefreshFarmer.vue';
 import TreasuryPayout from '@/components/gem-farm/TreasuryPayout.vue';
 import TheWhitelist from '@/components/gem-farm/BankWhitelist.vue';
+import UpdateFarm from '@/components/gem-farm/UpdateFarm.vue';
 
 export default defineComponent({
   components: {
+    UpdateFarm,
     TheWhitelist,
     TreasuryPayout,
     RefreshFarmer,

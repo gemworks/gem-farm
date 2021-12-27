@@ -279,6 +279,29 @@ export class GemFarmClient extends GemBankClient {
     };
   }
 
+  async updateFarm(
+    farm: PublicKey,
+    farmManager: PublicKey | Keypair,
+    config: FarmConfig | null = null,
+    newManager: PublicKey | null = null
+  ) {
+    const signers = [];
+    if (isKp(farmManager)) signers.push(<Keypair>farmManager);
+
+    console.log('updating farm');
+    const txSig = await this.farmProgram.rpc.updateFarm(config, newManager, {
+      accounts: {
+        farm,
+        farmManager: isKp(farmManager)
+          ? (<Keypair>farmManager).publicKey
+          : farmManager,
+      },
+      signers,
+    });
+
+    return { txSig };
+  }
+
   async payoutFromTreasury(
     farm: PublicKey,
     farmManager: PublicKey | Keypair,

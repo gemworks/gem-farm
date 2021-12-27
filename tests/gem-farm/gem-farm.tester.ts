@@ -153,6 +153,15 @@ export class GemFarmTester extends GemFarmClient {
     );
   }
 
+  async callUpdateFarm(farmConfig?: FarmConfig, newManager?: PublicKey) {
+    return this.updateFarm(
+      this.farm.publicKey,
+      this.farmManager,
+      farmConfig,
+      newManager
+    );
+  }
+
   async callPayout(destination: PublicKey, lamports: Numerical) {
     return this.payoutFromTreasury(
       this.farm.publicKey,
