@@ -22,16 +22,20 @@
       <div class="mb-2">
         Promised duration: {{ reward.fixedRate.promisedDuration }}
       </div>
-      <!--<div class="mb-2">-->
-      <!--  Promised schedule: {{ reward.fixedRate.promisedSchedule }}-->
-      <!--</div>-->
+      <div class="mb-2">Promised schedule:</div>
+      <FixedScheduleDisplay
+        class="ml-5"
+        :schedule="reward.fixedRate.promisedSchedule"
+      />
     </div>
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue';
+import FixedScheduleDisplay from '@/components/gem-farm/FixedScheduleDisplay.vue';
 export default defineComponent({
+  components: { FixedScheduleDisplay },
   props: {
     reward: Object,
     farmReward: Object,

@@ -22,35 +22,7 @@
     <div v-else>
       <div class="mb-2">
         Reserved amount: {{ reward.fixedRate.reservedAmount }}
-      </div>
-      <div class="mb-2">
-        Base rate: {{ reward.fixedRate.schedule.baseRate }}
-      </div>
-      <div class="mb-2" v-if="reward.fixedRate.schedule.tier1">
-        T1 reward rate:
-        {{ reward.fixedRate.schedule.tier1.rewardRate }} tokens/gem/s
-      </div>
-      <div class="mb-2" v-if="reward.fixedRate.schedule.tier1">
-        T1 required tenure:
-        {{ reward.fixedRate.schedule.tier1.requiredTenure }} sec
-      </div>
-      <!--tier 2-->
-      <div class="mb-2" v-if="reward.fixedRate.schedule.tier2">
-        T2 reward rate:
-        {{ reward.fixedRate.schedule.tier2.rewardRate }} tokens/gem/s
-      </div>
-      <div class="mb-2" v-if="reward.fixedRate.schedule.tier2">
-        T2 required tenure:
-        {{ reward.fixedRate.schedule.tier2.requiredTenure }} sec
-      </div>
-      <!--tier 3-->
-      <div class="mb-2" v-if="reward.fixedRate.schedule.tier3">
-        T3 reward rate:
-        {{ reward.fixedRate.schedule.tier3.rewardRate }} tokens/gem/s
-      </div>
-      <div class="mb-2" v-if="reward.fixedRate.schedule.tier3">
-        T3 required tenure:
-        {{ reward.fixedRate.schedule.tier3.requiredTenure }} sec
+        <FixedScheduleDisplay :schedule="reward.fixedRate.schedule" />
       </div>
     </div>
 
@@ -70,8 +42,10 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
+import FixedScheduleDisplay from '@/components/gem-farm/FixedScheduleDisplay.vue';
 
 export default defineComponent({
+  components: { FixedScheduleDisplay },
   props: {
     reward: Object,
     title: String,
