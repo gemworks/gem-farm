@@ -2,14 +2,13 @@
   <ConfigPane />
   <div v-if="!wallet" class="text-center">Pls connect (burner) wallet</div>
   <div v-else>
-    <div class="flex mb-10">
+    <div class="flex mb-10 w-full justify-center">
       <button
         class="nes-btn is-primary mr-5"
         @click="showNewFarm = !showNewFarm"
       >
         New farm
       </button>
-      <button class="nes-btn is-primary" @click="loadFarms">Load farms</button>
     </div>
     <!--new farms-->
     <div v-if="showNewFarm">
@@ -53,20 +52,33 @@
         <div class="flex">
           <!--reward A-->
           <div class="flex-1 mr-5">
-            <RewardDisplay :reward="farmAcc.rewardA" title="Reward A" />
+            <RewardDisplay
+              :key="farmAcc.rewardA"
+              :reward="farmAcc.rewardA"
+              title="Reward A"
+            />
           </div>
           <!--reward B-->
           <div class="flex-1">
-            <RewardDisplay :reward="farmAcc.rewardB" title="Reward B" />
+            <RewardDisplay
+              :key="farmAcc.rewardB"
+              :reward="farmAcc.rewardB"
+              title="Reward B"
+            />
           </div>
         </div>
       </div>
       <!--update farm-->
       <UpdateFarm :farm="farm" @update-farm="handleUpdateFarm" class="mb-10" />
       <!--manage NFT types-->
-      <TheWhitelist :farm="farm" :bank="farmAcc.bank" class="mb-10" />
+      <TheWhitelist
+        :key="farm"
+        :farm="farm"
+        :bank="farmAcc.bank"
+        class="mb-10"
+      />
       <!--manage funders-->
-      <AuthorizeFunder :farm="farm" class="mb-10" />
+      <AuthorizeFunder :key="farm" :farm="farm" class="mb-10" />
       <!--manage funding-->
       <FundCancelLock
         :farm="farm"
@@ -99,6 +111,7 @@ import RefreshFarmer from '@/components/gem-farm/RefreshFarmer.vue';
 import TreasuryPayout from '@/components/gem-farm/TreasuryPayout.vue';
 import TheWhitelist from '@/components/gem-farm/BankWhitelist.vue';
 import UpdateFarm from '@/components/gem-farm/UpdateFarm.vue';
+import { useRoute } from 'vue-router';
 
 export default defineComponent({
   components: {
@@ -128,6 +141,7 @@ export default defineComponent({
       if (getWallet() && getConnection()) {
         gf = await initGemFarm(getConnection(), getWallet()!);
       }
+      await findFarmsByManager(getWallet()!.publicKey!);
     });
 
     // --------------------------------------- farm locator
@@ -179,10 +193,6 @@ export default defineComponent({
       await findFarmsByManager(getWallet()!.publicKey!);
     };
 
-    const loadFarms = async () => {
-      await findFarmsByManager(getWallet()!.publicKey!);
-    };
-
     return {
       wallet,
       foundFarms,
@@ -191,7 +201,6 @@ export default defineComponent({
       handleNewFarm,
       handleUpdateFarm,
       showNewFarm,
-      loadFarms,
     };
   },
 });

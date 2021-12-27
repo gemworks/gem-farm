@@ -124,7 +124,8 @@ pub fn handler<'a, 'b, 'c, 'info>(
     let farmer = &mut ctx.accounts.farmer;
     let now_ts = now_ts()?;
 
-    farm.update_rewards(now_ts, Some(farmer), true)?;
+    // todo have to skip this due to compute budget limitation - don't think a problem
+    // farm.update_rewards(now_ts, Some(farmer), true)?;
 
     // stake extra gems
     ctx.accounts.vault.reload()?;

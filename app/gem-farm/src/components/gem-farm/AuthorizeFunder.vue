@@ -66,13 +66,6 @@ export default defineComponent({
     const toDeauthorize = ref<string>();
     const funders = ref<any[]>();
 
-    watch(
-      () => props.farm,
-      async (newFarm: any) => {
-        await getCurrentFunders(newFarm);
-      }
-    );
-
     const getCurrentFunders = async (farm: string) => {
       funders.value = await gf!.fetchAllAuthProofPDAs(new PublicKey(farm));
       console.log(`found a total of ${funders.value!.length} funders`);

@@ -16,6 +16,7 @@
 
     <div v-if="farmerAcc">
       <FarmerDisplay
+        :key="farmerAcc"
         :farm="farm"
         :farmAcc="farmAcc"
         :farmer="farmer"
@@ -24,7 +25,7 @@
         @refresh-farmer="handleRefreshFarmer"
       />
       <Vault
-        v-if="renderVault"
+        :key="farmerAcc"
         class="mb-10"
         :vault="farmerAcc.vault.toBase58()"
         @selected-wallet-nft="handleNewSelectedNFT"
@@ -76,6 +77,7 @@ import FarmerDisplay from '@/components/gem-farm/FarmerDisplay.vue';
 import Vault from '@/components/gem-bank/Vault.vue';
 import { INFT } from '@/common/web3/NFTget';
 import { stringifyPubkeysAndBNsInObject } from '../../../../tests/utils/types';
+import { useRoute } from 'vue-router';
 
 export default defineComponent({
   components: { Vault, FarmerDisplay, ConfigPane },
@@ -160,13 +162,11 @@ export default defineComponent({
     // --------------------------------------- staking
     const beginStaking = async () => {
       await gf.stakeWallet(new PublicKey(farm.value!));
-      await refreshVault();
       await fetchFarmer();
     };
 
     const endStaking = async () => {
       await gf.unstakeWallet(new PublicKey(farm.value!));
-      await refreshVault();
       await fetchFarmer();
     };
 
@@ -177,14 +177,6 @@ export default defineComponent({
         new PublicKey(farmAcc.value.rewardB.rewardMint!)
       );
       await fetchFarmer();
-    };
-
-    const renderVault = ref<boolean>(true);
-
-    const refreshVault = async () => {
-      renderVault.value = false;
-      await nextTick();
-      renderVault.value = true;
     };
 
     const handleRefreshFarmer = async () => {
@@ -211,7 +203,6 @@ export default defineComponent({
         gemSource,
         creator
       );
-      await refreshVault();
       await fetchFarmer();
     };
 
@@ -249,7 +240,6 @@ export default defineComponent({
       selectedNFTs,
       handleNewSelectedNFT,
       addGems,
-      renderVault,
     };
   },
 });

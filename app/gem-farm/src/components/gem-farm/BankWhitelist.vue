@@ -86,14 +86,6 @@ export default defineComponent({
     const type = ref<WhitelistType>(WhitelistType.Creator);
     const proofs = ref<PublicKey[]>([]);
 
-    //todo doesn't work
-    watch(
-      () => props.bank,
-      async () => {
-        await fetchProofs();
-      }
-    );
-
     const fetchProofs = async () => {
       proofs.value = await gf.fetchAllWhitelistProofPDAs(
         new PublicKey(props.bank)

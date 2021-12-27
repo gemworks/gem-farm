@@ -15,6 +15,7 @@
     <div class="flex mb-5">
       <div class="flex-1 mr-5">
         <FarmerRewardDisplay
+          :key="farmerAcc.rewardA"
           :farmReward="farmAcc.rewardA"
           :reward="farmerAcc.rewardA"
           title="Reward A"
@@ -22,6 +23,7 @@
       </div>
       <div class="flex-1">
         <FarmerRewardDisplay
+          :key="farmerAcc.rewardB"
           :farmReward="farmAcc.rewardB"
           :reward="farmerAcc.rewardB"
           title="Reward B"

@@ -24,6 +24,7 @@
       </div>
       <div class="mb-2">Promised schedule:</div>
       <FixedScheduleDisplay
+        :key="farmReward"
         class="ml-5"
         :schedule="reward.fixedRate.promisedSchedule"
       />
