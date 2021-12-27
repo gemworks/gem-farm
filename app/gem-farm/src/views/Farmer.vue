@@ -26,7 +26,15 @@
         v-if="renderVault"
         class="mb-10"
         :vault="farmerAcc.vault.toBase58()"
+        @selected-wallet-nft="handleNewSelectedNFT"
       >
+        <button
+          v-if="farmerState === 'staked' && selectedNFTs.length > 0"
+          class="nes-btn is-primary mr-5"
+          @click="addGems"
+        >
+          Add Gems (resets staking)
+        </button>
         <button
           v-if="farmerState === 'unstaked'"
           class="nes-btn is-success mr-5"
@@ -48,7 +56,9 @@
         >
           End cooldown
         </button>
-        <button class="nes-btn is-warning" @click="claim">Claim</button>
+        <button class="nes-btn is-warning" @click="claim">
+          Claim {{ availableA }} A / {{ availableB }} B
+        </button>
       </Vault>
     </div>
   </div>
@@ -63,6 +73,7 @@ import { PublicKey } from '@solana/web3.js';
 import ConfigPane from '@/components/ConfigPane.vue';
 import FarmerDisplay from '@/components/gem-farm/FarmerDisplay.vue';
 import Vault from '@/components/gem-bank/Vault.vue';
+import { INFT } from '@/common/web3/NFTget';
 export default defineComponent({
   components: { Vault, FarmerDisplay, ConfigPane },
   setup() {
@@ -86,9 +97,22 @@ export default defineComponent({
     // --------------------------------------- farmer details
     const farm = ref<string>('4PcJxZEDkVs5bdHVtRMSoLZYvqKdaBoFP9s9VLzNWWPR');
     const farmAcc = ref<any>();
+
     const farmer = ref<string>();
     const farmerAcc = ref<any>();
     const farmerState = ref<string>();
+
+    const availableA = ref<string>();
+    const availableB = ref<string>();
+
+    const updateAvailableRewards = async () => {
+      availableA.value = farmerAcc.value.rewardA.accruedReward
+        .sub(farmerAcc.value.rewardA.paidOutReward)
+        .toString();
+      availableB.value = farmerAcc.value.rewardB.accruedReward
+        .sub(farmerAcc.value.rewardB.paidOutReward)
+        .toString();
+    };
 
     const fetchFarn = async () => {
       farmAcc.value = await gf.fetchFarmAcc(new PublicKey(farm.value!));
@@ -103,6 +127,7 @@ export default defineComponent({
       farmer.value = getWallet()!.publicKey?.toBase58();
       farmerAcc.value = await gf.fetchFarmerAcc(farmerPDA);
       farmerState.value = gf.parseFarmerState(farmerAcc.value);
+      await updateAvailableRewards();
       console.log('farmer found:', farmerAcc.value);
     };
 
@@ -123,7 +148,6 @@ export default defineComponent({
     };
 
     // --------------------------------------- staking
-
     const beginStaking = async () => {
       await gf.stakeWallet(new PublicKey(farm.value!));
       await refreshVault();
@@ -145,6 +169,35 @@ export default defineComponent({
       await fetchFarmer();
     };
 
+    const selectedNFTs = ref<INFT[]>([]);
+
+    const handleNewSelectedNFT = (newSelectedNFTs: INFT[]) => {
+      console.log(`presently selected ${newSelectedNFTs.length} NFTs`);
+      selectedNFTs.value = newSelectedNFTs;
+    };
+
+    const addSingleGem = async (gemMint: PublicKey, gemSource: PublicKey) => {
+      await gf.flashDepositWallet(
+        new PublicKey(farm.value!),
+        '1',
+        gemMint,
+        gemSource
+      );
+      await refreshVault();
+      await fetchFarmer();
+    };
+
+    const addGems = async () => {
+      await Promise.all(
+        selectedNFTs.value.map((nft) => {
+          addSingleGem(nft.mint, nft.pubkey!);
+        })
+      );
+      console.log(
+        `added another ${selectedNFTs.value.length} gems into staking vault`
+      );
+    };
+
     const renderVault = ref<boolean>(true);
 
     const refreshVault = async () => {
@@ -160,10 +213,15 @@ export default defineComponent({
       farmer,
       farmerAcc,
       farmerState,
+      availableA,
+      availableB,
       findOrInitFarmer,
       beginStaking,
       endStaking,
       claim,
+      selectedNFTs,
+      handleNewSelectedNFT,
+      addGems,
       renderVault,
     };
   },

@@ -129,6 +129,7 @@ export default defineComponent({
     farm: String,
     farmAcc: Object,
   },
+  emits: ['update-farm'],
   setup(props, ctx) {
     const { wallet, getWallet } = useWallet();
     const { cluster, getConnection } = useCluster();

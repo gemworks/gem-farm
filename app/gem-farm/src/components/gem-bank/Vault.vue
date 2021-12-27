@@ -69,6 +69,7 @@ export default defineComponent({
   props: {
     vault: String,
   },
+  emits: ['selected-wallet-nft'],
   setup(props, ctx) {
     const { wallet, getWallet } = useWallet();
     const { cluster, getConnection } = useCluster();
@@ -155,6 +156,7 @@ export default defineComponent({
         const index = selectedWalletNFTs.value.indexOf(e.nft);
         selectedWalletNFTs.value.splice(index, 1);
       }
+      ctx.emit('selected-wallet-nft', selectedWalletNFTs.value);
     };
 
     const handleVaultSelected = (e: any) => {
@@ -275,6 +277,7 @@ export default defineComponent({
       moveNFTsFE,
       moveNFTsOnChain,
       bank,
+      // eslint-disable-next-line vue/no-dupe-keys
       vault,
       vaultLocked,
     };

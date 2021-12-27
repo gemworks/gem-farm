@@ -72,6 +72,7 @@ import { BN } from '@project-serum/anchor';
 import { RewardType } from '../../../../../tests/gem-farm/gem-farm.client';
 
 export default defineComponent({
+  emits: ['new-farm'],
   setup(props, ctx) {
     const { wallet, getWallet } = useWallet();
     const { cluster, getConnection } = useCluster();

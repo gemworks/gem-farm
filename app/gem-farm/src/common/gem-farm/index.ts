@@ -277,6 +277,10 @@ export class GemFarm extends GemFarmClient {
     gemMint: PublicKey,
     gemSource: PublicKey
   ) {
+    console.log('farm is', farm.toBase58());
+    console.log('mint is', gemMint.toBase58());
+    console.log('src is', gemSource.toBase58());
+
     const result = await this.flashDeposit(
       farm,
       this.wallet.publicKey,

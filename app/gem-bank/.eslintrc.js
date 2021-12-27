@@ -11,6 +11,7 @@ module.exports = {
     '@vue/prettier/@typescript-eslint',
   ],
   parserOptions: {
+    sourceType: 'module',
     ecmaVersion: 2020,
   },
   rules: {
