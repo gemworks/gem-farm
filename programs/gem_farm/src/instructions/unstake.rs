@@ -12,17 +12,18 @@ use gem_common::*;
 use crate::state::*;
 
 #[derive(Accounts)]
-#[instruction(bump_treasury: u8, bump_farmer: u8)]
+#[instruction(bump_auth: u8, bump_treasury: u8, bump_farmer: u8)]
 pub struct Unstake<'info> {
     // farm
-    #[account(mut, has_one = farm_authority, has_one = farm_treasury)]
+    #[account(mut, has_one = farm_authority, has_one = farm_treasury, has_one = bank)]
     pub farm: Box<Account<'info, Farm>>,
+    #[account(seeds = [farm.key().as_ref()], bump = bump_auth)]
     pub farm_authority: AccountInfo<'info>,
     #[account(mut, seeds = [b"treasury".as_ref(), farm.key().as_ref()], bump = bump_treasury)]
     pub farm_treasury: AccountInfo<'info>,
 
     // farmer
-    #[account(mut, has_one = farm, has_one = identity,
+    #[account(mut, has_one = farm, has_one = identity, has_one = vault,
         seeds = [
             b"farmer".as_ref(),
             farm.key().as_ref(),
@@ -36,7 +37,7 @@ pub struct Unstake<'info> {
     // cpi
     #[account(constraint = bank.bank_manager == farm_authority.key())]
     pub bank: Box<Account<'info, Bank>>,
-    #[account(mut, has_one = bank)]
+    #[account(mut)]
     pub vault: Box<Account<'info, Vault>>,
     pub gem_bank: Program<'info, GemBank>,
 

@@ -12,7 +12,7 @@ pub struct RefreshFarmerSigned<'info> {
     pub farm: Box<Account<'info, Farm>>,
 
     // farmer
-    #[account(mut, has_one = farm, seeds = [
+    #[account(mut, has_one = farm, has_one = identity, seeds = [
             b"farmer".as_ref(),
             farm.key().as_ref(),
             identity.key().as_ref(),

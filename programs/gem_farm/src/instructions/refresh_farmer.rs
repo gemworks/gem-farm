@@ -12,13 +12,14 @@ pub struct RefreshFarmer<'info> {
     pub farm: Box<Account<'info, Farm>>,
 
     // farmer
-    #[account(mut, has_one = farm, seeds = [
+    #[account(mut, has_one = farm, has_one = identity, seeds = [
             b"farmer".as_ref(),
             farm.key().as_ref(),
             identity.key().as_ref(),
         ],
         bump = bump)]
     pub farmer: Box<Account<'info, Farmer>>,
+    //not a signer intentionally
     pub identity: AccountInfo<'info>,
 }
 

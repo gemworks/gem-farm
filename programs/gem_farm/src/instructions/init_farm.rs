@@ -43,8 +43,6 @@ pub struct InitFarm<'info> {
     pub reward_b_mint: Box<Account<'info, Mint>>,
 
     // cpi
-    // todo should it be less opinionated and simply take in a pre-made bank?
-    //  current thinking no: coz we NEED the bank to be managed by the farm authority
     #[account(mut)]
     pub bank: Signer<'info>,
     pub gem_bank: Program<'info, GemBank>,

@@ -8,7 +8,7 @@ use crate::state::*;
 #[instruction(bump_farmer: u8, bump_vault: u8)]
 pub struct InitFarmer<'info> {
     // farm
-    #[account(mut)]
+    #[account(mut, has_one = bank)]
     pub farm: Box<Account<'info, Farm>>,
 
     // farmer
@@ -24,9 +24,9 @@ pub struct InitFarmer<'info> {
     pub identity: Signer<'info>,
 
     // cpi
-    // todo should it be less opinionated and simply take in a pre-made vault?
     #[account(mut)]
     pub bank: Box<Account<'info, Bank>>,
+    // trying to deserialize here leads to errors (doesn't exist yet)
     #[account(mut)]
     pub vault: AccountInfo<'info>,
     pub gem_bank: Program<'info, GemBank>,

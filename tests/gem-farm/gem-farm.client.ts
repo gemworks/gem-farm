@@ -318,6 +318,7 @@ export class GemFarmClient extends GemBankClient {
 
     console.log('paying out from treasury', farmTreasury.toBase58());
     const txSig = await this.farmProgram.rpc.payoutFromTreasury(
+      farmAuthBump,
       farmTreasuryBump,
       lamports,
       {
@@ -510,23 +511,28 @@ export class GemFarmClient extends GemBankClient {
     let txSig;
     if (unstake) {
       console.log('UNstaking gems for', identityPk.toBase58());
-      txSig = await this.farmProgram.rpc.unstake(farmTreasuryBump, farmerBump, {
-        accounts: {
-          farm,
-          farmer,
-          farmTreasury,
-          identity: identityPk,
-          bank: farmAcc.bank,
-          vault,
-          farmAuthority: farmAuth,
-          gemBank: this.bankProgram.programId,
-          systemProgram: SystemProgram.programId,
-        },
-        signers,
-      });
+      txSig = await this.farmProgram.rpc.unstake(
+        farmAuthBump,
+        farmTreasuryBump,
+        farmerBump,
+        {
+          accounts: {
+            farm,
+            farmer,
+            farmTreasury,
+            identity: identityPk,
+            bank: farmAcc.bank,
+            vault,
+            farmAuthority: farmAuth,
+            gemBank: this.bankProgram.programId,
+            systemProgram: SystemProgram.programId,
+          },
+          signers,
+        }
+      );
     } else {
       console.log('staking gems for', identityPk.toBase58());
-      txSig = await this.farmProgram.rpc.stake(farmerBump, {
+      txSig = await this.farmProgram.rpc.stake(farmAuthBump, farmerBump, {
         accounts: {
           farm,
           farmer,

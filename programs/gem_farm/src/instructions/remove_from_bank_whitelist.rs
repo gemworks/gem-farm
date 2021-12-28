@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use gem_bank::state::WhitelistProof;
 use gem_bank::{self, cpi::accounts::RemoveFromWhitelist, program::GemBank, state::Bank};
 
 use crate::state::*;
@@ -6,7 +7,7 @@ use crate::state::*;
 #[derive(Accounts)]
 #[instruction(bump_auth: u8)]
 pub struct RemoveFromBankWhitelist<'info> {
-    #[account(has_one = farm_manager, has_one = farm_authority)]
+    #[account(has_one = farm_manager, has_one = farm_authority, has_one = bank)]
     pub farm: Box<Account<'info, Farm>>,
     #[account(mut)]
     pub farm_manager: Signer<'info>,
@@ -15,10 +16,10 @@ pub struct RemoveFromBankWhitelist<'info> {
 
     // cpi
     #[account(mut)]
-    pub bank: Account<'info, Bank>,
+    pub bank: Box<Account<'info, Bank>>,
     pub address_to_remove: AccountInfo<'info>,
     #[account(mut)]
-    pub whitelist_proof: AccountInfo<'info>,
+    pub whitelist_proof: Box<Account<'info, WhitelistProof>>,
     pub gem_bank: Program<'info, GemBank>,
 }
 
@@ -32,7 +33,7 @@ impl<'info> RemoveFromBankWhitelist<'info> {
                 bank: self.bank.to_account_info(),
                 bank_manager: self.farm_authority.clone(),
                 address_to_remove: self.address_to_remove.clone(),
-                whitelist_proof: self.whitelist_proof.clone(),
+                whitelist_proof: self.whitelist_proof.to_account_info(),
             },
         )
     }

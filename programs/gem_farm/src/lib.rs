@@ -38,11 +38,12 @@ pub mod gem_farm {
 
     pub fn payout_from_treasury(
         ctx: Context<TreasuryPayout>,
-        bump: u8,
+        _bump_auth: u8,
+        bump_treasury: u8,
         lamports: u64,
     ) -> ProgramResult {
         msg!("payout");
-        instructions::treasury_payout::handler(ctx, bump, lamports)
+        instructions::treasury_payout::handler(ctx, bump_treasury, lamports)
     }
 
     pub fn add_to_bank_whitelist(
@@ -75,12 +76,17 @@ pub mod gem_farm {
         instructions::init_farmer::handler(ctx, bump_vault)
     }
 
-    pub fn stake(ctx: Context<Stake>, _bump: u8) -> ProgramResult {
+    pub fn stake(ctx: Context<Stake>, _bump_auth: u8, _bump_farmer: u8) -> ProgramResult {
         msg!("stake");
         instructions::stake::handler(ctx)
     }
 
-    pub fn unstake(ctx: Context<Unstake>, _bump_treasury: u8, _bump_farmer: u8) -> ProgramResult {
+    pub fn unstake(
+        ctx: Context<Unstake>,
+        _bump_auth: u8,
+        _bump_treasury: u8,
+        _bump_farmer: u8,
+    ) -> ProgramResult {
         msg!("unstake");
         instructions::unstake::handler(ctx)
     }

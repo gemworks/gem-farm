@@ -12,7 +12,7 @@ import { prepGem } from '../utils/gem-common';
 
 chai.use(chaiAsPromised);
 
-describe.only('gem bank', () => {
+describe.skip('gem bank', () => {
   const _provider = anchor.Provider.env();
   const gb = new GemBankClient(
     _provider.connection,

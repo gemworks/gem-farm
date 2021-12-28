@@ -9,7 +9,7 @@ use crate::state::*;
 pub struct FundReward<'info> {
     // farm
     #[account(mut)]
-    pub farm: Account<'info, Farm>,
+    pub farm: Box<Account<'info, Farm>>,
 
     // funder
     #[account(has_one = farm, has_one = authorized_funder ,seeds = [

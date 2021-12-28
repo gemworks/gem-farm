@@ -10,30 +10,30 @@ use gem_common::{errors::ErrorCode, *};
 use crate::state::*;
 
 #[derive(Accounts)]
-#[instruction(bump: u8)]
+#[instruction(bump_auth: u8, bump_farmer: u8)]
 pub struct Stake<'info> {
     // farm
-    #[account(mut, has_one = farm_authority)]
+    #[account(mut, has_one = farm_authority, has_one = bank)]
     pub farm: Box<Account<'info, Farm>>,
+    #[account(seeds = [farm.key().as_ref()], bump = bump_auth)]
     pub farm_authority: AccountInfo<'info>,
 
     // farmer
-    #[account(mut, has_one = farm, has_one = identity,
+    #[account(mut, has_one = farm, has_one = identity, has_one = vault,
         seeds = [
             b"farmer".as_ref(),
             farm.key().as_ref(),
             identity.key().as_ref(),
         ],
-        bump = bump)]
+        bump = bump_farmer)]
     pub farmer: Box<Account<'info, Farmer>>,
     #[account(mut)]
     pub identity: Signer<'info>,
 
     // cpi
-    // todo I don't think I need to re-do these checks here do I?
     #[account(constraint = bank.bank_manager == farm_authority.key())]
     pub bank: Box<Account<'info, Bank>>,
-    #[account(mut, has_one = bank)]
+    #[account(mut)]
     pub vault: Box<Account<'info, Vault>>,
     pub gem_bank: Program<'info, GemBank>,
 }

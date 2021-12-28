@@ -16,10 +16,11 @@ pub struct FlashDeposit<'info> {
     // farm
     #[account(mut, has_one = farm_authority)]
     pub farm: Box<Account<'info, Farm>>,
+    //skipping seeds verification to save compute budget, has_one check above should be enough
     pub farm_authority: AccountInfo<'info>,
 
     // farmer
-    #[account(mut, has_one = farm, has_one = identity,
+    #[account(mut, has_one = farm, has_one = identity, has_one = vault,
         seeds = [
             b"farmer".as_ref(),
             farm.key().as_ref(),
@@ -35,8 +36,10 @@ pub struct FlashDeposit<'info> {
     #[account(mut)]
     pub vault: Box<Account<'info, Vault>>,
     pub vault_authority: AccountInfo<'info>,
+    // trying to deserialize here leads to errors (doesn't exist yet)
     #[account(mut)]
     pub gem_box: AccountInfo<'info>,
+    // trying to deserialize here leads to errors (doesn't exist yet)
     #[account(mut)]
     pub gem_deposit_receipt: AccountInfo<'info>,
     #[account(mut)]
