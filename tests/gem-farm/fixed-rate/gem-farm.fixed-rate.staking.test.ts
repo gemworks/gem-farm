@@ -8,6 +8,7 @@ import {
 import { BN } from '@project-serum/anchor';
 import { pause, toBN } from '../../utils/types';
 import { FixedRateConfig, RewardType } from '../gem-farm.client';
+import { WhitelistType } from '../../gem-bank/gem-bank.client';
 
 chai.use(chaiAsPromised);
 
@@ -23,7 +24,7 @@ const shortFixedConfig = <FixedRateConfig>{
   durationSec: new BN(5), //5s only
 };
 
-describe('staking (fixed rate)', () => {
+describe.only('staking (fixed rate)', () => {
   let gf = new GemFarmTester();
 
   beforeEach('preps accs', async () => {
@@ -184,5 +185,88 @@ describe('staking (fixed rate)', () => {
     assert(fixed.beginStakingTs.eq(originalStakedTs));
     assert(fixed.beginStakingTs.lt(fixed.beginScheduleTs));
     assert(fixed.promisedDuration.gte(toBN(90)));
+  });
+
+  //todo needs a variable rate counterpart (less concerning tho)
+  it('flash deposits a gem', async () => {
+    //get the gems back, we'll need them for 2 separate deposits
+    await gf.callWithdraw(gf.gem1Amount, gf.farmer1Identity);
+
+    const initialDeposit = new BN(1); //drop 1 existing gem, need to lock the vault
+    await gf.callDeposit(initialDeposit, gf.farmer1Identity);
+
+    //stake to lock the vault
+    const { farmer, vault } = await gf.callStake(gf.farmer1Identity);
+
+    let vaultAcc = await gf.fetchVaultAcc(vault);
+    assert(vaultAcc.gemCount.eq(initialDeposit));
+    assert.isTrue(vaultAcc.locked);
+
+    let farmAcc = await gf.fetchFarm();
+    assert(farmAcc.stakedFarmerCount.eq(new BN(1)));
+    assert(farmAcc.gemsStaked.eq(initialDeposit));
+
+    let farmerAcc = (await gf.fetchFarmerAcc(farmer)) as any;
+    assert(farmerAcc.gemsStaked.eq(initialDeposit));
+    const oldEndTs = farmerAcc.minStakingEndsTs;
+    const originalBeginStakingTs =
+      farmerAcc[gf.reward].fixedRate.beginStakingTs;
+    const originalBeginScheduleTs =
+      farmerAcc[gf.reward].fixedRate.beginScheduleTs;
+    const originalDuration = farmerAcc[gf.reward].fixedRate.promisedDuration;
+
+    //wait for 1 sec so that flash deposit staking time is recorded as different
+    await pause(1000);
+
+    //flash deposit after vault locked
+    const flashDeposit = new BN(1);
+
+    await gf.callFlashDeposit(flashDeposit, gf.farmer1Identity);
+    // await printStructs('FLASH DEPOSITS');
+
+    vaultAcc = await gf.fetchVaultAcc(vault);
+    assert(vaultAcc.gemCount.eq(initialDeposit.add(flashDeposit)));
+    assert.isTrue(vaultAcc.locked);
+
+    farmAcc = await gf.fetchFarm();
+    assert(farmAcc.stakedFarmerCount.eq(new BN(1)));
+    assert(farmAcc.gemsStaked.eq(initialDeposit.add(flashDeposit)));
+
+    farmerAcc = (await gf.fetchFarmerAcc(farmer)) as any;
+    assert(farmerAcc.gemsStaked.eq(initialDeposit.add(flashDeposit)));
+    //flash deposits resets staking time, which means it should be higher
+    assert(farmerAcc.minStakingEndsTs.gt(oldEndTs));
+
+    //check to make sure schedule renewed, but original staking TS preserved
+    const newBeginStakingTs = farmerAcc[gf.reward].fixedRate.beginStakingTs;
+    const newBeginScheduleTs = farmerAcc[gf.reward].fixedRate.beginScheduleTs;
+    const newDuration = farmerAcc[gf.reward].fixedRate.promisedDuration;
+    assert(originalBeginStakingTs.eq(newBeginStakingTs));
+    assert(originalBeginScheduleTs.lt(newBeginScheduleTs));
+    assert(originalDuration.gt(newDuration)); //since less time left on schedule
+  });
+
+  it('flash deposits a gem (whitelisted)', async () => {
+    //get the gems back, we'll need them for 2 separate deposits
+    await gf.callWithdraw(gf.gem1Amount, gf.farmer1Identity);
+
+    const initialDeposit = new BN(1); //drop 1 existing gem, need to lock the vault
+    await gf.callDeposit(initialDeposit, gf.farmer1Identity);
+    const { vault } = await gf.callStake(gf.farmer1Identity);
+
+    //whitelist mint
+    const { whitelistProof } = await gf.callAddToBankWhitelist(
+      gf.gem1.tokenMint,
+      WhitelistType.Mint
+    );
+
+    //flash deposit after vault locked
+    const flashDeposit = new BN(1);
+    await gf.callFlashDeposit(flashDeposit, gf.farmer1Identity, whitelistProof);
+
+    //this is enough to verify it worked
+    const vaultAcc = await gf.fetchVaultAcc(vault);
+    assert(vaultAcc.gemCount.eq(initialDeposit.add(flashDeposit)));
+    assert.isTrue(vaultAcc.locked);
   });
 });

@@ -7,7 +7,6 @@ import {
 } from '../gem-farm.tester';
 import { BN } from '@project-serum/anchor';
 import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
-import { pause } from '../../utils/types';
 import { FarmConfig, RewardType } from '../gem-farm.client';
 import { WhitelistType } from '../../gem-bank/gem-bank.client';
 
@@ -21,7 +20,7 @@ const updatedFarmConfig = <FarmConfig>{
 
 const creator = new PublicKey('75ErM1QcGjHiPMX7oLsf9meQdGSUs4ZrwS2X8tBpsZhA');
 
-describe.only('misc', () => {
+describe('misc', () => {
   let gf = new GemFarmTester();
 
   before('preps accs', async () => {
@@ -140,76 +139,12 @@ describe.only('misc', () => {
     );
   });
 
-  // --------------------------------------- flash deposit
-
-  it('flash deposits a gem', async () => {
-    const initialDeposit = new BN(1); //drop 1 existing gem, need to lock the vault
-    await gf.callDeposit(initialDeposit, gf.farmer1Identity);
-
-    //stake to lock the vault
-    const { farmer, vault } = await gf.callStake(gf.farmer1Identity);
-
-    let vaultAcc = await gf.fetchVaultAcc(vault);
-    assert(vaultAcc.gemCount.eq(initialDeposit));
-    assert.isTrue(vaultAcc.locked);
-
-    let farmAcc = await gf.fetchFarm();
-    assert(farmAcc.stakedFarmerCount.eq(new BN(1)));
-    assert(farmAcc.gemsStaked.eq(initialDeposit));
-
-    let farmerAcc = await gf.fetchFarmerAcc(farmer);
-    assert(farmerAcc.gemsStaked.eq(initialDeposit));
-    const oldEndTs = farmerAcc.minStakingEndsTs;
-
-    //wait for 1 sec so that flash deposit staking time is recorded as different
-    await pause(1000);
-
-    //flash deposit after vault locked
-    const flashDeposit = new BN(1);
-
-    await gf.callFlashDeposit(flashDeposit, gf.farmer1Identity);
-    // await printStructs('FLASH DEPOSITS');
-
-    vaultAcc = await gf.fetchVaultAcc(vault);
-    assert(vaultAcc.gemCount.eq(initialDeposit.add(flashDeposit)));
-    assert.isTrue(vaultAcc.locked);
-
-    farmAcc = await gf.fetchFarm();
-    assert(farmAcc.stakedFarmerCount.eq(new BN(1)));
-    assert(farmAcc.gemsStaked.eq(initialDeposit.add(flashDeposit)));
-
-    farmerAcc = await gf.fetchFarmerAcc(farmer);
-    assert(farmerAcc.gemsStaked.eq(initialDeposit.add(flashDeposit)));
-    //flash deposits resets staking time, which means it should be higher
-    assert(farmerAcc.minStakingEndsTs.gt(oldEndTs));
-  });
-
-  it('flash deposits a gem (whitelisted)', async () => {
-    //prep - use the 2nd farmer this itme
-    const initialDeposit = new BN(1); //drop 1 existing gem, need to lock the vault
-    await gf.callDeposit(initialDeposit, gf.farmer2Identity);
-    const { vault } = await gf.callStake(gf.farmer2Identity);
-
-    //whitelist mint
-    const { whitelistProof } = await gf.callAddToBankWhitelist(
-      gf.gem2.tokenMint,
-      WhitelistType.Mint
-    );
-
-    //flash deposit after vault locked
-    const flashDeposit = new BN(1);
-    await gf.callFlashDeposit(flashDeposit, gf.farmer2Identity, whitelistProof);
-
-    //this is enough to verify it worked
-    const vaultAcc = await gf.fetchVaultAcc(vault);
-    assert(vaultAcc.gemCount.eq(initialDeposit.add(flashDeposit)));
-    assert.isTrue(vaultAcc.locked);
-  });
-
   // --------------------------------------- treasury payout
 
   it('pays out from treasury', async () => {
     // unstake to accrue payout fees that will go into treasury
+    await gf.callDeposit(gf.gem1Amount, gf.farmer1Identity);
+    await gf.callStake(gf.farmer1Identity);
     await gf.callUnstake(gf.farmer1Identity);
 
     const destination = await gf.createWallet(0);

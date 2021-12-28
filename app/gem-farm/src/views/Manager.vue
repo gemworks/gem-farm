@@ -9,6 +9,7 @@
       >
         New farm
       </button>
+      <button class="nes-btn" @click="refreshFarms">Refetch farms</button>
     </div>
 
     <!--new farm-->
@@ -158,6 +159,10 @@ export default defineComponent({
       await findFarmsByManager(getWallet()!.publicKey!);
     };
 
+    const refreshFarms = async () => {
+      await findFarmsByManager(getWallet()!.publicKey!);
+    };
+
     return {
       isLoading,
       wallet,
@@ -167,6 +172,7 @@ export default defineComponent({
       handleNewFarm,
       handleUpdateFarm,
       showNewFarm,
+      refreshFarms,
     };
   },
 });

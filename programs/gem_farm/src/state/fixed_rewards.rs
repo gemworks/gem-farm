@@ -250,7 +250,7 @@ impl FixedRateReward {
 
         self.schedule = schedule;
 
-        msg!("recorded new funding of {}", amount);
+        // msg!("recorded new funding of {}", amount);
         Ok(())
     }
 
@@ -265,7 +265,7 @@ impl FixedRateReward {
 
         times.end_reward(now_ts)?;
 
-        msg!("prepared a total refund of {}", refund_amount);
+        // msg!("prepared a total refund of {}", refund_amount);
         Ok(refund_amount)
     }
 
@@ -294,9 +294,7 @@ impl FixedRateReward {
         if farmer_reward.fixed_rate.is_staked()
             && farmer_reward.fixed_rate.is_time_to_graduate(now_ts)?
         {
-            let original_staking_start = farmer_reward.fixed_rate.begin_staking_ts;
-
-            self.graduate_farmer(now_ts, farmer_gems_staked, farmer_reward)?;
+            let original_staking_start = self.graduate_farmer(farmer_gems_staked, farmer_reward)?;
 
             // if desired, we roll them forward with original staking time
             if reenroll {
@@ -311,7 +309,7 @@ impl FixedRateReward {
             }
         }
 
-        msg!("updated reward as of {}", now_ts);
+        // msg!("updated reward as of {}", now_ts);
         Ok(())
     }
 
@@ -352,19 +350,22 @@ impl FixedRateReward {
         // update farm
         self.reserved_amount.try_add_assign(reserve_amount)?;
 
-        msg!("enrolled farmer as of {}", now_ts);
+        // msg!("enrolled farmer as of {}", now_ts);
         Ok(())
     }
 
-    /// this can be called either
-    /// 1) by the staker themselves, when they unstake, or
-    /// 2) by the farm if graduation_time has come
+    /// called in these sits:
+    /// 1) by the staker themselves, when they unstake
+    /// 2) by the staker themselves, when they stake extra gems
+    /// 3) by the farm if is_time_to_graduate
+    /// returns original staking time
     pub fn graduate_farmer(
         &mut self,
-        now_ts: u64,
         farmer_gems_staked: u64,
         farmer_reward: &mut FarmerReward,
-    ) -> ProgramResult {
+    ) -> Result<u64, ProgramError> {
+        let original_begin_staking_ts = farmer_reward.fixed_rate.begin_staking_ts;
+
         // reduce reserved amount
         let voided_reward = farmer_reward.fixed_rate.voided_reward(farmer_gems_staked)?;
 
@@ -373,8 +374,8 @@ impl FixedRateReward {
         // zero out the data on the farmer
         farmer_reward.fixed_rate = FarmerFixedRateReward::default();
 
-        msg!("graduated farmer on {}", now_ts);
-        Ok(())
+        // msg!("graduated farmer on {}", now_ts);
+        Ok(original_begin_staking_ts)
     }
 }
 

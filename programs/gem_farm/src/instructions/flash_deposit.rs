@@ -131,6 +131,6 @@ pub fn handler<'a, 'b, 'c, 'info>(
     ctx.accounts.vault.reload()?;
     farm.stake_extra_gems(now_ts, ctx.accounts.vault.gem_count, amount, farmer)?;
 
-    msg!("{} extra gems staked for {}", amount, farmer.key());
+    // msg!("{} extra gems staked for {}", amount, farmer.key());
     Ok(())
 }

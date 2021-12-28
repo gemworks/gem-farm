@@ -46,13 +46,14 @@ impl Farmer {
         min_staking_period_sec: u64,
         now_ts: u64,
         gems_in_vault: u64,
-    ) -> ProgramResult {
+    ) -> Result<u64, ProgramError> {
         self.state = FarmerState::Staked;
+        let previous_gems_staked = self.gems_staked;
         self.gems_staked = gems_in_vault;
         self.min_staking_ends_ts = now_ts.try_add(min_staking_period_sec)?;
         self.cooldown_ends_ts = 0; //zero it out in case it was set before
 
-        Ok(())
+        Ok(previous_gems_staked)
     }
 
     pub fn end_staking_begin_cooldown(
@@ -69,11 +70,11 @@ impl Farmer {
         self.gems_staked = 0; //no rewards will accrue during cooldown period
         self.cooldown_ends_ts = now_ts.try_add(cooldown_period_sec)?;
 
-        msg!(
-            "{} gems now cooling down for {}",
-            gems_unstaked,
-            self.identity
-        );
+        // msg!(
+        //     "{} gems now cooling down for {}",
+        //     gems_unstaked,
+        //     self.identity
+        // );
         Ok(gems_unstaked)
     }
 
@@ -88,10 +89,10 @@ impl Farmer {
         self.min_staking_ends_ts = 0;
         self.cooldown_ends_ts = 0;
 
-        msg!(
-            "gems now unstaked and available for withdrawal for {}",
-            self.identity
-        );
+        // msg!(
+        //     "gems now unstaked and available for withdrawal for {}",
+        //     self.identity
+        // );
         Ok(())
     }
 

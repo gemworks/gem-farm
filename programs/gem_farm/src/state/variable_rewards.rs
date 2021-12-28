@@ -63,7 +63,7 @@ impl VariableRateReward {
 
         self.reward_last_updated_ts = times.reward_upper_bound(now_ts);
 
-        msg!("recorded new funding of {}", amount);
+        // msg!("recorded new funding of {}", amount);
         Ok(())
     }
 
@@ -81,7 +81,7 @@ impl VariableRateReward {
         self.reward_rate = Number128::ZERO;
         self.reward_last_updated_ts = times.reward_upper_bound(now_ts);
 
-        msg!("prepared a total refund of {}", refund_amount);
+        // msg!("prepared a total refund of {}", refund_amount);
         Ok(refund_amount)
     }
 
@@ -128,7 +128,7 @@ impl VariableRateReward {
 
         self.reward_last_updated_ts = reward_upper_bound;
 
-        msg!("updated reward as of {}", self.reward_last_updated_ts);
+        // msg!("updated reward as of {}", self.reward_last_updated_ts);
         Ok(())
     }
 

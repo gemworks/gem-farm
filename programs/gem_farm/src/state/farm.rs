@@ -189,19 +189,15 @@ impl Farm {
                 // fixed-rate only - we need to do some extra book-keeping
                 // (!) MUST COME BEFORE FARMER IS UPDATED - WE NEED CURRENT GEMS AMOUNT
                 if self.reward_a.reward_type == RewardType::Fixed {
-                    self.reward_a.fixed_rate.graduate_farmer(
-                        now_ts,
-                        farmer.gems_staked,
-                        &mut farmer.reward_a,
-                    )?;
+                    self.reward_a
+                        .fixed_rate
+                        .graduate_farmer(farmer.gems_staked, &mut farmer.reward_a)?;
                 }
 
                 if self.reward_b.reward_type == RewardType::Fixed {
-                    self.reward_b.fixed_rate.graduate_farmer(
-                        now_ts,
-                        farmer.gems_staked,
-                        &mut farmer.reward_b,
-                    )?;
+                    self.reward_b
+                        .fixed_rate
+                        .graduate_farmer(farmer.gems_staked, &mut farmer.reward_b)?;
                 }
 
                 // update farmer
@@ -226,10 +222,50 @@ impl Farm {
         farmer: &mut Account<Farmer>,
     ) -> ProgramResult {
         // update farmer
-        farmer.begin_staking(self.config.min_staking_period_sec, now_ts, gems_in_vault)?;
+        let previous_gems_staked =
+            farmer.begin_staking(self.config.min_staking_period_sec, now_ts, gems_in_vault)?;
 
         // update farm
-        self.gems_staked.try_add_assign(extra_gems)
+        self.gems_staked.try_add_assign(extra_gems)?;
+
+        // fixed-rate only - we need to do some extra book-keeping
+        if self.reward_a.reward_type == RewardType::Fixed {
+            // graduate with PREVIOUS gems count
+            let original_begin_staking_ts = self
+                .reward_a
+                .fixed_rate
+                .graduate_farmer(previous_gems_staked, &mut farmer.reward_a)?;
+
+            // re-enroll with NEW gems count
+            self.reward_a.fixed_rate.enroll_farmer(
+                now_ts,
+                &mut self.reward_a.times,
+                &mut self.reward_a.funds,
+                farmer.gems_staked,
+                &mut farmer.reward_a,
+                Some(original_begin_staking_ts),
+            )?;
+        }
+
+        if self.reward_b.reward_type == RewardType::Fixed {
+            // graduate with PREVIOUS gems count
+            let original_begin_staking_ts = self
+                .reward_b
+                .fixed_rate
+                .graduate_farmer(previous_gems_staked, &mut farmer.reward_b)?;
+
+            // re-enroll with NEW gems count
+            self.reward_b.fixed_rate.enroll_farmer(
+                now_ts,
+                &mut self.reward_b.times,
+                &mut self.reward_b.funds,
+                farmer.gems_staked,
+                &mut farmer.reward_b,
+                Some(original_begin_staking_ts),
+            )?;
+        }
+
+        Ok(())
     }
 }
 
@@ -291,7 +327,7 @@ impl TimeTracker {
     pub fn end_reward(&mut self, now_ts: u64) -> ProgramResult {
         self.duration_sec
             .try_sub_assign(self.remaining_duration(now_ts)?)?;
-        self.reward_end_ts = now_ts;
+        self.reward_end_ts = std::cmp::min(now_ts, self.reward_end_ts);
 
         Ok(())
     }
@@ -339,7 +375,7 @@ impl FarmReward {
     fn lock_reward(&mut self) -> ProgramResult {
         self.times.lock_end_ts = self.times.reward_end_ts;
 
-        msg!("locked reward up to {}", self.times.reward_end_ts);
+        // msg!("locked reward up to {}", self.times.reward_end_ts);
         Ok(())
     }
 
@@ -456,6 +492,11 @@ mod tests {
         };
 
         times.end_reward(140).unwrap();
+        assert_eq!(times.duration_sec, 20);
+        assert_eq!(times.reward_end_ts, 140);
+
+        // repeated calls with later TS won't have an effect
+        times.end_reward(150).unwrap();
         assert_eq!(times.duration_sec, 20);
         assert_eq!(times.reward_end_ts, 140);
     }
