@@ -316,6 +316,7 @@ export class GemFarmClient extends GemBankClient {
     const signers = [];
     if (isKp(farmManager)) signers.push(<Keypair>farmManager);
 
+    console.log('paying out from treasury', farmTreasury.toBase58());
     const txSig = await this.farmProgram.rpc.payoutFromTreasury(
       farmTreasuryBump,
       lamports,

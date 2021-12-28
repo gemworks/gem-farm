@@ -62,19 +62,20 @@ export default defineComponent({
     const lamports = ref<string>();
     const balance = ref<string>();
 
-    const payoutFromTreasury = () => {
-      return gf.treasuryPayoutWallet(
+    const payoutFromTreasury = async () => {
+      await gf.treasuryPayoutWallet(
         new PublicKey(props.farm!),
         new PublicKey(destination.value!),
         lamports.value!
       );
+      await getTresauryBalance();
     };
 
     const getTresauryBalance = async () => {
       const [treasury] = await gf.findFarmTreasuryPDA(
         new PublicKey(props.farm!)
       );
-      console.log('treasury', treasury.toBase58());
+      console.log('treasury found:', treasury.toBase58());
       balance.value = await gf.getBalance(treasury);
     };
 

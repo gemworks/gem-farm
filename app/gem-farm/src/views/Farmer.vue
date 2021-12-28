@@ -103,7 +103,7 @@ export default defineComponent({
     });
 
     // --------------------------------------- farmer details
-    const farm = ref<string>('2sF4pQtEbRAkdR8yYNdwp2GoemjC1tau1q4WQWDBKETZ');
+    const farm = ref<string>('J2HmnQ92aseoygvLdp9Smxfjed1af2MY6Vxk2adFm4YY');
     const farmAcc = ref<any>();
 
     const farmerIdentity = ref<string>();
@@ -180,11 +180,13 @@ export default defineComponent({
     const beginStaking = async () => {
       await gf.stakeWallet(new PublicKey(farm.value!));
       await fetchFarmer();
+      selectedNFTs.value = [];
     };
 
     const endStaking = async () => {
       await gf.unstakeWallet(new PublicKey(farm.value!));
       await fetchFarmer();
+      selectedNFTs.value = [];
     };
 
     const claim = async () => {

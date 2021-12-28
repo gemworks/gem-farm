@@ -54,7 +54,7 @@
       <!--refresh farmer-->
       <RefreshFarmer :farm="farm" class="mb-10" />
       <!--treasury payout-->
-      <TreasuryPayout :farm="farm" class="mb-10" />
+      <TreasuryPayout :key="farmAcc" :farm="farm" class="mb-10" />
     </div>
     <div v-else-if="isLoading" class="text-center">Loading...</div>
     <div v-else class="text-center">No farms found :( Start a new one?</div>
