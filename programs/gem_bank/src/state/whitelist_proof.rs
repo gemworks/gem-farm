@@ -1,6 +1,10 @@
 use anchor_lang::prelude::*;
 use gem_common::errors::ErrorCode;
 
+/// whitelists are used to control what gems can/can't go into the vault
+/// currently 2 types of vault lists are supported: by mint and by creator
+/// if the whitelist PDA exists, then the mint/creator is considered accepted
+/// if at least 1 whitelist PDA exists total, then all deposit attempts will start getting checked
 #[repr(C)]
 #[account]
 pub struct WhitelistProof {

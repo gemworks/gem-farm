@@ -15,16 +15,17 @@ pub enum FixedRateRewardTier {
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct TierConfig {
-    // tokens/denominator / sec
+    /// tokens/denominator / sec
     pub reward_rate: u64,
 
+    /// min amount of time that needs to pass for the above rate to come into effect
     pub required_tenure: u64,
 }
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FixedRateSchedule {
-    // tokens/denominator / sec
+    /// tokens/denominator / sec
     pub base_rate: u64,
 
     pub tier1: Option<TierConfig>,
@@ -33,10 +34,12 @@ pub struct FixedRateSchedule {
 
     pub tier3: Option<TierConfig>,
 
+    /// needed to slow down the payout schedule (else min would be 1 token/gem/s or 86k/gem/day
+    /// only used in fixed rate - in variable overall duration serves as sufficient speed regulator  
     pub denominator: u64,
 }
 
-// need the discriminator to be 1 by default, else get div /0 errors
+/// custom impl coz need the discriminator to be 1 by default, else get div /0 errors
 impl Default for FixedRateSchedule {
     fn default() -> Self {
         Self {
@@ -54,21 +57,29 @@ impl Default for FixedRateSchedule {
 pub struct FixedRateConfig {
     pub schedule: FixedRateSchedule,
 
+    /// total amount that is being sent with the ix - will be added ON TOP of existing available funding
     pub amount: u64,
 
+    /// duration the funding is being committed for
+    /// eg if commit funding for 100s and a farmer shows up 3s in, they will be promised 97s at above schedule
+    /// set this carefully!
+    /// every farmer enrolled will be "reserved" an amount to cover the schedule for this duration
     pub duration_sec: u64,
 }
 
 /// a tenure which we can definitely apply the reward rate to
 /// needed for calc only, not stored anywhere in final struct
+#[repr(C)]
 struct HeldTenure {
     definitive_start: u64,
+
     definitive_end: u64,
+
     reward_rate: u64,
 }
 
 impl HeldTenure {
-    // caps start and end, then saves a new HT
+    /// caps start and end, then saves a new HT
     fn new(
         reward_rate: u64,
         start_from: u64,
@@ -78,6 +89,7 @@ impl HeldTenure {
     ) -> Option<Self> {
         let definitive_start = std::cmp::max(start_from, lower_bound);
         let definitive_end = std::cmp::min(end_at, upper_bound);
+
         match definitive_end < definitive_start {
             false => Some(Self {
                 definitive_start,
@@ -88,7 +100,7 @@ impl HeldTenure {
         }
     }
 
-    // multiplies definitive start & end by the rate
+    /// multiplies definitive start & end by the rate
     pub fn get_reward(&self) -> Result<u64, ProgramError> {
         let duration = self.definitive_end.try_sub(self.definitive_start)?;
         self.reward_rate.try_mul(duration)
@@ -155,7 +167,9 @@ impl FixedRateSchedule {
         self.base_rate.try_mul(duration)
     }
 
-    /// extracts held tenure from a combination of 1) actual start & end times, 2)appropriate lower/upper bounds
+    /// extracts held tenure from a combination of
+    ///   1) actual start & end times, and
+    ///   2) appropriate lower/upper bounds
     /// lower bound: required_tenure extracted from appropriate TierConfig
     /// upper bound: for first iteration (last-most TierConfig) simply U64::MAX,
     ///   later recursively updated with previous TierConfig's required_tenure
@@ -178,6 +192,11 @@ impl FixedRateSchedule {
         }
     }
 
+    /// calculates reward per gem, by
+    ///   1) recursively extracting tenures,
+    ///   2) calling get_reward() on each which isn't None
+    ///   3) calculating base rate
+    ///   4) folding base rate and non-None tenure rewards
     fn per_gem_for_reward(&self, start_from: u64, end_at: u64) -> Result<u64, ProgramError> {
         let mut cap = u64::MAX;
 
@@ -224,10 +243,10 @@ impl FixedRateSchedule {
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FixedRateReward {
-    // configured on funding
+    /// configured on funding
     pub schedule: FixedRateSchedule,
 
-    // amount that has been promised to existing stakers and hence can't be withdrawn
+    /// amount that has been promised to existing stakers and hence can't be withdrawn
     pub reserved_amount: u64,
 }
 
@@ -286,7 +305,7 @@ impl FixedRateReward {
             .fixed_rate
             .newly_accrued_reward(now_ts, farmer_gems_staked)?;
 
-        // update farm (move from reserved to accrued)
+        // update farm (move amount from reserved to accrued)
         funds
             .total_accrued_to_stakers
             .try_add_assign(newly_accrued_reward)?;
@@ -301,6 +320,9 @@ impl FixedRateReward {
             let original_staking_start = self.graduate_farmer(farmer_gems_staked, farmer_reward)?;
 
             // if desired, we roll them forward with original staking time
+            // why would it not be desired?
+            //   one scenario is where there isn't sufficient funding to enroll them,
+            //   which causes update ix to fail. So instead we can let them opt out of reenrolling
             if reenroll {
                 self.enroll_farmer(
                     now_ts,

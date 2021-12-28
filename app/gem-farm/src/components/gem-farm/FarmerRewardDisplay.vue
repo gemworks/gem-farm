@@ -7,7 +7,11 @@
       <div class="mb-2 w-full bg-black text-white">Variable reward:</div>
       <div class="mb-2">
         Last recorded accrued reward per gem:
-        {{ reward.variableRate.lastRecordedAccruedRewardPerGem.n / 10 ** 15 }}
+        {{
+          numeral(
+            reward.variableRate.lastRecordedAccruedRewardPerGem.n / 10 ** 15
+          ).format('0,0.0')
+        }}
       </div>
     </div>
     <div v-else>
@@ -38,6 +42,7 @@
 import { defineComponent } from 'vue';
 import FixedScheduleDisplay from '@/components/gem-farm/FixedScheduleDisplay.vue';
 import { parseDate } from '@/common/util';
+import numeral from 'numeral';
 
 export default defineComponent({
   components: { FixedScheduleDisplay },
@@ -55,6 +60,7 @@ export default defineComponent({
     return {
       parseRewardType,
       parseDate,
+      numeral,
     };
   },
 });

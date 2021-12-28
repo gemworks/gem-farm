@@ -112,7 +112,6 @@ pub fn handler(ctx: Context<Claim>) -> ProgramResult {
             to_claim_a,
         )?;
     }
-
     if to_claim_b > 0 {
         token::transfer(
             ctx.accounts

@@ -5,30 +5,33 @@ use crate::state::{Bank, BankFlags};
 #[repr(C)]
 #[account]
 pub struct Vault {
-    // each vault is registered with a single bank, used for indexing
+    /// each vault is registered with a single bank, used for indexing
     pub bank: Pubkey,
 
-    // has the sole right to update Vault state, incl. assigning someone else as owner
+    /// responsible for signing deposits / withdrawals into the vault
+    /// (!) NOTE: does NOT un/lock the vault - the bank manager does that
+    /// can update itself to another Pubkey
     pub owner: Pubkey,
 
-    // baked into vault's PDA - NOT CHANGEABLE
+    /// pubkey used to create the vault, baked into vault's PDA - NOT CHANGEABLE
     pub creator: Pubkey,
 
-    // signs off on any token transfers out of the gem boxes controlled by the vault
+    /// signs off on any token transfers out of the gem boxes controlled by the vault
     pub authority: Pubkey,
 
     pub authority_seed: Pubkey,
 
     pub authority_bump_seed: [u8; 1],
 
+    /// when the vault is locked, no gems can move in/out of it
     pub locked: bool,
 
     pub name: [u8; 32],
 
-    // total number of NFT mints stored in the vault
+    /// total number of token mints stored in the vault (gem box per mint)
     pub gem_box_count: u64,
 
-    // gem_boxes can store >1 token, this counts actual token count
+    /// gem_boxes can store >1 token, see detailed explanation on GDR
     pub gem_count: u64,
 }
 

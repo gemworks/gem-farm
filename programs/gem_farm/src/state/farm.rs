@@ -23,37 +23,40 @@ pub struct FarmConfig {
 pub struct Farm {
     pub version: u16,
 
+    /// authorizes funders, whitelists mints/creators, sets farm config params
+    /// can update itself to another Pubkey
     pub farm_manager: Pubkey,
 
-    // used for collecting any fees earned by the farm
+    /// used for collecting any fees earned by the farm
     pub farm_treasury: Pubkey,
 
-    // signs off on treasury payouts and on any operations related to the bank
-    // (configured as bank manager)
+    /// signs off on treasury payouts and on any operations related to the bank
+    /// (configured as bank manager)
     pub farm_authority: Pubkey,
 
     pub farm_authority_seed: Pubkey,
 
     pub farm_authority_bump_seed: [u8; 1],
 
-    // each farm controls a single bank
+    /// each farm controls a single bank. each farmer gets a vault in that bank
     pub bank: Pubkey,
 
     pub config: FarmConfig,
 
-    // --------------------------------------- farmers
-    // total count, including initialized but inactive farmers
+    // ----------------- counts
+    /// total count, including initialized but inactive farmers
     pub farmer_count: u64,
 
-    // active only
+    /// currently staked farmer count
     pub staked_farmer_count: u64,
 
+    /// currently staked gem count
     pub gems_staked: u64,
 
-    // --------------------------------------- funders
+    /// how many accounts can create funding schedules
     pub authorized_funder_count: u64,
 
-    // --------------------------------------- rewards
+    // ----------------- rewards
     pub reward_a: FarmReward,
 
     pub reward_b: FarmReward,
@@ -267,7 +270,7 @@ impl Farm {
     }
 }
 
-// --------------------------------------- reward tracker
+// --------------------------------------- farm reward
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize, PartialEq)]
@@ -276,7 +279,7 @@ pub enum RewardType {
     Fixed,
 }
 
-// these numbers should only ever go up
+/// these numbers should only ever go up - ie they are cummulative
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FundsTracker {
@@ -298,10 +301,14 @@ impl FundsTracker {
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct TimeTracker {
+    /// total duration for which the reward has been funded
+    /// updated with each new funding round
     pub duration_sec: u64,
 
     pub reward_end_ts: u64,
 
+    /// this will be set = to reward_end_ts if farm manager decides to lock up their reward
+    /// gives stakers the certainty it won't be withdrawn
     pub lock_end_ts: u64,
 }
 
@@ -347,16 +354,17 @@ impl TimeTracker {
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FarmReward {
-    // in v0 the next 3 fields (mint, pot type) are set ONLY once, at farm init
-    //   and can't ever be changed for security reasons
-    //   potentially in v1++ might find a way around it, but for now just use a new farm
+    /// in v0 the next 3 fields (mint, pot type) are set ONLY once, at farm init
+    ///   and can't ever be changed for security reasons
+    ///   potentially in v1++ might find a way around it, but for now just use a new farm
     pub reward_mint: Pubkey,
 
+    /// where the reward is stored
     pub reward_pot: Pubkey,
 
     pub reward_type: RewardType,
 
-    // only one of the two will actually be used
+    /// only one of these two (fixed and variable) will actually be used, per reward
     pub fixed_rate: FixedRateReward,
 
     pub variable_rate: VariableRateReward,

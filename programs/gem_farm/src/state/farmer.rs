@@ -17,22 +17,24 @@ pub enum FarmerState {
 pub struct Farmer {
     pub farm: Pubkey,
 
-    // the identity of the farmer = their public key
+    /// the identity of the farmer = their public key
     pub identity: Pubkey,
 
-    // vault storing all of the farmer's gems
+    /// vault storing all of the farmer's gems
     pub vault: Pubkey,
 
     pub state: FarmerState,
 
-    // total number of gems at the time when the vault is locked
+    /// total number of gems at the time when the vault is locked
     pub gems_staked: u64,
 
+    /// this will be updated when they decide to unstake taking into acc. config set at farm level
     pub min_staking_ends_ts: u64,
 
+    /// this will be updated when they decide to unstake taking into acc. config set at farm level
     pub cooldown_ends_ts: u64,
 
-    // --------------------------------------- rewards
+    // ----------------- rewards
     pub reward_a: FarmerReward,
 
     pub reward_b: FarmerReward,
@@ -46,6 +48,7 @@ impl Farmer {
         gems_in_vault: u64,
     ) -> Result<u64, ProgramError> {
         self.state = FarmerState::Staked;
+
         let previous_gems_staked = self.gems_staked;
         self.gems_staked = gems_in_vault;
         self.min_staking_ends_ts = now_ts.try_add(min_staking_period_sec)?;
@@ -64,6 +67,7 @@ impl Farmer {
         }
 
         self.state = FarmerState::PendingCooldown;
+
         let gems_unstaked = self.gems_staked;
         self.gems_staked = 0; //no rewards will accrue during cooldown period
         self.cooldown_ends_ts = now_ts.try_add(cooldown_period_sec)?;
@@ -82,6 +86,7 @@ impl Farmer {
         }
 
         self.state = FarmerState::Unstaked;
+
         // zero everything out
         self.gems_staked = 0;
         self.min_staking_ends_ts = 0;
@@ -103,15 +108,18 @@ impl Farmer {
     }
 }
 
+// --------------------------------------- farmer reward
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FarmerReward {
-    // total, not per gem
+    /// total, not per gem. Never goes down (ie is cumulative)
     pub paid_out_reward: u64,
 
-    // total, not per gem
+    /// total, not per gem. Never goes down (ie is cumulative)
     pub accrued_reward: u64,
 
+    /// only one of these two (fixed and variable) will actually be used, per reward
     pub variable_rate: FarmerVariableRateReward,
 
     pub fixed_rate: FarmerFixedRateReward,
@@ -152,27 +160,37 @@ impl FarmerReward {
     }
 }
 
+// --------------------------------------- variable rate reward
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FarmerVariableRateReward {
-    // used to keep track of how much of the variable reward has been updated for this farmer
-    // (read more in variable rate config)
+    /// used to keep track of how much of the variable reward has been updated for this farmer
+    /// (read more in variable rate config)
     pub last_recorded_accrued_reward_per_gem: Number128,
 }
+
+// --------------------------------------- fixed rate reward
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Default, AnchorSerialize, AnchorDeserialize)]
 pub struct FarmerFixedRateReward {
-    // this is the time the farmer staked
-    // can be WAY BACK in the past, if we've rolled them multiple times
+    /// this is the time the farmer staked
+    /// can be WAY BACK in the past, if we've rolled them multiple times
     pub begin_staking_ts: u64,
 
-    // this is the time the current reward begins (this + promised duration = end)
+    /// this is the time the latest reward schedule they subscribed to begins
+    /// (this + promised duration = end_schedule_ts)
     pub begin_schedule_ts: u64,
 
-    // should always be set to upper bound, not just now_ts (except funding)
+    /// always set to upper bound, not just now_ts (except funding)
     pub last_updated_ts: u64,
 
+    /// when a farmer stakes with the fixed schedule, at the time of staking,
+    /// we promise them a schedule for a certain duration (eg 1 token/gem/s for 100s)
+    /// that then "reserves" a certain amount of funds so that they can't be promised to other farmers
+    /// only if the farmer unstakes, will the reserve be void, and the funds become available again
+    /// for either funding other farmers or withdrawing (when the reward is cancelled)
     pub promised_schedule: FixedRateSchedule,
 
     pub promised_duration: u64,

@@ -11,11 +11,19 @@
     <div class="mb-2 w-full bg-black text-white">Config:</div>
     <div v-if="parseRewardType(reward) === 'variable'">
       <div class="mb-2">
-        Reward rate: {{ reward.variableRate.rewardRate.n / 10 ** 15 }} tokens/s
+        Reward rate:
+        {{
+          numeral(reward.variableRate.rewardRate.n / 10 ** 15).format('0,0.0')
+        }}
+        tokens/s
       </div>
       <div class="mb-2">
         Accrued reward/gem:
-        {{ reward.variableRate.accruedRewardPerGem.n / 10 ** 15 }}
+        {{
+          numeral(reward.variableRate.accruedRewardPerGem.n / 10 ** 15).format(
+            '0,0.0'
+          )
+        }}
       </div>
       <div class="mb-2">
         Reward last updated:
@@ -50,6 +58,7 @@
 import { defineComponent } from 'vue';
 import FixedScheduleDisplay from '@/components/gem-farm/FixedScheduleDisplay.vue';
 import { parseDate } from '@/common/util';
+import numeral from 'numeral';
 
 export default defineComponent({
   components: { FixedScheduleDisplay },
@@ -82,6 +91,7 @@ export default defineComponent({
       parseRewardConfig,
       parseRewardMint,
       parseDate,
+      numeral,
     };
   },
 });
