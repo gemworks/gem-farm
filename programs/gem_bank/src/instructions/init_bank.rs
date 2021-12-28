@@ -6,7 +6,7 @@ use crate::state::*;
 pub struct InitBank<'info> {
     // bank
     #[account(init, payer = payer, space = 8 + std::mem::size_of::<Bank>())]
-    pub bank: Account<'info, Bank>,
+    pub bank: Box<Account<'info, Bank>>,
     pub bank_manager: Signer<'info>,
 
     // misc

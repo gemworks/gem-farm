@@ -10,11 +10,10 @@ use crate::state::*;
 pub struct InitVault<'info> {
     // bank
     #[account(mut)]
-    pub bank: Account<'info, Bank>,
+    pub bank: Box<Account<'info, Bank>>,
 
     // vault
-    #[account(init,
-        seeds = [
+    #[account(init, seeds = [
             b"vault".as_ref(),
             bank.key().as_ref(),
             creator.key().as_ref(),
@@ -22,7 +21,7 @@ pub struct InitVault<'info> {
         bump = bump,
         payer = payer,
         space = 8 + std::mem::size_of::<Vault>())]
-    pub vault: Account<'info, Vault>,
+    pub vault: Box<Account<'info, Vault>>,
     pub creator: Signer<'info>,
 
     // misc

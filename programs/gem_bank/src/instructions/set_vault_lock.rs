@@ -7,15 +7,16 @@ use crate::state::*;
 pub struct SetVaultLock<'info> {
     // bank
     #[account(has_one = bank_manager)]
-    pub bank: Account<'info, Bank>,
+    pub bank: Box<Account<'info, Bank>>,
     // vaults are locked / unlocked by THE MANAGER
     // (depositing / withdrawing doesn't require them)
     pub bank_manager: Signer<'info>,
 
     // vault
-    // todo can do seeds verification
+    // not doing PDA verification because passing in creator tedious
+    // this ix is designed for BM to execute, who by defn can pass in any vault
     #[account(mut, has_one = bank)]
-    pub vault: Account<'info, Vault>,
+    pub vault: Box<Account<'info, Vault>>,
 }
 
 pub fn handler(ctx: Context<SetVaultLock>, vault_locked: bool) -> ProgramResult {

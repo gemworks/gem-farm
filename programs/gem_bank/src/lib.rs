@@ -37,6 +37,7 @@ pub mod gem_bank {
 
     pub fn deposit_gem(
         ctx: Context<DepositGem>,
+        _bump_auth: u8,
         _bump_gem_box: u8,
         _bump_gdr: u8,
         amount: u64,
@@ -44,7 +45,13 @@ pub mod gem_bank {
         instructions::deposit_gem::handler(ctx, amount)
     }
 
-    pub fn withdraw_gem(ctx: Context<WithdrawGem>, _bump: u8, amount: u64) -> ProgramResult {
+    pub fn withdraw_gem(
+        ctx: Context<WithdrawGem>,
+        _bump_auth: u8,
+        _bump_gem_box: u8,
+        _bump_gdr: u8,
+        amount: u64,
+    ) -> ProgramResult {
         instructions::withdraw_gem::handler(ctx, amount)
     }
 

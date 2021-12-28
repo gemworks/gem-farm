@@ -677,6 +677,7 @@ export class GemFarmClient extends GemBankClient {
     console.log('flash depositing on behalf of', identityPk.toBase58());
     const txSig = await this.farmProgram.rpc.flashDeposit(
       farmerBump,
+      vaultAuthBump,
       gemBoxBump,
       GDRBump,
       gemAmount,

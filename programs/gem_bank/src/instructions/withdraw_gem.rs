@@ -8,29 +8,34 @@ use gem_common::{errors::ErrorCode, *};
 use crate::state::*;
 
 #[derive(Accounts)]
-#[instruction(bump: u8)]
+#[instruction(bump_auth: u8, bump_gem_box: u8, bump_gdr: u8)]
 pub struct WithdrawGem<'info> {
     // bank
     pub bank: Box<Account<'info, Bank>>,
 
     // vault
+    // same rationale for not verifying the PDA as in deposit
     #[account(mut, has_one = bank, has_one = owner, has_one = authority)]
-    pub vault: Account<'info, Vault>,
+    pub vault: Box<Account<'info, Vault>>,
     #[account(mut)]
     pub owner: Signer<'info>,
-    // todo verify pda
+    #[account(seeds = [vault.key().as_ref()], bump = bump_auth)]
     pub authority: AccountInfo<'info>,
 
     // gem
-    #[account(mut,
-        seeds = [
+    #[account(mut, seeds = [
             b"gem_box".as_ref(),
             vault.key().as_ref(),
             gem_mint.key().as_ref(),
         ],
-        bump = bump)]
-    pub gem_box: Account<'info, TokenAccount>,
-    #[account(mut)]
+        bump = bump_gem_box)]
+    pub gem_box: Box<Account<'info, TokenAccount>>,
+    #[account(mut, has_one = vault, has_one = gem_mint, seeds = [
+            b"gem_deposit_receipt".as_ref(),
+            vault.key().as_ref(),
+            gem_mint.key().as_ref(),
+        ],
+        bump = bump_gdr)]
     pub gem_deposit_receipt: Box<Account<'info, GemDepositReceipt>>,
     #[account(init_if_needed,
         associated_token::mint = gem_mint,

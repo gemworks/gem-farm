@@ -370,6 +370,7 @@ export class GemBankClient extends AccountUtils {
       `depositing ${gemAmount} gems into ${gemBox.toBase58()}, GDR ${GDR.toBase58()}`
     );
     const txSig = await this.bankProgram.rpc.depositGem(
+      vaultAuthBump,
       gemBoxBump,
       GDRBump,
       gemAmount,
@@ -426,7 +427,9 @@ export class GemBankClient extends AccountUtils {
       `withdrawing ${gemAmount} gems from ${gemBox.toBase58()}, GDR ${GDR.toBase58()}`
     );
     const txSig = await this.bankProgram.rpc.withdrawGem(
+      vaultAuthBump,
       gemBoxBump,
+      GDRBump,
       gemAmount,
       {
         accounts: {

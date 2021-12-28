@@ -6,11 +6,12 @@ use crate::state::*;
 #[derive(Accounts)]
 pub struct UpdateVaultOwner<'info> {
     // bank
-    pub bank: Account<'info, Bank>,
+    pub bank: Box<Account<'info, Bank>>,
 
     // vault
+    // same rationale for not verifying the PDA as in deposit
     #[account(mut, has_one = bank, has_one = owner)]
-    pub vault: Account<'info, Vault>,
+    pub vault: Box<Account<'info, Vault>>,
     pub owner: Signer<'info>,
 }
 

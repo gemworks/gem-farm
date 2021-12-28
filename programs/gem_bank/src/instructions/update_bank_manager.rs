@@ -6,7 +6,7 @@ use crate::state::*;
 pub struct UpdateBankManager<'info> {
     // bank
     #[account(mut, has_one = bank_manager)]
-    pub bank: Account<'info, Bank>,
+    pub bank: Box<Account<'info, Bank>>,
     pub bank_manager: Signer<'info>,
 }
 

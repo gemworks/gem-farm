@@ -8,18 +8,21 @@ use metaplex_token_metadata::state::Metadata;
 use crate::state::*;
 
 #[derive(Accounts)]
-#[instruction(bump_gem_box: u8, bump_gdr: u8, bump_metadata: u8)]
+#[instruction(bump_auth: u8, bump_gem_box: u8, bump_gdr: u8)]
 pub struct DepositGem<'info> {
     // bank
     pub bank: Box<Account<'info, Bank>>,
 
     // vault
+    // skipped vault PDA verification because requires passing in creator, which is tedious
+    // sec wise secure enough: vault has owner -> owner is signer
     #[account(mut, has_one = bank, has_one = owner, has_one = authority)]
     pub vault: Box<Account<'info, Vault>>,
     // currently only the vault owner can deposit
     // add a "depositor" account, and remove Signer from vault owner to let anyone to deposit
     #[account(mut)]
     pub owner: Signer<'info>,
+    #[account(seeds = [vault.key().as_ref()], bump = bump_auth)]
     pub authority: AccountInfo<'info>,
 
     // gem
@@ -50,6 +53,7 @@ pub struct DepositGem<'info> {
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
+    //
     // remaining accounts could be passed, in this order:
     // - mint_whitelist_proof
     // - gem_metadata <- if we got to this point we can assume gem = NFT, not a fungible token

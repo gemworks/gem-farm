@@ -8,7 +8,7 @@ use crate::state::*;
 pub struct AddToWhitelist<'info> {
     // bank
     #[account(mut, has_one = bank_manager)]
-    pub bank: Account<'info, Bank>,
+    pub bank: Box<Account<'info, Bank>>,
     pub bank_manager: Signer<'info>,
 
     // whitelist
@@ -23,12 +23,12 @@ pub struct AddToWhitelist<'info> {
         bump = bump,
         payer = payer,
         space = 8 + std::mem::size_of::<WhitelistProof>())]
-    pub whitelist_proof: Account<'info, WhitelistProof>,
+    pub whitelist_proof: Box<Account<'info, WhitelistProof>>,
 
     // misc
-    pub system_program: Program<'info, System>,
     #[account(mut)]
     pub payer: Signer<'info>,
+    pub system_program: Program<'info, System>,
 }
 
 pub fn handler(ctx: Context<AddToWhitelist>, whitelist_type: u8) -> ProgramResult {
