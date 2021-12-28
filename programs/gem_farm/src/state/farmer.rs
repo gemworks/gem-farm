@@ -180,7 +180,6 @@ pub struct FarmerFixedRateReward {
     pub promised_duration: u64,
 }
 
-// todo need a time diagram in README or this might be hard to comprehend
 impl FarmerFixedRateReward {
     /// accrued to rolled stakers, whose begin_staking_ts < begin_schedule_ts
     pub fn loyal_staker_bonus_time(&self) -> Result<u64, ProgramError> {

@@ -72,7 +72,7 @@ export class GemFarmTester extends GemFarmClient {
   farmer2Vault!: PublicKey;
 
   //rewards + funder
-  reward = 'rewardA'; //todo switch
+  reward = 'rewardA';
   rewardMint!: Token;
   rewardSource!: PublicKey;
   rewardSecondMint!: Token;
@@ -92,6 +92,9 @@ export class GemFarmTester extends GemFarmClient {
   }
 
   async prepAccounts(initialFundingAmount: Numerical, reward?: string) {
+    reward = Math.random() < 0.5 ? 'rewardA' : 'rewardB';
+    console.log('running tests for', reward);
+
     this.bank = Keypair.generate();
     this.farm = Keypair.generate();
     this.farmManager = await this.createWallet(100 * LAMPORTS_PER_SOL);
@@ -140,14 +143,16 @@ export class GemFarmTester extends GemFarmClient {
   // ----------------- core
 
   async callInitFarm(farmConfig: FarmConfig, rewardType?: any) {
+    const isRewardA = this.reward === 'rewardA';
+
     return this.initFarm(
       this.farm,
       this.farmManager,
       this.farmManager,
       this.bank,
-      this.rewardMint.publicKey,
+      isRewardA ? this.rewardMint.publicKey : this.rewardSecondMint.publicKey,
       rewardType ?? RewardType.Variable,
-      this.rewardSecondMint.publicKey,
+      isRewardA ? this.rewardSecondMint.publicKey : this.rewardMint.publicKey,
       rewardType ?? RewardType.Variable,
       farmConfig
     );
@@ -236,11 +241,13 @@ export class GemFarmTester extends GemFarmClient {
   }
 
   async callClaimRewards(identity: Keypair) {
+    const isRewardA = this.reward === 'rewardA';
+
     return this.claim(
       this.farm.publicKey,
       identity,
-      this.rewardMint.publicKey,
-      this.rewardSecondMint.publicKey
+      isRewardA ? this.rewardMint.publicKey : this.rewardSecondMint.publicKey,
+      isRewardA ? this.rewardSecondMint.publicKey : this.rewardMint.publicKey
     );
   }
 

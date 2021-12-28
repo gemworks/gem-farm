@@ -44,14 +44,12 @@ describe('staking (fixed rate)', () => {
     // ----------------- stake + accrue
     await gf.stakeAndVerify(gf.farmer1Identity);
     await gf.stakeAndVerify(gf.farmer2Identity);
-    // await gf.printStructs('staked');
 
     await pause(6000);
 
     //manually refresh to update accrued rewards for each farmer
     await gf.callRefreshFarmer(gf.farmer1Identity);
     await gf.callRefreshFarmer(gf.farmer2Identity);
-    // await gf.printStructs('refreshed');
 
     //verify counts
     await gf.verifyStakedGemsAndFarmers(gf.gem1Amount.add(gf.gem2Amount), 2);
@@ -180,7 +178,6 @@ describe('staking (fixed rate)', () => {
 
     //refresh the farmer to get them in
     await gf.callRefreshFarmer(gf.farmer1Identity);
-    await gf.printStructs('refreshed');
 
     //expect them to be "rolled" - ie on the new schedule, but with old TS
     const fixed = (await gf.verifyFarmerReward(gf.farmer1Identity)).fixedRate;
@@ -272,7 +269,7 @@ describe('staking (fixed rate)', () => {
     assert.isTrue(vaultAcc.locked);
   });
 
-  it.only('flash deposits a gem (whitelisted creator)', async () => {
+  it('flash deposits a gem (whitelisted creator)', async () => {
     //get the gems back, we'll need them for 2 separate deposits
     await gf.callWithdraw(gf.gem1Amount, gf.farmer1Identity);
 
