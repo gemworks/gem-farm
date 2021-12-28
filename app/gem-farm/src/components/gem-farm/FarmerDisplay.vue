@@ -12,7 +12,7 @@
     <div class="mb-2">
       Min staking ends: {{ parseDate(farmerAcc.minStakingEndsTs) }}
     </div>
-    <div class="mb-2">
+    <div class="mb-5">
       Cooldown ends: {{ parseDate(farmerAcc.cooldownEndsTs) }}
     </div>
 

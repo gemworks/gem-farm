@@ -1,7 +1,10 @@
 <template>
   <div class="nes-container with-title">
     <p class="title">{{ title }}</p>
-    <div class="mb-2">Type: {{ parseRewardType(reward) }}</div>
+    <div class="mb-2">
+      Type:
+      <p class="inline-block bg-yellow-200">{{ parseRewardType(reward) }}</p>
+    </div>
     <div class="mb-2">Mint: {{ parseRewardMint(reward) }}</div>
 
     <!--config-->

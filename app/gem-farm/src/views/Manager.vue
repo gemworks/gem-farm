@@ -10,11 +10,13 @@
         New farm
       </button>
     </div>
-    <!--new farms-->
+
+    <!--new farm-->
     <div v-if="showNewFarm">
       <TestMint class="mb-10" />
       <InitFarm class="mb-10" @new-farm="handleNewFarm" />
     </div>
+
     <!--existing farms-->
     <div v-if="foundFarms && foundFarms.length">
       <!--farm selector-->
@@ -28,45 +30,7 @@
             </option>
           </select>
         </div>
-        <div class="mb-2">Associated bank: {{ farmAcc.bank }}</div>
-        <!--config-->
-        <div class="mb-2">Farm config:</div>
-        <div class="mb-2 ml-5">
-          Min staking period: {{ farmAcc.config.minStakingPeriodSec }} sec
-        </div>
-        <div class="mb-2 ml-5">
-          Cooldown period: {{ farmAcc.config.cooldownPeriodSec }} sec
-        </div>
-        <div class="mb-2 ml-5">
-          Unstaking fee: {{ farmAcc.config.unstakingFeeLamp }} lamp
-        </div>
-        <!--participating farmers/gems-->
-        <div class="mb-2">
-          Initialized farmer count: {{ farmAcc.farmerCount }}
-        </div>
-        <div class="mb-2">
-          Staked farmer count: {{ farmAcc.stakedFarmerCount }}
-        </div>
-        <div class="mb-2">Gems staked: {{ farmAcc.gemsStaked }}</div>
-
-        <div class="flex">
-          <!--reward A-->
-          <div class="flex-1 mr-5">
-            <RewardDisplay
-              :key="farmAcc.rewardA"
-              :reward="farmAcc.rewardA"
-              title="Reward A"
-            />
-          </div>
-          <!--reward B-->
-          <div class="flex-1">
-            <RewardDisplay
-              :key="farmAcc.rewardB"
-              :reward="farmAcc.rewardB"
-              title="Reward B"
-            />
-          </div>
-        </div>
+        <FarmDisplay :key="farmAcc" :farmAcc="farmAcc" />
       </div>
       <!--update farm-->
       <UpdateFarm :farm="farm" @update-farm="handleUpdateFarm" class="mb-10" />
@@ -91,6 +55,8 @@
       <!--treasury payout-->
       <TreasuryPayout :farm="farm" class="mb-10" />
     </div>
+    <div v-else-if="isLoading" class="text-center">Loading...</div>
+    <div v-else class="text-center">No farms found :( Start a new one!</div>
   </div>
 </template>
 
@@ -106,20 +72,19 @@ import { PublicKey } from '@solana/web3.js';
 import { stringifyPubkeysAndBNInArray } from '../../../../tests/utils/types';
 import AuthorizeFunder from '@/components/gem-farm/AuthorizeFunder.vue';
 import FundCancelLock from '@/components/gem-farm/FundCancelLock.vue';
-import RewardDisplay from '@/components/gem-farm/RewardDisplay.vue';
 import RefreshFarmer from '@/components/gem-farm/RefreshFarmer.vue';
 import TreasuryPayout from '@/components/gem-farm/TreasuryPayout.vue';
 import TheWhitelist from '@/components/gem-farm/BankWhitelist.vue';
 import UpdateFarm from '@/components/gem-farm/UpdateFarm.vue';
-import { useRoute } from 'vue-router';
+import FarmDisplay from '@/components/gem-farm/FarmDisplay.vue';
 
 export default defineComponent({
   components: {
+    FarmDisplay,
     UpdateFarm,
     TheWhitelist,
     TreasuryPayout,
     RefreshFarmer,
-    RewardDisplay,
     FundCancelLock,
     AuthorizeFunder,
     InitFarm,
@@ -148,18 +113,21 @@ export default defineComponent({
     const foundFarms = ref<any[]>([]);
     const farm = ref<string>();
     const farmAcc = ref<any>();
+    const currentFarmIndex = ref<number>(0);
+    const isLoading = ref<boolean>(true);
 
+    //whenever we change the farm, we update the index/account
     watch(farm, (newFarm: any) => {
-      let ff = filterFoundFarmsByPk(newFarm);
-      if (ff) {
-        farmAcc.value = ff.account;
-      }
+      updateFarmByPk(newFarm);
     });
 
-    const filterFoundFarmsByPk = (farm: string) => {
-      return foundFarms.value.filter(
-        (ff) => ff.publicKey.toBase58() === farm
-      )[0];
+    const updateFarmByPk = (newFarm: string) => {
+      const idx = foundFarms.value.findIndex(
+        (ff) => ff.publicKey.toBase58() === newFarm
+      );
+      console.log('idx is', idx);
+      currentFarmIndex.value = idx;
+      farmAcc.value = foundFarms.value[idx].account;
     };
 
     const findFarmsByManager = async (manager: PublicKey) => {
@@ -175,10 +143,12 @@ export default defineComponent({
       );
 
       if (foundFarms.value.length) {
-        //start by assigning the 1st one
-        farm.value = foundFarms.value[0].publicKey.toBase58();
-        farmAcc.value = foundFarms.value[0].account;
+        farm.value =
+          foundFarms.value[currentFarmIndex.value].publicKey.toBase58();
+        //yes this is needed here, as sometimes farm.value stays same, but we want to rerender anyway
+        updateFarmByPk(farm.value!);
       }
+      isLoading.value = false;
     };
 
     // --------------------------------------- rest
