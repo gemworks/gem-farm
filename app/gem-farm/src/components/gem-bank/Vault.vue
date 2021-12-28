@@ -26,8 +26,17 @@
 
     <!--mid-->
     <div class="m-2 flex flex-col">
-      <ArrowButton class="my-2" @click="moveNFTsFE(false)" />
-      <ArrowButton class="my-2" :left="true" @click="moveNFTsFE(true)" />
+      <ArrowButton
+        :disabled="vaultLocked"
+        class="my-2"
+        @click="moveNFTsFE(false)"
+      />
+      <ArrowButton
+        :disabled="vaultLocked"
+        class="my-2"
+        :left="true"
+        @click="moveNFTsFE(true)"
+      />
     </div>
 
     <!--right-->

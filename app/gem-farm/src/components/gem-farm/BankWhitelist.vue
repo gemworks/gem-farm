@@ -78,6 +78,7 @@ export default defineComponent({
       if (getWallet() && getConnection()) {
         gf = await initGemFarm(getConnection(), getWallet()!);
       }
+      await fetchProofs();
     });
 
     // --------------------------------------- whitelist
@@ -90,7 +91,6 @@ export default defineComponent({
       proofs.value = await gf.fetchAllWhitelistProofPDAs(
         new PublicKey(props.bank)
       );
-      console.log(`found a total of ${proofs.value.length} whitelist proofs`);
     };
 
     const updateWhitelist = async () => {

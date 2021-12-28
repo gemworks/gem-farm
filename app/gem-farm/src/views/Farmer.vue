@@ -4,14 +4,11 @@
   <div v-else>
     <!--farm address-->
     <div class="nes-container with-title mb-10">
-      <p class="title">Find / Create Your Account</p>
+      <p class="title">Connect to a Farm</p>
       <div class="nes-field mb-5">
-        <label for="farm">Farm:</label>
+        <label for="farm">Farm address:</label>
         <input id="farm" class="nes-input" v-model="farm" />
       </div>
-      <button class="nes-btn is-primary mb-5" @click="findOrInitFarmer">
-        Find / create account
-      </button>
     </div>
 
     <div v-if="farmerAcc">
@@ -63,6 +60,16 @@
         </button>
       </Vault>
     </div>
+    <div v-else>
+      <div class="w-full text-center mb-5">
+        Farmer account not found :( Create a new one?
+      </div>
+      <div class="w-full text-center">
+        <button class="nes-btn is-primary" @click="initFarmer">
+          New Farmer
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -87,16 +94,12 @@ export default defineComponent({
 
     let gf: any;
     watch([wallet, cluster], async () => {
-      gf = await initGemFarm(getConnection(), getWallet()!);
-      farmerIdentity.value = getWallet()!.publicKey?.toBase58();
+      await freshStart();
     });
 
     //needed in case we switch in from another window
     onMounted(async () => {
-      if (getWallet() && getConnection()) {
-        gf = await initGemFarm(getConnection(), getWallet()!);
-        farmerIdentity.value = getWallet()!.publicKey?.toBase58();
-      }
+      await freshStart();
     });
 
     // --------------------------------------- farmer details
@@ -109,6 +112,11 @@ export default defineComponent({
 
     const availableA = ref<string>();
     const availableB = ref<string>();
+
+    //auto loading for when farm changes
+    watch(farm, async () => {
+      await freshStart();
+    });
 
     const updateAvailableRewards = async () => {
       availableA.value = farmerAcc.value.rewardA.accruedReward
@@ -132,7 +140,6 @@ export default defineComponent({
         new PublicKey(farm.value!),
         getWallet()!.publicKey
       );
-      console.log('farmer PDA', farmerPDA.toBase58());
       farmerIdentity.value = getWallet()!.publicKey?.toBase58();
       farmerAcc.value = await gf.fetchFarmerAcc(farmerPDA);
       farmerState.value = gf.parseFarmerState(farmerAcc.value);
@@ -143,20 +150,30 @@ export default defineComponent({
       );
     };
 
-    const initFarmer = async () => {
-      return gf.initFarmerWallet(new PublicKey(farm.value!));
+    const freshStart = async () => {
+      if (getWallet() && getConnection()) {
+        gf = await initGemFarm(getConnection(), getWallet()!);
+        farmerIdentity.value = getWallet()!.publicKey?.toBase58();
+
+        //reset stuff
+        farmAcc.value = undefined;
+        farmerAcc.value = undefined;
+        farmerState.value = undefined;
+        availableA.value = undefined;
+        availableB.value = undefined;
+
+        try {
+          await fetchFarn();
+          await fetchFarmer();
+        } catch (e) {
+          console.log(`farm with PK ${farm.value} not found :(`);
+        }
+      }
     };
 
-    const findOrInitFarmer = async () => {
-      //fetch the farm first - we'll need it for reward type determination later
-      await fetchFarn();
-      try {
-        await fetchFarmer();
-      } catch (e) {
-        console.log('uh oh there was an error when finding farmer:', e);
-        await initFarmer();
-        await fetchFarmer();
-      }
+    const initFarmer = async () => {
+      await gf.initFarmerWallet(new PublicKey(farm.value!));
+      await fetchFarmer();
     };
 
     // --------------------------------------- staking
@@ -187,7 +204,7 @@ export default defineComponent({
     const selectedNFTs = ref<INFT[]>([]);
 
     const handleNewSelectedNFT = (newSelectedNFTs: INFT[]) => {
-      console.log(`presently selected ${newSelectedNFTs.length} NFTs`);
+      console.log(`selected ${newSelectedNFTs.length} NFTs`);
       selectedNFTs.value = newSelectedNFTs;
     };
 
@@ -232,7 +249,7 @@ export default defineComponent({
       farmerState,
       availableA,
       availableB,
-      findOrInitFarmer,
+      initFarmer,
       beginStaking,
       endStaking,
       claim,

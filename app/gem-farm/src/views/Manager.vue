@@ -36,9 +36,9 @@
       <UpdateFarm :farm="farm" @update-farm="handleUpdateFarm" class="mb-10" />
       <!--manage NFT types-->
       <TheWhitelist
-        :key="farm"
+        :key="farmAcc.bank"
         :farm="farm"
-        :bank="farmAcc.bank"
+        :bank="farmAcc.bank.toBase58()"
         class="mb-10"
       />
       <!--manage funders-->
@@ -56,7 +56,7 @@
       <TreasuryPayout :farm="farm" class="mb-10" />
     </div>
     <div v-else-if="isLoading" class="text-center">Loading...</div>
-    <div v-else class="text-center">No farms found :( Start a new one!</div>
+    <div v-else class="text-center">No farms found :( Start a new one?</div>
   </div>
 </template>
 
@@ -105,8 +105,8 @@ export default defineComponent({
     onMounted(async () => {
       if (getWallet() && getConnection()) {
         gf = await initGemFarm(getConnection(), getWallet()!);
+        await findFarmsByManager(getWallet()!.publicKey!);
       }
-      await findFarmsByManager(getWallet()!.publicKey!);
     });
 
     // --------------------------------------- farm locator
@@ -125,18 +125,12 @@ export default defineComponent({
       const idx = foundFarms.value.findIndex(
         (ff) => ff.publicKey.toBase58() === newFarm
       );
-      console.log('idx is', idx);
       currentFarmIndex.value = idx;
       farmAcc.value = foundFarms.value[idx].account;
     };
 
     const findFarmsByManager = async (manager: PublicKey) => {
       foundFarms.value = await gf.fetchAllFarmPDAs(manager);
-      console.log(
-        `found a total of ${
-          foundFarms.value.length
-        } farms for manager ${manager.toBase58()}`
-      );
       console.log(
         'Found farms:',
         stringifyPubkeysAndBNInArray(foundFarms.value)
@@ -155,8 +149,9 @@ export default defineComponent({
     const showNewFarm = ref<boolean>(false);
 
     const handleNewFarm = async (newFarm: string) => {
-      farm.value = newFarm;
+      showNewFarm.value = false;
       await findFarmsByManager(getWallet()!.publicKey!);
+      farm.value = newFarm;
     };
 
     const handleUpdateFarm = async () => {
@@ -164,6 +159,7 @@ export default defineComponent({
     };
 
     return {
+      isLoading,
       wallet,
       foundFarms,
       farm,

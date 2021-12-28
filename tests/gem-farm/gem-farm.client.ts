@@ -199,7 +199,7 @@ export class GemFarmClient extends GemBankClient {
       });
     }
     const pdas = await this.farmProgram.account.authorizationProof.all(filter);
-    console.log(`found a total of ${pdas.length} authorization proof PDAs`);
+    console.log(`found a total of ${pdas.length} authorized funders`);
     return pdas;
   }
 

@@ -1,11 +1,11 @@
 <template>
-  <button>
+  <button :disabled="disabled">
     <img
       src="../assets/play.png"
       alt="right"
       :width="60"
       :height="60"
-      :class="{ left: left }"
+      :class="{ left: left, disabled: disabled }"
     />
   </button>
 </template>
@@ -15,6 +15,7 @@ import { defineComponent } from 'vue';
 export default defineComponent({
   props: {
     left: Boolean,
+    disabled: Boolean,
   },
   setup() {
     return {};
@@ -30,5 +31,8 @@ img {
 
 .left {
   transform: scaleX(-1);
+}
+.disabled {
+  opacity: 0;
 }
 </style>
