@@ -1,8 +1,7 @@
 use proc_macro::TokenStream;
+use proc_macro2;
 use quote::{quote, ToTokens};
 use syn::{ItemEnum, ItemStruct};
-
-use proc_macro2;
 
 pub fn handler(args: TokenStream, input: TokenStream) -> TokenStream {
     let (ident, item) = (keep_trying! {

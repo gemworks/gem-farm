@@ -8,11 +8,13 @@
 //!  1) can't use https://docs.rs/uint/0.9.1/uint/ so droppped to u128
 //!  2) have to keep the file inside the crate, can't have as separate lib
 
+use std::{
+    convert::TryFrom,
+    fmt::{Display, Formatter},
+};
+
 use anchor_lang::prelude::*;
-use gem_common::errors::ErrorCode;
-use gem_common::{TryAdd, TryDiv, TryMul, TryPow, TryRem, TrySub};
-use std::convert::TryFrom;
-use std::fmt::{Display, Formatter};
+use gem_common::{errors::ErrorCode, TryAdd, TryDiv, TryMul, TryPow, TryRem, TrySub};
 
 const ONE: u128 = 1_000_000_000_000_000;
 const PRECISION: i32 = 15;

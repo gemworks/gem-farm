@@ -9,7 +9,7 @@ import { BN } from '@project-serum/anchor';
 import { pause, toBN } from '../../utils/types';
 import { FixedRateConfig, RewardType } from '../gem-farm.client';
 import { WhitelistType } from '../../gem-bank/gem-bank.client';
-import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
+import { PublicKey } from '@solana/web3.js';
 import { createMetadata } from '../../utils/metaplex';
 
 chai.use(chaiAsPromised);

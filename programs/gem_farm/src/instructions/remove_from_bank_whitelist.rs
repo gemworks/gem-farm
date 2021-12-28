@@ -1,6 +1,10 @@
 use anchor_lang::prelude::*;
-use gem_bank::state::WhitelistProof;
-use gem_bank::{self, cpi::accounts::RemoveFromWhitelist, program::GemBank, state::Bank};
+use gem_bank::{
+    self,
+    cpi::accounts::RemoveFromWhitelist,
+    program::GemBank,
+    state::{Bank, WhitelistProof},
+};
 
 use crate::state::*;
 

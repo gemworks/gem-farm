@@ -1,7 +1,5 @@
 use anchor_lang::prelude::*;
-
-use gem_common::errors::ErrorCode;
-use gem_common::*;
+use gem_common::{errors::ErrorCode, *};
 
 use crate::state::*;
 
