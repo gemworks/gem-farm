@@ -51,7 +51,6 @@ pub fn handler(ctx: Context<InitVault>, owner: Pubkey, name: String) -> ProgramR
     vault.authority_bump_seed = [bump];
     vault.locked = false;
     (&mut vault.name[..]).write_all(name.as_bytes())?;
-    vault.gem_box_count = 0;
 
     msg!("new vault founded by {}", &ctx.accounts.creator.key());
     Ok(())

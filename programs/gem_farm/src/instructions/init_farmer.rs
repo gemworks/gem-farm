@@ -63,8 +63,6 @@ pub fn handler(ctx: Context<InitFarmer>, bump_vault: u8) -> ProgramResult {
     farmer.reward_a.fixed_rate.promised_schedule = FixedRateSchedule::default(); //denom to 1
     farmer.reward_b.fixed_rate.promised_schedule = FixedRateSchedule::default(); //denom to 1
 
-    // todo worth manually init'ing all the variables at 0s?
-
     // update farm
     let farm = &mut ctx.accounts.farm;
 

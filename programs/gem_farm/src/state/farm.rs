@@ -42,13 +42,12 @@ pub struct Farm {
 
     pub config: FarmConfig,
 
-    // todo make sure all of the below count vars are incr'ed/decr'ed correctly
     // --------------------------------------- farmers
     // total count, including initialized but inactive farmers
-    pub farmer_count: u64, //todo what's the use besides analytics?
+    pub farmer_count: u64,
 
     // active only
-    pub staked_farmer_count: u64, //todo what's the use besides analytics??
+    pub staked_farmer_count: u64,
 
     pub gems_staked: u64,
 
@@ -349,9 +348,9 @@ impl TimeTracker {
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FarmReward {
-    // todo in v0 the next 3 fields (mint, pot type) are set ONLY once, at farm init
-    //  and can't ever be changed for security reasons
-    //  potentially in v1++ might find a way around it, but for now just use a new farm
+    // in v0 the next 3 fields (mint, pot type) are set ONLY once, at farm init
+    //   and can't ever be changed for security reasons
+    //   potentially in v1++ might find a way around it, but for now just use a new farm
     pub reward_mint: Pubkey,
 
     pub reward_pot: Pubkey,

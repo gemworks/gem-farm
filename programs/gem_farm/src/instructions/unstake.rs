@@ -70,10 +70,6 @@ impl<'info> Unstake<'info> {
 }
 
 pub fn handler(ctx: Context<Unstake>) -> ProgramResult {
-    //todo any checks I might want to do here?
-    //  eg probably need a "live/paused" feature
-    //  eg is it okay to start staking when both reward pots are empty?
-
     // collect any unstaking fee
     let farm = &ctx.accounts.farm;
 

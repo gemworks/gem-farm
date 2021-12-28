@@ -101,8 +101,6 @@ pub fn handler(
     farm.reward_b.reward_type = reward_type_b;
     farm.reward_b.fixed_rate.schedule = FixedRateSchedule::default(); //denom to 1
 
-    // todo worth manually init'ing all the variables at 0s?
-
     //do a cpi call to start a new bank
     gem_bank::cpi::init_bank(
         ctx.accounts

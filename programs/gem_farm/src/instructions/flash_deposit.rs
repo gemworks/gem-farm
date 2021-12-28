@@ -95,10 +95,6 @@ pub fn handler<'a, 'b, 'c, 'info>(
     bump_gdr: u8,
     amount: u64,
 ) -> ProgramResult {
-    //todo any checks I might want to do here?
-    //  eg probably need a "live/paused" feature
-    //  eg is it okay to start staking when both reward pots are empty?
-
     // flash deposit a gem into a locked vault
     gem_bank::cpi::set_vault_lock(
         ctx.accounts
@@ -129,8 +125,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
     let farmer = &mut ctx.accounts.farmer;
     let now_ts = now_ts()?;
 
-    // todo have to skip this due to compute budget limitation - don't think a problem
-    // farm.update_rewards(now_ts, Some(farmer), true)?;
+    farm.update_rewards(now_ts, Some(farmer), true)?;
 
     // stake extra gems
     ctx.accounts.vault.reload()?;

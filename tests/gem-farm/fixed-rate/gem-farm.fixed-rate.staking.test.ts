@@ -9,6 +9,8 @@ import { BN } from '@project-serum/anchor';
 import { pause, toBN } from '../../utils/types';
 import { FixedRateConfig, RewardType } from '../gem-farm.client';
 import { WhitelistType } from '../../gem-bank/gem-bank.client';
+import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
+import { createMetadata } from '../../utils/metaplex';
 
 chai.use(chaiAsPromised);
 
@@ -246,7 +248,7 @@ describe('staking (fixed rate)', () => {
     assert(originalDuration.gt(newDuration)); //since less time left on schedule
   });
 
-  it('flash deposits a gem (whitelisted)', async () => {
+  it('flash deposits a gem (whitelisted mint)', async () => {
     //get the gems back, we'll need them for 2 separate deposits
     await gf.callWithdraw(gf.gem1Amount, gf.farmer1Identity);
 
@@ -263,6 +265,42 @@ describe('staking (fixed rate)', () => {
     //flash deposit after vault locked
     const flashDeposit = new BN(1);
     await gf.callFlashDeposit(flashDeposit, gf.farmer1Identity, whitelistProof);
+
+    //this is enough to verify it worked
+    const vaultAcc = await gf.fetchVaultAcc(vault);
+    assert(vaultAcc.gemCount.eq(initialDeposit.add(flashDeposit)));
+    assert.isTrue(vaultAcc.locked);
+  });
+
+  it.only('flash deposits a gem (whitelisted creator)', async () => {
+    //get the gems back, we'll need them for 2 separate deposits
+    await gf.callWithdraw(gf.gem1Amount, gf.farmer1Identity);
+
+    const initialDeposit = new BN(1); //drop 1 existing gem, need to lock the vault
+    await gf.callDeposit(initialDeposit, gf.farmer1Identity);
+    const { vault } = await gf.callStake(gf.farmer1Identity);
+
+    //whitelist creator
+    const gemMetadata = await createMetadata(
+      gf.conn,
+      gf.wallet,
+      gf.gem1.tokenMint
+    );
+
+    const { whitelistProof } = await gf.callAddToBankWhitelist(
+      gf.wallet.publicKey,
+      WhitelistType.Creator
+    );
+
+    //flash deposit after vault locked
+    const flashDeposit = new BN(1);
+    await gf.callFlashDeposit(
+      flashDeposit,
+      gf.farmer1Identity,
+      PublicKey.default,
+      gemMetadata,
+      whitelistProof
+    );
 
     //this is enough to verify it worked
     const vaultAcc = await gf.fetchVaultAcc(vault);

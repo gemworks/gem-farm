@@ -12,7 +12,6 @@ pub struct Bank {
 
     pub flags: u32,
 
-    // todo verify these are incremented / decremented correctly
     // only gems allowed will be those that have EITHER a:
     // 1)creator from this list
     pub whitelisted_creators: u32,

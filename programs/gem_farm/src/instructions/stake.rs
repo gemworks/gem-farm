@@ -52,10 +52,6 @@ impl<'info> Stake<'info> {
 }
 
 pub fn handler(ctx: Context<Stake>) -> ProgramResult {
-    //todo any checks I might want to do here?
-    //  eg probably need a "live/paused" feature
-    //  eg is it okay to start staking when both reward pots are empty?
-
     if ctx.accounts.vault.gem_count == 0 {
         return Err(ErrorCode::VaultIsEmpty.into());
     }
