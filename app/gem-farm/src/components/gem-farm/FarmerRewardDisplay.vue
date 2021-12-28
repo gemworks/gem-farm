@@ -13,12 +13,14 @@
     <div v-else>
       <div class="mb-2 w-full bg-black text-white">Fixed reward:</div>
       <div class="mb-2">
-        Staking begins: {{ reward.fixedRate.beginStakingTs }}
+        Staking begins: {{ parseDate(reward.fixedRate.beginStakingTs) }}
       </div>
       <div class="mb-2">
-        Schedule begins: {{ reward.fixedRate.beginScheduleTs }}
+        Schedule begins: {{ parseDate(reward.fixedRate.beginScheduleTs) }}
       </div>
-      <div class="mb-2">Last updated: {{ reward.fixedRate.lastUpdatedTs }}</div>
+      <div class="mb-2">
+        Last updated: {{ parseDate(reward.fixedRate.lastUpdatedTs) }}
+      </div>
       <div class="mb-2">
         Promised duration: {{ reward.fixedRate.promisedDuration }}
       </div>
@@ -35,6 +37,8 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import FixedScheduleDisplay from '@/components/gem-farm/FixedScheduleDisplay.vue';
+import { parseDate } from '@/common/util';
+
 export default defineComponent({
   components: { FixedScheduleDisplay },
   props: {
@@ -50,6 +54,7 @@ export default defineComponent({
 
     return {
       parseRewardType,
+      parseDate,
     };
   },
 });

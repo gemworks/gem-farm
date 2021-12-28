@@ -1,3 +1,7 @@
+import moment from 'moment/moment';
+import { BN } from '@project-serum/anchor';
+import { toBN } from '../../../../../tests/utils/types';
+
 export function removeManyFromList(toRemove: any[], fromList: any[]) {
   toRemove.forEach((i) => {
     const index = fromList.indexOf(i);
@@ -19,4 +23,14 @@ export function getListDiffBasedOnMints(list1: any[], list2: any[]): any[] {
   const diff = getListDiff(list1Mints, list2Mints);
 
   return list1.filter((i) => diff.includes(i.mint.toBase58()));
+}
+
+export function parseDate(unixTsSec: number | string | BN) {
+  const unixBN = toBN(unixTsSec);
+  if (unixBN.eq(new BN(0))) {
+    return '--';
+  }
+
+  const dateObj = new Date(unixBN.mul(new BN(1000)).toNumber());
+  return moment(dateObj).format('MMM Do YY, h:mm a');
 }

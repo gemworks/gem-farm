@@ -8,14 +8,15 @@
     <div class="mb-2 w-full bg-black text-white">Config:</div>
     <div v-if="parseRewardType(reward) === 'variable'">
       <div class="mb-2">
-        Reward rate: {{ reward.variableRate.rewardRate.n / 10 ** 15 }}
+        Reward rate: {{ reward.variableRate.rewardRate.n / 10 ** 15 }} tokens/s
       </div>
       <div class="mb-2">
-        Accrued reward / gem:
+        Accrued reward/gem:
         {{ reward.variableRate.accruedRewardPerGem.n / 10 ** 15 }}
       </div>
       <div class="mb-2">
-        Reward last updated: {{ reward.variableRate.rewardLastUpdatedTs }}
+        Reward last updated:
+        {{ parseDate(reward.variableRate.rewardLastUpdatedTs) }}
       </div>
       <div class="mb-2"></div>
     </div>
@@ -34,15 +35,18 @@
 
     <!--times-->
     <div class="mb-2 w-full bg-black text-white">Times:</div>
-    <div class="mb-2">Duration: {{ reward.times.durationSec }}</div>
-    <div class="mb-2">Reward end: {{ reward.times.rewardEndTs }}</div>
-    <div class="mb-2">Lock end: {{ reward.times.lockEndTs }}</div>
+    <div class="mb-2">Duration: {{ reward.times.durationSec }} sec</div>
+    <div class="mb-2">
+      Reward end: {{ parseDate(reward.times.rewardEndTs) }}
+    </div>
+    <div class="mb-2">Lock end: {{ parseDate(reward.times.lockEndTs) }}</div>
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue';
 import FixedScheduleDisplay from '@/components/gem-farm/FixedScheduleDisplay.vue';
+import { parseDate } from '@/common/util';
 
 export default defineComponent({
   components: { FixedScheduleDisplay },
@@ -74,6 +78,7 @@ export default defineComponent({
       parseRewardType,
       parseRewardConfig,
       parseRewardMint,
+      parseDate,
     };
   },
 });

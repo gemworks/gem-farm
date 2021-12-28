@@ -207,7 +207,12 @@ impl FixedRateSchedule {
             }
         }?;
 
-        // for v0 performing basic floor division
+        // considered making this U128, but drastically increases app's complexity
+        //   (not just rust-side calc, but also js-side serde)
+        // if this is U128 -> newly_accrued_reward() and voided_reward() must be too,
+        //   as well as farm.reward_x.funds and farmer.paid_out_reward / farmer.accrued_reward
+        //   then we'd do payouts in u64 and subtract the amount from u128 stored (eg 123.123 - 123.0)
+        // maybe in v1++, if there's demand from users
         gems.try_mul(per_gem)?.try_div(self.denominator)
     }
 }

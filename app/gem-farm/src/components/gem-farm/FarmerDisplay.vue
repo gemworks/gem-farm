@@ -9,8 +9,12 @@
     </div>
     <div class="mb-2">Associated vault: {{ farmerAcc.vault.toBase58() }}</div>
     <div class="mb-2">Gems staked: {{ farmerAcc.gemsStaked }}</div>
-    <div class="mb-2">Min staking ends: {{ farmerAcc.minStakingEndsTs }}</div>
-    <div class="mb-2">Cooldown ends: {{ farmerAcc.cooldownEndsTs }}</div>
+    <div class="mb-2">
+      Min staking ends: {{ parseDate(farmerAcc.minStakingEndsTs) }}
+    </div>
+    <div class="mb-2">
+      Cooldown ends: {{ parseDate(farmerAcc.cooldownEndsTs) }}
+    </div>
 
     <div class="flex mb-5">
       <div class="flex-1 mr-5">
@@ -43,6 +47,8 @@ import useWallet from '@/composables/wallet';
 import useCluster from '@/composables/cluster';
 import { initGemFarm } from '@/common/gem-farm';
 import { PublicKey } from '@solana/web3.js';
+import { parseDate } from '@/common/util';
+
 export default defineComponent({
   components: { FarmerRewardDisplay },
   props: {
@@ -85,6 +91,7 @@ export default defineComponent({
     return {
       refreshFarmer,
       parseFarmerState,
+      parseDate,
     };
   },
 });
