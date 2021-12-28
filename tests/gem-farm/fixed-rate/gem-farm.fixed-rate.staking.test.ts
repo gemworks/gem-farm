@@ -186,7 +186,7 @@ describe('staking (fixed rate)', () => {
     assert(fixed.promisedDuration.gte(toBN(90)));
   });
 
-  //todo needs a variable rate counterpart (less concerning tho)
+  //todo ideally needs a variable rate counterpart (less concerning tho)
   it('flash deposits a gem', async () => {
     //get the gems back, we'll need them for 2 separate deposits
     await gf.callWithdraw(gf.gem1Amount, gf.farmer1Identity);

@@ -23,13 +23,6 @@ pub struct TierConfig {
     pub required_tenure: u64,
 }
 
-impl TierConfig {
-    pub fn get_reward(&self, start: u64, end: u64) -> Result<u64, ProgramError> {
-        let duration = end.try_sub(start)?;
-        self.reward_rate.try_mul(duration)
-    }
-}
-
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FixedRateSchedule {
@@ -68,6 +61,42 @@ pub struct FixedRateConfig {
     pub duration_sec: u64,
 }
 
+/// a tenure which we can definitely apply the reward rate to
+/// needed for calc only, not stored anywhere in final struct
+struct HeldTenure {
+    definitive_start: u64,
+    definitive_end: u64,
+    reward_rate: u64,
+}
+
+impl HeldTenure {
+    // caps start and end, then saves a new HT
+    fn new(
+        reward_rate: u64,
+        start_from: u64,
+        end_at: u64,
+        lower_bound: u64,
+        upper_bound: u64,
+    ) -> Option<Self> {
+        let definitive_start = std::cmp::max(start_from, lower_bound);
+        let definitive_end = std::cmp::min(end_at, upper_bound);
+        match definitive_end < definitive_start {
+            false => Some(Self {
+                definitive_start,
+                definitive_end,
+                reward_rate,
+            }),
+            true => None,
+        }
+    }
+
+    // multiplies definitive start & end by the rate
+    pub fn get_reward(&self) -> Result<u64, ProgramError> {
+        let duration = self.definitive_end.try_sub(self.definitive_start)?;
+        self.reward_rate.try_mul(duration)
+    }
+}
+
 impl FixedRateSchedule {
     /// rates themselves can be anything, no invariant
     pub fn verify_schedule_invariants(&self) {
@@ -96,27 +125,27 @@ impl FixedRateSchedule {
         assert_ne!(self.denominator, 0);
     }
 
-    pub fn extract_tenure(&self, tier: &str) -> (Option<u64>, Option<TierConfig>) {
+    pub fn extract_tenure_and_rate(&self, tier: &str) -> Option<(u64, u64)> {
         match tier {
             "t1" => {
                 if let Some(t) = self.tier1 {
-                    (Some(t.required_tenure), Some(t))
+                    Some((t.required_tenure, t.reward_rate))
                 } else {
-                    (None, None)
+                    None
                 }
             }
             "t2" => {
                 if let Some(t) = self.tier2 {
-                    (Some(t.required_tenure), Some(t))
+                    Some((t.required_tenure, t.reward_rate))
                 } else {
-                    (None, None)
+                    None
                 }
             }
             "t3" => {
                 if let Some(t) = self.tier3 {
-                    (Some(t.required_tenure), Some(t))
+                    Some((t.required_tenure, t.reward_rate))
                 } else {
-                    (None, None)
+                    None
                 }
             }
             _ => panic!("undefined tier"),
@@ -128,84 +157,61 @@ impl FixedRateSchedule {
         self.base_rate.try_mul(duration)
     }
 
-    // todo there has to be a better way
-    //  https://users.rust-lang.org/t/looking-for-a-cleaner-way-to-handle-large-number-of-options/69243
-    #[allow(unused_assignments)]
+    /// extracts held tenure from a combination of 1) actual start & end times, 2)appropriate lower/upper bounds
+    /// lower bound: required_tenure extracted from appropriate TierConfig
+    /// upper bound: for first iteration (last-most TierConfig) simply U64::MAX,
+    ///   later recursively updated with previous TierConfig's required_tenure
+    fn extract_held_tenure(
+        &self,
+        tier: &str,
+        start_from: u64,
+        end_at: u64,
+        max_end: &mut u64,
+    ) -> Option<HeldTenure> {
+        match self.extract_tenure_and_rate(tier) {
+            // "required tenure" serves as lower bound
+            // previous iteration's
+            Some((begin, rate)) => {
+                let ht = HeldTenure::new(rate, start_from, end_at, begin, *max_end);
+                *max_end = begin;
+                ht
+            }
+            _ => None,
+        }
+    }
+
+    fn per_gem_for_reward(&self, start_from: u64, end_at: u64) -> Result<u64, ProgramError> {
+        let mut cap = u64::MAX;
+
+        // collect definitively held tenures for 3 periods - still missing base
+        let t3 = self.extract_held_tenure("t3", start_from, end_at, &mut cap);
+        let t2 = self.extract_held_tenure("t2", start_from, end_at, &mut cap);
+        let t1 = self.extract_held_tenure("t1", start_from, end_at, &mut cap);
+
+        // flatten the options and call get_reward() on those that are Some()
+        let mut iter = vec![t1, t2, t3]
+            .into_iter()
+            .flatten()
+            .map(|t| t.get_reward());
+
+        // Base case is either base_reward or first applicable tenure, depending
+        // on the start position relative to the first applicable tenure
+        let init = match start_from < cap {
+            // If iter is empty, cap is MAX.  So this can only panic if start_from is also MAX.
+            false => iter.next().unwrap(),
+            true => self.get_base_reward(start_from, std::cmp::min(cap, end_at)),
+        };
+
+        iter.fold(init, |last, this| last?.try_add(this?))
+    }
+
     pub fn reward_amount(
         &self,
         start_from: u64,
         end_at: u64,
         gems: u64,
     ) -> Result<u64, ProgramError> {
-        let (t1_start, t1) = self.extract_tenure("t1");
-        let (t2_start, t2) = self.extract_tenure("t2");
-        let (t3_start, t3) = self.extract_tenure("t3");
-
-        // triage based on starting point on the outside, ending point on the inside
-        let per_gem = if t3.is_some() && start_from >= t3_start.unwrap() {
-            // t3 only case
-            t3.unwrap().get_reward(start_from, end_at)
-        } else if t2.is_some() && start_from >= t2_start.unwrap() {
-            if t3.is_some() && end_at >= t3_start.unwrap() {
-                // t2 + t3 case
-                let t2_reward = t2.unwrap().get_reward(start_from, t3_start.unwrap())?;
-                let t3_reward = t3.unwrap().get_reward(t3_start.unwrap(), end_at)?;
-                t2_reward.try_add(t3_reward)
-            } else {
-                // t2 only case
-                t2.unwrap().get_reward(start_from, end_at)
-            }
-        } else if t1.is_some() && start_from >= t1_start.unwrap() {
-            if t3.is_some() && end_at >= t3_start.unwrap() {
-                // t1 + t2 + t3 case
-                let t1_reward = t1.unwrap().get_reward(start_from, t2_start.unwrap())?;
-                let t2_reward = t2
-                    .unwrap()
-                    .get_reward(t2_start.unwrap(), t3_start.unwrap())?;
-                let t3_reward = t3.unwrap().get_reward(t3_start.unwrap(), end_at)?;
-                t1_reward.try_add(t2_reward)?.try_add(t3_reward)
-            } else if t2.is_some() && end_at >= t2_start.unwrap() {
-                // t1 + t2 case
-                let t1_reward = t1.unwrap().get_reward(start_from, t2_start.unwrap())?;
-                let t2_reward = t2.unwrap().get_reward(t2_start.unwrap(), end_at)?;
-                t1_reward.try_add(t2_reward)
-            } else {
-                // t1 only case
-                t1.unwrap().get_reward(start_from, end_at)
-            }
-        } else {
-            if t3.is_some() && end_at >= t3_start.unwrap() {
-                // base + t1 + t2 + t3 case
-                let base_reward = self.get_base_reward(start_from, t1_start.unwrap())?;
-                let t1_reward = t1
-                    .unwrap()
-                    .get_reward(t1_start.unwrap(), t2_start.unwrap())?;
-                let t2_reward = t2
-                    .unwrap()
-                    .get_reward(t2_start.unwrap(), t3_start.unwrap())?;
-                let t3_reward = t3.unwrap().get_reward(t3_start.unwrap(), end_at)?;
-                base_reward
-                    .try_add(t1_reward)?
-                    .try_add(t2_reward)?
-                    .try_add(t3_reward)
-            } else if t2.is_some() && end_at >= t2_start.unwrap() {
-                // base + t1 + t2 case
-                let base_reward = self.get_base_reward(start_from, t1_start.unwrap())?;
-                let t1_reward = t1
-                    .unwrap()
-                    .get_reward(t1_start.unwrap(), t2_start.unwrap())?;
-                let t2_reward = t2.unwrap().get_reward(t2_start.unwrap(), end_at)?;
-                base_reward.try_add(t1_reward)?.try_add(t2_reward)
-            } else if t1.is_some() && end_at >= t1_start.unwrap() {
-                // base + t1 case
-                let base_reward = self.get_base_reward(start_from, t1_start.unwrap())?;
-                let t1_reward = t1.unwrap().get_reward(t1_start.unwrap(), end_at)?;
-                base_reward.try_add(t1_reward)
-            } else {
-                // base only case
-                self.get_base_reward(start_from, end_at)
-            }
-        }?;
+        let per_gem = self.per_gem_for_reward(start_from, end_at)?;
 
         // considered making this U128, but drastically increases app's complexity
         //   (not just rust-side calc, but also js-side serde)
