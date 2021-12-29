@@ -111,6 +111,13 @@
     buffer-layout "^1.2.0"
     dotenv "10.0.0"
 
+"@solana/wallet-adapter-base@^0.8.1":
+  version "0.8.1"
+  resolved "https://registry.yarnpkg.com/@solana/wallet-adapter-base/-/wallet-adapter-base-0.8.1.tgz#df425abb5c14b93baefd449bbe62ebfb685803fe"
+  integrity sha512-Qq4YQg2lDpbWhReY+r6h7YlcgUgr505lgiq8lvIfI5brTwH44yenKRUxYOPViUvCLOTVhy4r2TC5YsS2Ta1O3g==
+  dependencies:
+    eventemitter3 "^4.0.7"
+
 "@solana/web3.js@^1.17.0", "@solana/web3.js@^1.21.0", "@solana/web3.js@^1.30.2", "@solana/web3.js@^1.31.0":
   version "1.31.0"
   resolved "https://registry.yarnpkg.com/@solana/web3.js/-/web3.js-1.31.0.tgz#7a313d4c1a90b77f27ddbfe845a10d6883e06452"

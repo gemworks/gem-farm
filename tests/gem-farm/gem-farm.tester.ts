@@ -10,9 +10,10 @@ import {
   VariableRateConfig,
 } from './gem-farm.client';
 import { Token } from '@solana/spl-token';
-import { ITokenData } from '../gem-common/account';
+import { ITokenData } from '../gem-common/account-utils';
 import { assert } from 'chai';
 import { WhitelistType } from '../gem-bank/gem-bank.client';
+import { NodeWallet } from '../gem-common/node-wallet';
 
 // --------------------------------------- configs
 
@@ -55,6 +56,9 @@ export const defaultFixedConfig = <FixedRateConfig>{
 // --------------------------------------- tester class
 
 export class GemFarmTester extends GemFarmClient {
+  //useful for quickly creating mint/token accounts
+  nw: NodeWallet;
+
   //farm + bank
   bank!: Keypair;
   farm!: Keypair;
@@ -71,7 +75,7 @@ export class GemFarmTester extends GemFarmClient {
   rewardMint!: Token;
   rewardSource!: PublicKey;
   rewardSecondMint!: Token;
-  funder = this.wallet.payer;
+  funder: Keypair;
 
   //gem 1 used by farmer 1 / gem 2 by farmer 2
   gem1Amount!: anchor.BN;
@@ -84,6 +88,11 @@ export class GemFarmTester extends GemFarmClient {
       anchor.Provider.env().connection,
       anchor.Provider.env().wallet as anchor.Wallet
     );
+    this.nw = new NodeWallet(
+      anchor.Provider.env().connection,
+      anchor.Provider.env().wallet as anchor.Wallet
+    );
+    this.funder = this.nw.wallet.payer;
   }
 
   async prepAccounts(initialFundingAmount: Numerical, reward?: string) {
@@ -92,16 +101,16 @@ export class GemFarmTester extends GemFarmClient {
 
     this.bank = Keypair.generate();
     this.farm = Keypair.generate();
-    this.farmManager = await this.createFundedWallet(100 * LAMPORTS_PER_SOL);
+    this.farmManager = await this.nw.createFundedWallet(100 * LAMPORTS_PER_SOL);
 
-    this.farmer1Identity = await this.createFundedWallet(
+    this.farmer1Identity = await this.nw.createFundedWallet(
       100 * LAMPORTS_PER_SOL
     );
     [this.farmer1Vault] = await this.findVaultPDA(
       this.bank.publicKey,
       this.farmer1Identity.publicKey
     );
-    this.farmer2Identity = await this.createFundedWallet(
+    this.farmer2Identity = await this.nw.createFundedWallet(
       100 * LAMPORTS_PER_SOL
     );
     [this.farmer2Vault] = await this.findVaultPDA(
@@ -110,13 +119,13 @@ export class GemFarmTester extends GemFarmClient {
     );
 
     if (reward) this.reward = reward;
-    this.rewardMint = await this.createMint(0);
-    this.rewardSource = await this.createAndFundATA(
+    this.rewardMint = await this.nw.createMint(0);
+    this.rewardSource = await this.nw.createAndFundATA(
       this.rewardMint,
       this.funder.publicKey,
       toBN(initialFundingAmount)
     );
-    this.rewardSecondMint = await this.createMint(0);
+    this.rewardSecondMint = await this.nw.createMint(0);
 
     ({ gemAmount: this.gem1Amount, gem: this.gem1 } = await this.prepGem(
       this.farmer1Identity
@@ -129,8 +138,11 @@ export class GemFarmTester extends GemFarmClient {
   async prepGem(owner?: Keypair) {
     const gemAmount = new BN(1 + Math.ceil(Math.random() * 100)); //min 2
     const gemOwner =
-      owner ?? (await this.createFundedWallet(100 * LAMPORTS_PER_SOL));
-    const gem = await this.createMintAndFundATA(gemOwner.publicKey, gemAmount);
+      owner ?? (await this.nw.createFundedWallet(100 * LAMPORTS_PER_SOL));
+    const gem = await this.nw.createMintAndFundATA(
+      gemOwner.publicKey,
+      gemAmount
+    );
 
     return { gemAmount, gemOwner, gem };
   }

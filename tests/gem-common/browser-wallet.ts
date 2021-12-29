@@ -14,19 +14,20 @@ import {
   Token,
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token';
-import { Wallet } from '@project-serum/anchor';
-import { AccountUtils } from './account';
+import { AccountUtils } from './account-utils';
+import { SignerWalletAdapter } from '@solana/wallet-adapter-base';
 
 export interface TxWithSigners {
   tx: Transaction;
   signers: Signer[];
 }
 
-export class WalletUtils {
-  conn: Connection;
+export class BrowserWallet extends AccountUtils {
+  wallet: SignerWalletAdapter; //actual wallet
 
-  constructor(conn: Connection) {
-    this.conn = conn;
+  constructor(conn: Connection, wallet: SignerWalletAdapter) {
+    super(conn);
+    this.wallet = wallet;
   }
 
   // --------------------------------------- Mint
@@ -90,38 +91,34 @@ export class WalletUtils {
   // --------------------------------------- Token Acc / ATA
 
   async createMintAndFundATAWithWallet(
-    wallet: Wallet,
     decimals: number,
     amount: number,
     isAssociated = true
   ) {
     //create mint
     const [mint, newMintTx] = await this.createMintTx(
-      wallet.publicKey,
-      wallet.publicKey,
+      this.wallet.publicKey!,
+      this.wallet.publicKey!,
       decimals
     );
     //create token ATA
     const [tokenAcc, newTokenAccTx] = await this.createTokenAccountTx(
       mint,
-      wallet.publicKey,
-      wallet.publicKey,
+      this.wallet.publicKey!,
+      this.wallet.publicKey!,
       isAssociated
     );
     //fund ATA
     const mintToTx = await this.mintToTx(
       mint,
       tokenAcc,
-      wallet.publicKey,
-      wallet.publicKey,
+      this.wallet.publicKey!,
+      this.wallet.publicKey!,
       amount
     );
 
-    const tx = await this.mergeTxs(
-      [newMintTx, newTokenAccTx, mintToTx],
-      wallet.publicKey
-    );
-    const txSig = await this.sendTxWithWallet(wallet, tx);
+    const tx = await this.mergeTxs([newMintTx, newTokenAccTx, mintToTx]);
+    const txSig = await this.sendTxWithWallet(tx);
 
     return { mint, tokenAcc, txSig };
   }
@@ -196,19 +193,16 @@ export class WalletUtils {
     return sendAndConfirmRawTransaction(this.conn, tx.tx.serialize());
   }
 
-  async sendTxWithWallet(wallet: Wallet, tx: TxWithSigners) {
-    await wallet.signTransaction(tx.tx);
-    return this.sendAndConfirmTx(tx, wallet.publicKey);
+  async sendTxWithWallet(tx: TxWithSigners) {
+    await this.wallet.signTransaction(tx.tx);
+    return this.sendAndConfirmTx(tx, this.wallet.publicKey!);
   }
 
   // ----------------- multiple
 
-  async mergeTxs(
-    txs: TxWithSigners[],
-    payer: PublicKey
-  ): Promise<TxWithSigners> {
+  async mergeTxs(txs: TxWithSigners[]): Promise<TxWithSigners> {
     const finalTx = new Transaction({
-      feePayer: payer,
+      feePayer: this.wallet.publicKey!,
       recentBlockhash: (await this.conn.getRecentBlockhash()).blockhash,
     });
     let finalSigners: Signer[] = [];
@@ -226,13 +220,10 @@ export class WalletUtils {
     return { tx: finalTx, signers: finalSigners };
   }
 
-  async sendAndConfirmTxsSet(
-    txs: TxWithSigners[],
-    payer: PublicKey
-  ): Promise<string[]> {
+  async sendAndConfirmTxsSet(txs: TxWithSigners[]): Promise<string[]> {
     console.log(`attempting to send ${txs.length} transactions`);
     const signatures = await Promise.all(
-      txs.map((t) => this.sendAndConfirmTx(t, payer))
+      txs.map((t) => this.sendAndConfirmTx(t, this.wallet.publicKey!))
     );
     const result = await Promise.all(
       signatures.map((s) => this.conn.confirmTransaction(s))
@@ -249,8 +240,8 @@ export class WalletUtils {
   }
 
   // (!) does NOT merge - will fail if one tx depends on another
-  async sendTxsSetWithWallet(wallet: Wallet, txs: TxWithSigners[]) {
-    await wallet.signAllTransactions(txs.map((t) => t.tx));
-    return this.sendAndConfirmTxsSet(txs, wallet.publicKey);
+  async sendTxsSetWithWallet(txs: TxWithSigners[]) {
+    await this.wallet.signAllTransactions(txs.map((t) => t.tx));
+    return this.sendAndConfirmTxsSet(txs);
   }
 }

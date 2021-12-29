@@ -281,12 +281,12 @@ describe('staking (fixed rate)', () => {
     //whitelist creator
     const gemMetadata = await createMetadata(
       gf.conn,
-      gf.wallet,
+      gf.nw.wallet,
       gf.gem1.tokenMint
     );
 
     const { whitelistProof } = await gf.callAddToBankWhitelist(
-      gf.wallet.publicKey,
+      gf.nw.wallet.publicKey,
       WhitelistType.Creator
     );
 

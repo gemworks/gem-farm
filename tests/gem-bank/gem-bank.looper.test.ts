@@ -2,9 +2,9 @@ import * as anchor from '@project-serum/anchor';
 import { BN } from '@project-serum/anchor';
 import { GemBankClient } from './gem-bank.client';
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
-import { ITokenData } from '../gem-common/account';
+import { ITokenData } from '../gem-common/account-utils';
 import { assert } from 'chai';
-import { prepGem } from './gem-bank.spec';
+import { NodeWallet } from '../gem-common/node-wallet';
 
 interface IGem {
   gem: ITokenData;
@@ -30,17 +30,21 @@ describe.skip('looper', () => {
     _provider.connection,
     _provider.wallet as anchor.Wallet
   );
+  const nw = new NodeWallet(
+    _provider.connection,
+    _provider.wallet as anchor.Wallet
+  );
 
   const nVaults = 10;
   const nGemsPerVault = 5;
 
   const bank = Keypair.generate();
-  const bankManager = gb.wallet.publicKey;
+  const bankManager = nw.wallet.publicKey;
 
   let vaults: IVault[] = [];
 
   async function prepVault() {
-    const vaultOwner = await gb.createFundedWallet(100 * LAMPORTS_PER_SOL);
+    const vaultOwner = await nw.createFundedWallet(100 * LAMPORTS_PER_SOL);
 
     const { vault, vaultAuth } = await gb.initVault(
       bank.publicKey,
@@ -60,7 +64,7 @@ describe.skip('looper', () => {
 
   async function prepGemDeposit(vault: IVault) {
     //many gems, different amounts, but same owner (who also owns the vault)
-    const { gemAmount, gem } = await prepGem(gb, vault.vaultOwner);
+    const { gemAmount, gem } = await prepGem(vault.vaultOwner);
 
     const { gemBox } = await gb.depositGem(
       bank.publicKey,
@@ -88,6 +92,15 @@ describe.skip('looper', () => {
       g.gem.tokenMint,
       vault.vaultOwner.publicKey //the receiver = owner of gemDest, NOT gemDest itself
     );
+  }
+
+  async function prepGem(owner?: Keypair) {
+    const gemAmount = new BN(1 + Math.ceil(Math.random() * 100)); //min 2
+    const gemOwner =
+      owner ?? (await nw.createFundedWallet(100 * LAMPORTS_PER_SOL));
+    const gem = await nw.createMintAndFundATA(gemOwner.publicKey, gemAmount);
+
+    return { gemAmount, gemOwner, gem };
   }
 
   async function depositLooper() {

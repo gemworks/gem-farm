@@ -1,20 +1,24 @@
 import * as anchor from '@project-serum/anchor';
 import { BN } from '@project-serum/anchor';
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
-import { ITokenData } from '../gem-common/account';
+import { ITokenData } from '../gem-common/account-utils';
 import chai, { assert, expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { stringifyPKsAndBNs, stringToBytes } from '../gem-common/types';
 import { BankFlags, GemBankClient, WhitelistType } from './gem-bank.client';
 import { describe } from 'mocha';
 import { createMetadata } from '../gem-common/metaplex';
-import { GemFarmClient } from '../gem-farm/gem-farm.client';
+import { NodeWallet } from '../gem-common/node-wallet';
 
 chai.use(chaiAsPromised);
 
-describe.only('gem bank', () => {
+describe.skip('gem bank', () => {
   const _provider = anchor.Provider.env();
   const gb = new GemBankClient(
+    _provider.connection,
+    _provider.wallet as anchor.Wallet
+  );
+  const nw = new NodeWallet(
     _provider.connection,
     _provider.wallet as anchor.Wallet
   );
@@ -38,10 +42,10 @@ describe.only('gem bank', () => {
   }
 
   before('configures accounts', async () => {
-    randomWallet = await gb.createFundedWallet(100 * LAMPORTS_PER_SOL);
-    bankManager = await gb.createFundedWallet(100 * LAMPORTS_PER_SOL);
-    vaultCreator = await gb.createFundedWallet(100 * LAMPORTS_PER_SOL);
-    vaultOwner = await gb.createFundedWallet(100 * LAMPORTS_PER_SOL);
+    randomWallet = await nw.createFundedWallet(100 * LAMPORTS_PER_SOL);
+    bankManager = await nw.createFundedWallet(100 * LAMPORTS_PER_SOL);
+    vaultCreator = await nw.createFundedWallet(100 * LAMPORTS_PER_SOL);
+    vaultOwner = await nw.createFundedWallet(100 * LAMPORTS_PER_SOL);
   });
 
   it('inits bank', async () => {
@@ -174,9 +178,18 @@ describe.only('gem bank', () => {
       );
     }
 
+    async function prepGem(owner?: Keypair) {
+      const gemAmount = new BN(1 + Math.ceil(Math.random() * 100)); //min 2
+      const gemOwner =
+        owner ?? (await nw.createFundedWallet(100 * LAMPORTS_PER_SOL));
+      const gem = await nw.createMintAndFundATA(gemOwner.publicKey, gemAmount);
+
+      return { gemAmount, gemOwner, gem };
+    }
+
     beforeEach('creates a fresh gem', async () => {
       //many gems, different amounts, but same owner (who also owns the vault)
-      ({ gemAmount, gem } = await prepGem(gb, vaultOwner));
+      ({ gemAmount, gem } = await prepGem(vaultOwner));
     });
 
     it('deposits gem', async () => {
@@ -458,12 +471,12 @@ describe.only('gem bank', () => {
 
       it('allows a deposit if creator verified + whitelisted, and mint WL empty', async () => {
         const gemMetadata = await createMetadata(
-          gb.conn,
-          gb.wallet,
+          nw.conn,
+          nw.wallet,
           gem.tokenMint
         );
         const { whitelistedCreator, whitelistProof } = await whitelistCreator(
-          gb.wallet.publicKey //this is the address used to create the metadata
+          nw.wallet.publicKey //this is the address used to create the metadata
         );
 
         await prepDeposit(
@@ -480,14 +493,14 @@ describe.only('gem bank', () => {
       //again we're simply checking OR behavior
       it('allows a deposit if creator verified + whitelisted, and mint WL NOT empty', async () => {
         const gemMetadata = await createMetadata(
-          gb.conn,
-          gb.wallet,
+          nw.conn,
+          nw.wallet,
           gem.tokenMint
         );
-        const { gem: randomGem } = await prepGem(gb);
+        const { gem: randomGem } = await prepGem();
         const { whitelistedMint } = await whitelistMint(randomGem.tokenMint); //random mint intentionally
         const { whitelistedCreator, whitelistProof } = await whitelistCreator(
-          gb.wallet.publicKey //this is the address used to create the metadata
+          nw.wallet.publicKey //this is the address used to create the metadata
         );
 
         await prepDeposit(
@@ -504,14 +517,14 @@ describe.only('gem bank', () => {
 
       it('allows a deposit if creator verified + whitelisted, but listed LAST', async () => {
         const gemMetadata = await createMetadata(
-          gb.conn,
-          gb.wallet,
+          nw.conn,
+          nw.wallet,
           gem.tokenMint,
           5,
           5
         );
         const { whitelistedCreator, whitelistProof } = await whitelistCreator(
-          gb.wallet.publicKey //this is the address used to create the metadata
+          nw.wallet.publicKey //this is the address used to create the metadata
         );
 
         await prepDeposit(
@@ -529,15 +542,15 @@ describe.only('gem bank', () => {
 
       it('FAILS a deposit if creator whitelisted but not verified (signed off)', async () => {
         const gemMetadata = await createMetadata(
-          gb.conn,
-          gb.wallet,
+          nw.conn,
+          nw.wallet,
           gem.tokenMint,
           5,
           1,
           true
         );
         const { whitelistedCreator, whitelistProof } = await whitelistCreator(
-          gb.wallet.publicKey //this is the address used to create the metadata
+          nw.wallet.publicKey //this is the address used to create the metadata
         );
 
         await expect(
@@ -555,7 +568,7 @@ describe.only('gem bank', () => {
 
       it('FAILS a deposit if mint whitelist exists, but mint not whitelisted', async () => {
         //setup the whitelist for the WRONG gem
-        const { gem: randomGem } = await prepGem(gb);
+        const { gem: randomGem } = await prepGem();
         const { whitelistedMint, whitelistProof } = await whitelistMint(
           randomGem.tokenMint
         );
@@ -570,8 +583,8 @@ describe.only('gem bank', () => {
 
       it('FAILS a deposit if creator whitelist exists, but creator not whitelisted', async () => {
         const gemMetadata = await createMetadata(
-          gb.conn,
-          gb.wallet,
+          nw.conn,
+          nw.wallet,
           gem.tokenMint
         );
         //setup the whitelist for the WRONG creator
@@ -594,14 +607,14 @@ describe.only('gem bank', () => {
 
       it('FAILS to verify when proof is marked as "mint", but is actually for creator', async () => {
         const gemMetadata = await createMetadata(
-          gb.conn,
-          gb.wallet,
+          nw.conn,
+          nw.wallet,
           gem.tokenMint
         );
         //intentionally passing in the wallet's address not the mint's
         //now the creator has a proof, but it's marked as "mint"
         const { whitelistedMint, whitelistProof } = await whitelistMint(
-          gb.wallet.publicKey
+          nw.wallet.publicKey
         );
         //let's also whitelist a random creator, so that both branches of checks are triggered
         const { whitelistedCreator } = await whitelistCreator(
@@ -624,8 +637,8 @@ describe.only('gem bank', () => {
 
       it('FAILS to verify when proof is marked as "creator", but is actually for mint', async () => {
         const gemMetadata = await createMetadata(
-          gb.conn,
-          gb.wallet,
+          nw.conn,
+          nw.wallet,
           gem.tokenMint
         );
         //intentionally passing in the mint's address not the creator's
@@ -688,15 +701,3 @@ describe.only('gem bank', () => {
     });
   });
 });
-
-export async function prepGem(
-  g: GemBankClient | GemFarmClient,
-  owner?: Keypair
-) {
-  const gemAmount = new BN(1 + Math.ceil(Math.random() * 100)); //min 2
-  const gemOwner =
-    owner ?? (await g.createFundedWallet(100 * LAMPORTS_PER_SOL));
-  const gem = await g.createMintAndFundATA(gemOwner.publicKey, gemAmount);
-
-  return { gemAmount, gemOwner, gem };
-}

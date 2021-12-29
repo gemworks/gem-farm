@@ -33,9 +33,12 @@ export async function initGemBank(
 }
 
 export class GemBank extends GemBankClient {
+  wallet: anchor.Wallet;
+
   constructor(conn: Connection, wallet: anchor.Wallet, idl: Idl) {
     const programId = DEFAULTS.GEM_BANK_PROG_ID;
     super(conn, wallet, idl, programId);
+    this.wallet = wallet;
   }
 
   async initBankWallet() {
