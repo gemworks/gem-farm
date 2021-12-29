@@ -152,6 +152,7 @@ export default defineComponent({
       );
       vault.value = fetchedVault.toBase58();
       console.log('vault created', fetchedVault.toBase58());
+      await startFresh();
     };
 
     const depositGem = async (
