@@ -101,7 +101,7 @@ export default defineComponent({
     });
 
     // --------------------------------------- manage vault
-    const bank = ref<string>('99iLsAd6knmUtm5fpiF8ZNks4xR5SQWsPAYqA3ape5uq');
+    const bank = ref<string>();
     const vault = ref<string>();
     const gdrs = ref([]);
     const vaultLocked = ref<boolean>(false);

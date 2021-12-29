@@ -83,7 +83,7 @@ export default defineComponent({
 
     // --------------------------------------- whitelist
     const action = ref<string>('add');
-    const address = ref<string>('AGsJu1jZmFcVDPdm6bbaP54S3sMEinxmdiYWhaBBDNVX');
+    const address = ref<string>();
     const type = ref<WhitelistType>(WhitelistType.Creator);
     const proofs = ref<PublicKey[]>([]);
 
@@ -97,14 +97,14 @@ export default defineComponent({
       if (action.value === 'add') {
         await gf.addToBankWhitelistWallet(
           new PublicKey(props.farm),
-          new PublicKey(address.value),
+          new PublicKey(address.value!),
           type.value
         );
         await fetchProofs();
       } else {
         await gf.removeFromBankWhitelistWallet(
           new PublicKey(props.farm),
-          new PublicKey(address.value)
+          new PublicKey(address.value!)
         );
         await fetchProofs();
       }

@@ -68,14 +68,10 @@ export default defineComponent({
 
     let gb: any;
 
-    const bank = ref<string>('4a2TepvNfovaqnSvZ8pptYA4H1jcUWdWFhDVqahAmnWc');
-    const bankManager = ref<string>(
-      'AGsJu1jZmFcVDPdm6bbaP54S3sMEinxmdiYWhaBBDNVX'
-    );
-    const vault = ref<string>('WMiZp6hARKJ4KCeCYFSYWLHVrdYPqrC3i657zePiHWu');
-    const vaultCreator = ref<string>(
-      'AGsJu1jZmFcVDPdm6bbaP54S3sMEinxmdiYWhaBBDNVX'
-    );
+    const bank = ref<string>();
+    const bankManager = ref<string>();
+    const vault = ref<string>();
+    const vaultCreator = ref<string>();
 
     const fetchedVaultList = ref<string[]>();
     const fetchedVaultNFTs = ref<INFT[]>();
@@ -128,11 +124,11 @@ export default defineComponent({
       if (vaultCreator.value) {
         await loadByVaultCreator();
       } else if (vault.value) {
-        await loadByVault(new PublicKey(vault.value));
-      } else if (bankManager.value) {
+        await loadByVault(new PublicKey(vault.value!));
+      } else if (bankManager.value!) {
         await loadByBankManager();
-      } else if (new PublicKey(bank.value)) {
-        await loadByBank(new PublicKey(bank.value));
+      } else if (new PublicKey(bank.value!)) {
+        await loadByBank(new PublicKey(bank.value!));
       }
     };
 

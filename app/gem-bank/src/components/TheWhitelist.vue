@@ -65,7 +65,7 @@ export default defineComponent({
   },
   setup(props, ctx) {
     const action = ref<string>('add');
-    const address = ref<string>('75ErM1QcGjHiPMX7oLsf9meQdGSUs4ZrwS2X8tBpsZhA');
+    const address = ref<string>();
     const type = ref<WhitelistType>(WhitelistType.Creator);
 
     const { getConnection } = useCluster();
@@ -97,7 +97,7 @@ export default defineComponent({
       if (action.value === 'add') {
         const { txSig } = await gb.addToWhitelistWallet(
           new PublicKey(props.bank),
-          new PublicKey(address.value),
+          new PublicKey(address.value!),
           type.value
         );
         console.log('added', txSig);
@@ -107,7 +107,7 @@ export default defineComponent({
       } else {
         const { txSig } = await gb.removeFromWhitelistWallet(
           new PublicKey(props.bank),
-          new PublicKey(address.value)
+          new PublicKey(address.value!)
         );
         console.log('removed', txSig);
         proofs.value = await gb.fetchAllWhitelistProofPDAs(

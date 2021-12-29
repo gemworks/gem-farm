@@ -90,9 +90,9 @@ export default defineComponent({
     });
 
     // --------------------------------------- init farm
-    const mintA = ref<string>('HpoWeaMWCNwveUmXqryG3EnUJ3UacBCKqJEA7pG9EHhV');
+    const mintA = ref<string>();
     const typeA = ref<any>(RewardType.Variable);
-    const mintB = ref<string>('CUaxcHnWqmsJjegT1EYXfVA3m76sbSRmFJGy4k5EgGgS');
+    const mintB = ref<string>();
     const typeB = ref<any>(RewardType.Fixed);
 
     const minStakingPeriodSec = ref<string>();
@@ -101,9 +101,9 @@ export default defineComponent({
 
     const initFarm = async () => {
       const { farm } = await gf.initFarmWallet(
-        new PublicKey(mintA.value),
+        new PublicKey(mintA.value!),
         typeA.value,
-        new PublicKey(mintB.value),
+        new PublicKey(mintB.value!),
         typeB.value,
         {
           minStakingPeriodSec: new BN(minStakingPeriodSec.value!),
