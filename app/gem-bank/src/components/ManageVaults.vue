@@ -1,6 +1,6 @@
 <template>
   <div class="nes-container with-title">
-    <p class="title">View Vaults</p>
+    <p class="title">Manage Vaults</p>
     <div v-if="fetchedVaultList && fetchedVaultList.length">
       <!--selector-->
       <p class="mb-2">Choose vault:</p>
@@ -13,17 +13,29 @@
       </div>
       <!--vault details-->
       <VaultDetails
+        class="mb-5"
         v-if="selectedVaultAcc"
         :key="selectedVaultAcc"
         :vaultAcc="selectedVaultAcc"
       />
+      <!--vault lock-->
+      <button class="nes-btn is-primary mb-5" @click="setVaultLock">
+        {{ parseVaultLock() ? 'Unlock' : 'Lock' }} vault
+      </button>
       <!--vault contents-->
       <div>
         <NFTGrid
-          class="nes-container with-title mt-10"
+          class="nes-container with-title"
           title="Vault contents"
           :nfts="fetchedVaultNFTs"
-        />
+        >
+          <div
+            v-if="parseVaultLock()"
+            class="locked flex-col justify-center items-center align-center"
+          >
+            <p class="mt-10">This vault is locked!</p>
+          </div>
+        </NFTGrid>
       </div>
     </div>
     <div v-else>This bank has no vaults yet :(</div>
@@ -90,8 +102,23 @@ export default defineComponent({
         console.log('found vaults', stringifyPKsAndBNs(vaults));
 
         selectedVault.value = vaults[0].publicKey.toBase58();
+        updateVaultByPk();
         await loadNFTs();
       }
+    };
+
+    const parseVaultLock = () => {
+      return selectedVaultAcc.value.locked;
+    };
+
+    const setVaultLock = async () => {
+      await gb.setVaultLockWallet(
+        new PublicKey(props.bank!),
+        new PublicKey(selectedVault.value!),
+        !parseVaultLock()
+      );
+      console.log('vault lock value changed to:', !parseVaultLock());
+      await loadVaults();
     };
 
     const loadNFTs = async () => {
@@ -118,9 +145,22 @@ export default defineComponent({
       selectedVaultAcc,
       fetchedVaultList,
       fetchedVaultNFTs,
+      setVaultLock,
+      parseVaultLock,
     };
   },
 });
 </script>
 
-<style scoped></style>
+<style scoped>
+.locked {
+  @apply text-center bg-black text-white;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0.7;
+  z-index: 10;
+}
+</style>

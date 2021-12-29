@@ -1,83 +1,72 @@
 <template>
   <ConfigPane />
-
   <div v-if="!wallet" class="text-center">Pls connect (burner) wallet</div>
   <div v-else>
-    <TheWhitelist :bank="bank ? bank.toBase58() : undefined" />
-
-    <!--control buttons-->
-    <div class="m-5 flex justify-center">
-      <button
-        v-if="vault"
-        class="nes-btn is-primary my-x"
-        @click="setVaultLock"
-      >
-        {{ vaultLocked ? 'Unlock' : 'Lock' }} vault
-      </button>
-      <button
-        v-if="
-          (toWalletNFTs && toWalletNFTs.length) ||
-          (toVaultNFTs && toVaultNFTs.length)
-        "
-        class="nes-btn is-primary mx-5"
-        @click="moveNFTsOnChain"
-      >
-        Move Gems!
-      </button>
+    <!--bank address-->
+    <div class="nes-container with-title mb-10">
+      <p class="title">Connect to a Bank</p>
+      <div class="nes-field mb-5">
+        <label for="farm">Bank address:</label>
+        <input id="farm" class="nes-input" v-model="bank" />
+      </div>
+      <div v-if="vault">Vault found: {{ vault }}</div>
     </div>
 
-    <!--wallet + vault view-->
-    <div class="flex items-stretch">
-      <!--left-->
-      <NFTGrid
-        title="Your wallet"
-        class="flex-1"
-        :nfts="desiredWalletNFTs"
-        @selected="handleWalletSelected"
-      />
-
-      <!--mid-->
-      <div class="m-2 flex flex-col justify-center items-center align-center">
-        <ArrowButton class="my-2" @click="moveNFTsFE(false)" />
-        <ArrowButton class="my-2" :left="true" @click="moveNFTsFE(true)" />
-      </div>
-
-      <!--right-->
-      <NFTGrid
-        v-if="bank && vault"
-        title="Your vault"
-        class="flex-1"
-        :nfts="desiredVaultNFTs"
-        @selected="handleVaultSelected"
-      >
-        <div
-          v-if="vaultLocked"
-          class="locked flex-col justify-center items-center align-center"
-        >
-          <p class="mt-10">This vault is locked!</p>
-        </div>
-      </NFTGrid>
-      <div v-else class="flex-1 nes-container with-title">
-        <p class="title">Your vault</p>
-        <!--create bank if doesn't exist-->
-        <button v-if="!bank" class="m-2 nes-btn is-primary" @click="startBank">
-          Start bank
-        </button>
-        <!--create vault if doesn't exist-->
+    <div v-if="vault">
+      <!--control buttons-->
+      <div class="mb-5 flex justify-center">
         <button
-          v-else-if="!vault"
-          class="m-2 nes-btn is-primary"
-          @click="createVault"
+          v-if="
+            (toWalletNFTs && toWalletNFTs.length) ||
+            (toVaultNFTs && toVaultNFTs.length)
+          "
+          class="nes-btn is-primary mx-5"
+          @click="moveNFTsOnChain"
         >
-          Create vault
+          Move Gems!
         </button>
       </div>
+
+      <!--wallet + vault view-->
+      <div class="flex items-stretch">
+        <!--left-->
+        <NFTGrid
+          title="Your wallet"
+          class="flex-1"
+          :nfts="desiredWalletNFTs"
+          @selected="handleWalletSelected"
+        />
+        <!--mid-->
+        <div class="m-2 flex flex-col">
+          <ArrowButton class="my-2" @click="moveNFTsFE(false)" />
+          <ArrowButton class="my-2" :left="true" @click="moveNFTsFE(true)" />
+        </div>
+        <!--right-->
+        <NFTGrid
+          title="Your vault"
+          class="flex-1"
+          :nfts="desiredVaultNFTs"
+          @selected="handleVaultSelected"
+        >
+          <div
+            v-if="vaultLocked"
+            class="locked flex-col justify-center items-center align-center"
+          >
+            <p class="mt-10">This vault is locked!</p>
+          </div>
+        </NFTGrid>
+      </div>
+    </div>
+    <div v-else class="flex-1 text-center">
+      <button class="nes-btn is-primary" @click="createVault">
+        Create vault
+      </button>
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, ref, watch } from 'vue';
+import { computed, defineComponent, onMounted, ref, watch } from 'vue';
 import ConfigPane from '@/components/ConfigPane.vue';
 import NFTGrid from '@/components/NFTGrid.vue';
 import ArrowButton from '@/components/ArrowButton.vue';
@@ -100,8 +89,87 @@ export default defineComponent({
     const { wallet, getWallet } = useWallet();
     const { cluster, getConnection } = useCluster();
 
-    // --------------------------------------- state
+    let gb: any;
+    watch([wallet, cluster], async () => {
+      gb = await initGemBank(getConnection(), getWallet()!);
+      await fetchVault();
+      await populateWalletNFTs();
+      await populateGemBankNFTs();
+    });
 
+    onMounted(async () => {
+      if (getWallet()) {
+        gb = await initGemBank(getConnection(), getWallet()!);
+        await fetchVault();
+        await populateWalletNFTs();
+        await populateGemBankNFTs();
+      }
+    });
+
+    // --------------------------------------- manage vault
+    const bank = ref<string>('99iLsAd6knmUtm5fpiF8ZNks4xR5SQWsPAYqA3ape5uq');
+    const vault = ref<string>();
+    const gdrs = ref([]);
+    //todo will need a diff way of getting
+    const vaultLocked = ref<boolean>(false);
+
+    watch(bank, async () => {
+      await fetchVault();
+      await populateWalletNFTs();
+      await populateGemBankNFTs();
+    });
+
+    const fetchVault = async () => {
+      const [vaultAddr] = await gb.findVaultPDA(
+        new PublicKey(bank.value!),
+        getWallet()!.publicKey
+      );
+      try {
+        await gb.fetchVaultAcc(vaultAddr);
+        //if this goes through, then the vault exists
+        vault.value = vaultAddr.toBase58();
+        console.log('found vault', vault.value);
+      } catch (e) {
+        vault.value = undefined;
+        console.log('looks like vault doesnt exist');
+      }
+    };
+
+    const createVault = async () => {
+      const { vault: fetchedVault } = await gb.initVaultWallet(
+        new PublicKey(bank.value!)
+      );
+      vault.value = fetchedVault.toBase58();
+      console.log('vault created', fetchedVault.toBase58());
+    };
+
+    const depositGem = async (
+      mint: PublicKey,
+      creator: PublicKey,
+      source: PublicKey
+    ) => {
+      const { txSig } = await gb.depositGemWallet(
+        new PublicKey(bank.value!),
+        new PublicKey(vault.value!),
+        new BN(1),
+        mint,
+        source,
+        creator
+      );
+      console.log('deposit done', txSig);
+    };
+
+    const withdrawGem = async (mint: PublicKey) => {
+      const { txSig } = await gb.withdrawGemWallet(
+        new PublicKey(bank.value!),
+        new PublicKey(vault.value!),
+        new BN(1),
+        mint
+      );
+      console.log('withdrawal done', txSig);
+    };
+
+    // --------------------------------------- populate initial nfts
     //current walet/vault state
     const currentWalletNFTs = ref<INFT[]>([]);
     const currentVaultNFTs = ref<INFT[]>([]);
@@ -115,8 +183,6 @@ export default defineComponent({
     const toWalletNFTs = ref<INFT[]>([]);
     const toVaultNFTs = ref<INFT[]>([]);
 
-    // --------------------------------------- populate initial nfts
-
     const populateWalletNFTs = async () => {
       if (getWallet()) {
         currentWalletNFTs.value = await getNFTsByOwner(
@@ -128,49 +194,26 @@ export default defineComponent({
     };
 
     const populateGemBankNFTs = async () => {
-      const banks = await gb.fetchAllBankPDAs(getWallet()!.publicKey!);
-      if (banks && banks.length) {
-        bank.value = banks[0].publicKey;
-        console.log('bank is', bank.value!.toBase58());
+      const foundGDRs = await gb.fetchAllGdrPDAs(new PublicKey(vault.value!));
+      if (foundGDRs && foundGDRs.length) {
+        gdrs.value = foundGDRs;
+        console.log(`found a total of ${foundGDRs.length} gdrs`);
 
-        const vaults = await gb.fetchAllVaultPDAs(bank.value);
-        if (vaults && vaults.length) {
-          vault.value = vaults[0].publicKey;
-          vaultLocked.value = vaults[0].account.locked;
-          console.log('vault is', vault.value!.toBase58());
-
-          const foundGDRs = await gb.fetchAllGdrPDAs(vault.value);
-          if (foundGDRs && foundGDRs.length) {
-            gdrs.value = foundGDRs;
-            console.log(`found a total of ${foundGDRs.length} gdrs`);
-
-            const mints = foundGDRs.map((gdr: any) => {
-              return { mint: gdr.account.gemMint };
-            });
-            currentVaultNFTs.value = await getNFTMetadataForMany(
-              mints,
-              getConnection()
-            );
-            desiredVaultNFTs.value = [...currentVaultNFTs.value];
-            console.log(
-              `populated a total of ${currentVaultNFTs.value.length} vault NFTs`
-            );
-          }
-        }
+        const mints = foundGDRs.map((gdr: any) => {
+          return { mint: gdr.account.gemMint };
+        });
+        currentVaultNFTs.value = await getNFTMetadataForMany(
+          mints,
+          getConnection()
+        );
+        desiredVaultNFTs.value = [...currentVaultNFTs.value];
+        console.log(
+          `populated a total of ${currentVaultNFTs.value.length} vault NFTs`
+        );
       }
     };
 
-    watch([wallet, cluster], async () => {
-      //populate wallet nfts
-      await populateWalletNFTs();
-
-      //populate gembank nfts
-      gb = await initGemBank(getConnection(), getWallet()!);
-      await populateGemBankNFTs();
-    });
-
     // --------------------------------------- moving nfts
-
     const handleWalletSelected = (e: any) => {
       if (e.selected) {
         selectedWalletNFTs.value.push(e.nft);
@@ -210,11 +253,9 @@ export default defineComponent({
     //todo jam into single tx
     const moveNFTsOnChain = async () => {
       for (const nft of toVaultNFTs.value) {
-        console.log(nft);
         const creator = new PublicKey(
           (nft.onchainMetadata as any).data.creators[0].address
         );
-        console.log('creator is', creator);
         await depositGem(nft.mint, creator, nft.pubkey!);
       }
       for (const nft of toWalletNFTs.value) {
@@ -250,52 +291,6 @@ export default defineComponent({
       { deep: true }
     );
 
-    // --------------------------------------- gem bank
-
-    let gb: any;
-    const bank = ref<PublicKey>();
-    const vault = ref<PublicKey>();
-    const gdrs = ref([]);
-    const vaultLocked = ref<boolean>(false);
-
-    const createVault = async () => {
-      const { vault: fetchedVault } = await gb.initVaultWallet(bank.value);
-      vault.value = fetchedVault;
-      console.log('vault created', fetchedVault.toBase58());
-    };
-
-    const setVaultLock = async () => {
-      await gb.setVaultLockWallet(bank.value, vault.value, !vaultLocked.value);
-      vaultLocked.value = !vaultLocked.value;
-      console.log('vault lock value changed to ', vaultLocked.value);
-    };
-
-    const depositGem = async (
-      mint: PublicKey,
-      creator: PublicKey,
-      source: PublicKey
-    ) => {
-      const { txSig } = await gb.depositGemWallet(
-        bank.value,
-        vault.value,
-        new BN(1),
-        mint,
-        source,
-        creator
-      );
-      console.log('deposit done', txSig);
-    };
-
-    const withdrawGem = async (mint: PublicKey) => {
-      const { txSig } = await gb.withdrawGemWallet(
-        bank.value,
-        vault.value,
-        new BN(1),
-        mint
-      );
-      console.log('withdrawal done', txSig);
-    };
-
     // --------------------------------------- return
 
     return {
@@ -312,7 +307,6 @@ export default defineComponent({
       vault,
       vaultLocked,
       createVault,
-      setVaultLock,
     };
   },
 });

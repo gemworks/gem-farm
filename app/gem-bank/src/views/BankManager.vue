@@ -11,7 +11,7 @@
         class="mb-10"
       />
       <TheWhitelist :bank="bank ? bank.toBase58() : undefined" class="mb-10" />
-      <ViewVaults :bank="bank" :key="bank" />
+      <ManageVaults :bank="bank" :key="bank" />
     </div>
     <!--create a bank if one doesn't exist-->
     <div v-else class="text-center">
@@ -32,10 +32,10 @@ import ConfigPane from '@/components/ConfigPane.vue';
 import { initGemBank } from '@/common/gem-bank';
 import BankDetails from '@/components/BankDetails.vue';
 import { stringifyPKsAndBNs } from '../../../../tests/gem-common/types';
-import ViewVaults from '@/components/ViewVaults.vue';
+import ManageVaults from '@/components/ManageVaults.vue';
 
 export default defineComponent({
-  components: { ViewVaults, BankDetails, ConfigPane, TheWhitelist },
+  components: { ManageVaults, BankDetails, ConfigPane, TheWhitelist },
   setup() {
     const { wallet, getWallet } = useWallet();
     const { cluster, getConnection } = useCluster();
