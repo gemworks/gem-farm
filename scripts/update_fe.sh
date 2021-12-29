@@ -39,9 +39,6 @@ cp ./target/idl/gem_bank.json ./app/gem-farm/public
 cp ./target/idl/gem_farm.json ./app/gem-farm/public
 
 #deploy!
-#solana airdrop 2
-#solana airdrop 2
-#solana airdrop 2
 solana balance #to know if enough sol left for deployment
 
 anchor deploy --provider.cluster devnet
