@@ -1,6 +1,8 @@
 import { BN } from '@project-serum/anchor';
 import { Keypair, PublicKey } from '@solana/web3.js';
 
+//todo need to write tests for functions in this file
+
 export type Numerical = BN | number;
 
 export function toBN(i: any): any {

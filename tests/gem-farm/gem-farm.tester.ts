@@ -92,14 +92,18 @@ export class GemFarmTester extends GemFarmClient {
 
     this.bank = Keypair.generate();
     this.farm = Keypair.generate();
-    this.farmManager = await this.createWallet(100 * LAMPORTS_PER_SOL);
+    this.farmManager = await this.createFundedWallet(100 * LAMPORTS_PER_SOL);
 
-    this.farmer1Identity = await this.createWallet(100 * LAMPORTS_PER_SOL);
+    this.farmer1Identity = await this.createFundedWallet(
+      100 * LAMPORTS_PER_SOL
+    );
     [this.farmer1Vault] = await this.findVaultPDA(
       this.bank.publicKey,
       this.farmer1Identity.publicKey
     );
-    this.farmer2Identity = await this.createWallet(100 * LAMPORTS_PER_SOL);
+    this.farmer2Identity = await this.createFundedWallet(
+      100 * LAMPORTS_PER_SOL
+    );
     [this.farmer2Vault] = await this.findVaultPDA(
       this.bank.publicKey,
       this.farmer2Identity.publicKey
@@ -124,7 +128,8 @@ export class GemFarmTester extends GemFarmClient {
 
   async prepGem(owner?: Keypair) {
     const gemAmount = new BN(1 + Math.ceil(Math.random() * 100)); //min 2
-    const gemOwner = owner ?? (await this.createWallet(100 * LAMPORTS_PER_SOL));
+    const gemOwner =
+      owner ?? (await this.createFundedWallet(100 * LAMPORTS_PER_SOL));
     const gem = await this.createMintAndFundATA(gemOwner.publicKey, gemAmount);
 
     return { gemAmount, gemOwner, gem };

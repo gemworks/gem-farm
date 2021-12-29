@@ -12,7 +12,7 @@ import { GemFarmClient } from '../gem-farm/gem-farm.client';
 
 chai.use(chaiAsPromised);
 
-describe.skip('gem bank', () => {
+describe.only('gem bank', () => {
   const _provider = anchor.Provider.env();
   const gb = new GemBankClient(
     _provider.connection,
@@ -38,10 +38,10 @@ describe.skip('gem bank', () => {
   }
 
   before('configures accounts', async () => {
-    randomWallet = await gb.createWallet(100 * LAMPORTS_PER_SOL);
-    bankManager = await gb.createWallet(100 * LAMPORTS_PER_SOL);
-    vaultCreator = await gb.createWallet(100 * LAMPORTS_PER_SOL);
-    vaultOwner = await gb.createWallet(100 * LAMPORTS_PER_SOL);
+    randomWallet = await gb.createFundedWallet(100 * LAMPORTS_PER_SOL);
+    bankManager = await gb.createFundedWallet(100 * LAMPORTS_PER_SOL);
+    vaultCreator = await gb.createFundedWallet(100 * LAMPORTS_PER_SOL);
+    vaultOwner = await gb.createFundedWallet(100 * LAMPORTS_PER_SOL);
   });
 
   it('inits bank', async () => {
@@ -694,7 +694,8 @@ export async function prepGem(
   owner?: Keypair
 ) {
   const gemAmount = new BN(1 + Math.ceil(Math.random() * 100)); //min 2
-  const gemOwner = owner ?? (await g.createWallet(100 * LAMPORTS_PER_SOL));
+  const gemOwner =
+    owner ?? (await g.createFundedWallet(100 * LAMPORTS_PER_SOL));
   const gem = await g.createMintAndFundATA(gemOwner.publicKey, gemAmount);
 
   return { gemAmount, gemOwner, gem };

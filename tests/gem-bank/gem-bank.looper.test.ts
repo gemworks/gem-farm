@@ -40,7 +40,7 @@ describe.skip('looper', () => {
   let vaults: IVault[] = [];
 
   async function prepVault() {
-    const vaultOwner = await gb.createWallet(100 * LAMPORTS_PER_SOL);
+    const vaultOwner = await gb.createFundedWallet(100 * LAMPORTS_PER_SOL);
 
     const { vault, vaultAuth } = await gb.initVault(
       bank.publicKey,

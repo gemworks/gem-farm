@@ -147,7 +147,7 @@ describe('misc', () => {
     await gf.callStake(gf.farmer1Identity);
     await gf.callUnstake(gf.farmer1Identity);
 
-    const destination = await gf.createWallet(0);
+    const destination = await gf.createFundedWallet(0);
 
     await gf.callPayout(destination.publicKey, new BN(LAMPORTS_PER_SOL / 2));
 
