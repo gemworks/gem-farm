@@ -1,9 +1,5 @@
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
-import {
-  Numerical,
-  stringifyPubkeysAndBNsInObject,
-  toBN,
-} from '../gem-common/types';
+import { Numerical, stringifyPKsAndBNs, toBN } from '../gem-common/types';
 import * as anchor from '@project-serum/anchor';
 import { BN } from '@project-serum/anchor';
 import {
@@ -113,7 +109,7 @@ export class GemFarmTester extends GemFarmClient {
     this.rewardMint = await this.createMint(0);
     this.rewardSource = await this.createAndFundATA(
       this.rewardMint,
-      this.funder,
+      this.funder.publicKey,
       toBN(initialFundingAmount)
     );
     this.rewardSecondMint = await this.createMint(0);
@@ -556,7 +552,7 @@ export class GemFarmTester extends GemFarmClient {
     );
     console.log(
       'accrued total for the farm:',
-      stringifyPubkeysAndBNsInObject(await this.verifyFunds())
+      stringifyPKsAndBNs(await this.verifyFunds())
     );
 
     assert(farmer1Accrued.gte(new BN(farmer1Ratio * minExpectedFarmAccrued)));
@@ -664,7 +660,7 @@ export class GemFarmTester extends GemFarmClient {
     const farmAcc = await this.fetchFarmAcc(this.farm.publicKey);
     console.log(`// --------------------------------------- ${state}`);
     console.log('// --------------------------------------- farm');
-    console.log(stringifyPubkeysAndBNsInObject(farmAcc));
+    console.log(stringifyPKsAndBNs(farmAcc));
 
     const [farmer1] = await this.findFarmerPDA(
       this.farm.publicKey,
@@ -672,7 +668,7 @@ export class GemFarmTester extends GemFarmClient {
     );
     const farmer1Acc = await this.fetchFarmerAcc(farmer1);
     console.log('// --------------------------------------- farmer 1');
-    console.log(stringifyPubkeysAndBNsInObject(farmer1Acc));
+    console.log(stringifyPKsAndBNs(farmer1Acc));
 
     const [farmer2] = await this.findFarmerPDA(
       this.farm.publicKey,
@@ -681,7 +677,7 @@ export class GemFarmTester extends GemFarmClient {
     try {
       const farmer2Acc = await this.fetchFarmerAcc(farmer2);
       console.log('// --------------------------------------- farmer 2');
-      console.log(stringifyPubkeysAndBNsInObject(farmer2Acc));
+      console.log(stringifyPKsAndBNs(farmer2Acc));
     } catch (e) {}
   }
 

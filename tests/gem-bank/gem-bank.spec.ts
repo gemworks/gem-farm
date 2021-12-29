@@ -4,7 +4,7 @@ import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import { ITokenData } from '../gem-common/account';
 import chai, { assert, expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { stringToBytes, toBase58 } from '../gem-common/types';
+import { stringifyPKsAndBNs, stringToBytes } from '../gem-common/types';
 import { BankFlags, GemBankClient, WhitelistType } from './gem-bank.client';
 import { describe } from 'mocha';
 import { createMetadata } from '../gem-common/metaplex';
@@ -135,7 +135,7 @@ describe.skip('gem bank', () => {
 
     function printGemBoxState() {
       console.log('amount', gemAmount.toString());
-      console.log('gem', toBase58(gem as any));
+      console.log('gem', stringifyPKsAndBNs(gem as any));
       console.log('gemBox', gemBox.toBase58());
       console.log('GDR', GDR.toBase58());
     }

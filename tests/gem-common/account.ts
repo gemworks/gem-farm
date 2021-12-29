@@ -3,7 +3,6 @@ import {
   Keypair,
   PublicKey,
   sendAndConfirmRawTransaction,
-  sendAndConfirmTransaction,
   Signer,
   SystemProgram,
   Transaction,
@@ -18,14 +17,7 @@ import {
   NATIVE_MINT,
   Token,
   TOKEN_PROGRAM_ID,
-  u64,
 } from '@solana/spl-token';
-import {
-  HasPublicKey,
-  stringifyPubkeysAndBNsInObject,
-  ToBytes,
-  toPublicKeys,
-} from './types';
 
 export interface ITokenData {
   tokenMint: PublicKey;
@@ -52,13 +44,11 @@ export class AccountUtils {
 
   async findProgramAddress(
     programId: PublicKey,
-    seeds: (HasPublicKey | ToBytes | Uint8Array | string)[]
+    seeds: (PublicKey | Uint8Array | string)[]
   ): Promise<[PublicKey, number]> {
     const seed_bytes = seeds.map((s) => {
       if (typeof s == 'string') {
         return Buffer.from(s);
-      } else if ('publicKey' in s) {
-        return s.publicKey.toBytes();
       } else if ('toBytes' in s) {
         return s.toBytes();
       } else {
@@ -212,13 +202,9 @@ export class AccountUtils {
 
   async createAndFundATA(
     token: Token,
-    owner: PublicKey | HasPublicKey,
+    owner: PublicKey,
     amount: BN
   ): Promise<PublicKey> {
-    if ('publicKey' in owner) {
-      owner = owner.publicKey;
-    }
-
     if (token.publicKey == NATIVE_MINT) {
       const account = await Token.createWrappedNativeAccount(
         this.conn,
@@ -255,7 +241,7 @@ export class AccountUtils {
     wallet: Wallet,
     decimals: number,
     amount: number,
-    isAssociated = true,
+    isAssociated = true
   ) {
     //create mint
     const [mint, newMintTx] = await this.createMintTx(
@@ -268,7 +254,7 @@ export class AccountUtils {
       mint,
       wallet.publicKey,
       wallet.publicKey,
-      isAssociated,
+      isAssociated
     );
     //fund ATA
     const mintToTx = await this.mintToTx(
@@ -323,15 +309,13 @@ export class AccountUtils {
       return [associatedAddress, { tx, signers: [] }];
     }
     tx.add(
-      SystemProgram.createAccount(
-        toPublicKeys({
-          fromPubkey: authority,
-          newAccountPubkey: newAccount,
-          lamports: balanceNeeded,
-          space: TokenAccountLayout.span,
-          programId: TOKEN_PROGRAM_ID,
-        })
-      )
+      SystemProgram.createAccount({
+        fromPubkey: authority,
+        newAccountPubkey: newAccount.publicKey,
+        lamports: balanceNeeded,
+        space: TokenAccountLayout.span,
+        programId: TOKEN_PROGRAM_ID,
+      })
     );
     tx.add(
       Token.createInitAccountInstruction(

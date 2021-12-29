@@ -70,7 +70,7 @@ import TestMint from '@/components/gem-farm/TestMint.vue';
 import { initGemFarm } from '@/common/gem-farm';
 import InitFarm from '@/components/gem-farm/InitFarm.vue';
 import { PublicKey } from '@solana/web3.js';
-import { stringifyPubkeysAndBNInArray } from '../../../../tests/utils/types';
+import { stringifyPKsAndBNs } from '../../../../tests/gem-common/types';
 import AuthorizeFunder from '@/components/gem-farm/AuthorizeFunder.vue';
 import FundCancelLock from '@/components/gem-farm/FundCancelLock.vue';
 import RefreshFarmer from '@/components/gem-farm/RefreshFarmer.vue';
@@ -132,10 +132,7 @@ export default defineComponent({
 
     const findFarmsByManager = async (manager: PublicKey) => {
       foundFarms.value = await gf.fetchAllFarmPDAs(manager);
-      console.log(
-        'Found farms:',
-        stringifyPubkeysAndBNInArray(foundFarms.value)
-      );
+      console.log('Found farms:', stringifyPKsAndBNs(foundFarms.value));
 
       if (foundFarms.value.length) {
         farm.value =

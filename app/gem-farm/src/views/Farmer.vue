@@ -83,8 +83,7 @@ import ConfigPane from '@/components/ConfigPane.vue';
 import FarmerDisplay from '@/components/gem-farm/FarmerDisplay.vue';
 import Vault from '@/components/gem-bank/Vault.vue';
 import { INFT } from '@/common/web3/NFTget';
-import { stringifyPubkeysAndBNsInObject } from '../../../../tests/utils/types';
-import { useRoute } from 'vue-router';
+import { stringifyPKsAndBNs } from '../../../../tests/gem-common/types';
 
 export default defineComponent({
   components: { Vault, FarmerDisplay, ConfigPane },
@@ -131,7 +130,7 @@ export default defineComponent({
       farmAcc.value = await gf.fetchFarmAcc(new PublicKey(farm.value!));
       console.log(
         `farm found at ${farm.value}:`,
-        stringifyPubkeysAndBNsInObject(farmAcc.value)
+        stringifyPKsAndBNs(farmAcc.value)
       );
     };
 
@@ -146,7 +145,7 @@ export default defineComponent({
       await updateAvailableRewards();
       console.log(
         `farmer found at ${farmerIdentity.value}:`,
-        stringifyPubkeysAndBNsInObject(farmerAcc.value)
+        stringifyPKsAndBNs(farmerAcc.value)
       );
     };
 

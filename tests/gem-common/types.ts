@@ -3,112 +3,31 @@ import { Keypair, PublicKey } from '@solana/web3.js';
 
 export type Numerical = BN | number;
 
-export interface ToBytes {
-  toBytes(): Uint8Array;
-}
+export function toBN(i: any): any {
+  if (typeof i == 'number') {
+    return new BN(i);
+  } else if (i instanceof BN) {
+    return i;
+  } else if (parseType(i) === 'array') {
+    const bnArray = [];
 
-export interface HasPublicKey {
-  publicKey: PublicKey;
-}
+    for (const item in i) {
+      bnArray.push(toBN(item));
+    }
 
-//todo missing arrays
-/**
- * Convert some value/object to use `BN` type to represent numbers.
- *
- * If the value is a number, its converted to a `BN`. If the value is
- * an object, then each field is (recursively) converted to a `BN`.
- *
- * @param obj The value or object to convert.
- * @returns The object as a`BN`
- */
-export function toBN(obj: any): any {
-  if (typeof obj == 'number') {
-    return new BN(obj);
-  } else if (obj instanceof BN) {
-    return obj;
-  } else if (typeof obj == 'object') {
+    return bnArray;
+  } else if (parseType(i) === 'object') {
     const bnObj = {};
 
-    for (const field in obj) {
+    for (const field in i) {
       // @ts-ignore
-      bnObj[field] = toBN(obj[field]);
+      bnObj[field] = toBN(i[field]);
     }
 
     return bnObj;
   }
 
-  return obj;
-}
-
-//todo missing arrays
-/**
- * Convert some object of fields with address-like values,
- * such that the values are converted to their `PublicKey` form.
- * @param obj The object to convert
- */
-export function toPublicKeys(
-  obj: Record<string, string | PublicKey | HasPublicKey | any>
-): any {
-  const newObj = {};
-
-  for (const key in obj) {
-    const value = obj[key];
-
-    if (typeof value == 'string') {
-      // @ts-ignore
-      newObj[key] = new PublicKey(value);
-    } else if (typeof value == 'object' && 'publicKey' in value) {
-      // @ts-ignore
-      newObj[key] = value.publicKey;
-    } else {
-      // @ts-ignore
-      newObj[key] = value;
-    }
-  }
-
-  return newObj;
-}
-
-//todo missing arrays
-/**
- * Convert some object of fields with address-like values,
- * such that the values are converted to their base58 `PublicKey` form.
- * @param obj The object to convert
- */
-export function toBase58(
-  obj: Record<string, string | PublicKey | HasPublicKey>
-): any {
-  const newObj = {};
-
-  for (const key in obj) {
-    const value = obj[key];
-
-    if (value == undefined) {
-      continue;
-    } else if (typeof value == 'string') {
-      // @ts-ignore
-      newObj[key] = value;
-    } else if ('publicKey' in value) {
-      // @ts-ignore
-      newObj[key] = value.publicKey.toBase58();
-    } else if ('toBase58' in value && typeof value.toBase58 == 'function') {
-      // @ts-ignore
-      newObj[key] = value.toBase58();
-    } else {
-      // @ts-ignore
-      newObj[key] = value;
-    }
-  }
-
-  return newObj;
-}
-
-export async function pause(ms: number) {
-  await new Promise((response) =>
-    setTimeout(() => {
-      response(0);
-    }, ms)
-  );
+  return i;
 }
 
 export function stringToBytes(str: string) {
@@ -132,7 +51,20 @@ export function isPk(obj: any): boolean {
   );
 }
 
-export function stringifyPubkeysAndBNsInObject(o: any): any {
+export function stringifyPKsAndBNs(i: any): any {
+  if (isPk(i)) {
+    return (<PublicKey>i).toBase58();
+  } else if (i instanceof BN) {
+    return (<BN>i).toString();
+  } else if (parseType(i) === 'array') {
+    return stringifyPKsAndBNInArray(i);
+  } else if (parseType(i) === 'object') {
+    return stringifyPKsAndBNsInObject(i);
+  }
+  return i;
+}
+
+function stringifyPKsAndBNsInObject(o: any): any {
   const newO = { ...o };
   for (const [k, v] of Object.entries(newO)) {
     if (isPk(v)) {
@@ -140,9 +72,9 @@ export function stringifyPubkeysAndBNsInObject(o: any): any {
     } else if (v instanceof BN) {
       newO[k] = v.toString();
     } else if (parseType(v) === 'array') {
-      newO[k] = stringifyPubkeysAndBNInArray(v as any);
-    } else if (parseType(v) === 'dict') {
-      newO[k] = stringifyPubkeysAndBNsInObject(v);
+      newO[k] = stringifyPKsAndBNInArray(v as any);
+    } else if (parseType(v) === 'object') {
+      newO[k] = stringifyPKsAndBNsInObject(v);
     } else {
       newO[k] = v;
     }
@@ -150,7 +82,7 @@ export function stringifyPubkeysAndBNsInObject(o: any): any {
   return newO;
 }
 
-export function stringifyPubkeysAndBNInArray(a: any[]): any[] {
+function stringifyPKsAndBNInArray(a: any[]): any[] {
   const newA = [];
   for (const i of a) {
     if (isPk(i)) {
@@ -158,9 +90,9 @@ export function stringifyPubkeysAndBNInArray(a: any[]): any[] {
     } else if (i instanceof BN) {
       newA.push(i.toString());
     } else if (parseType(i) === 'array') {
-      newA.push(stringifyPubkeysAndBNInArray(i));
-    } else if (parseType(i) === 'dict') {
-      newA.push(stringifyPubkeysAndBNsInObject(i));
+      newA.push(stringifyPKsAndBNInArray(i));
+    } else if (parseType(i) === 'object') {
+      newA.push(stringifyPKsAndBNs(i));
     } else {
       newA.push(i);
     }
@@ -168,7 +100,7 @@ export function stringifyPubkeysAndBNInArray(a: any[]): any[] {
   return newA;
 }
 
-export function parseType<T>(v: T): string {
+function parseType<T>(v: T): string {
   if (v === null || v === undefined) {
     return 'null';
   }
@@ -179,7 +111,7 @@ export function parseType<T>(v: T): string {
     if (v instanceof Date) {
       return 'date';
     }
-    return 'dict';
+    return 'object';
   }
   return typeof v;
 }
