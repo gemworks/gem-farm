@@ -14,28 +14,23 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, watch } from 'vue';
+import { defineComponent, ref } from 'vue';
 import useWallet from '@/composables/wallet';
 import useCluster from '@/composables/cluster';
-import { initGemFarm } from '@/common/gem-farm';
+import { BrowserWallet } from '../../../../../tests/gem-common/browser-wallet';
 
 export default defineComponent({
   setup() {
-    const { wallet, getWallet } = useWallet();
-    const { cluster, getConnection } = useCluster();
+    const { getWallet } = useWallet();
+    const { getConnection } = useCluster();
 
-    let gf: any;
-    watch([wallet, cluster], async () => {
-      gf = await initGemFarm(getConnection(), getWallet()!);
-    });
-
-    // --------------------------------------- test mint
     const mint = ref<string>();
 
     const createTestReward = async () => {
-      const { mint: rewardMint } = await gf.createTestReward(1000000);
+      const bw = new BrowserWallet(getConnection(), getWallet() as any);
+
+      const { mint: rewardMint } = await bw.createMintAndFundATA(0, 1000000);
       mint.value = rewardMint.toBase58();
-      console.log(mint.value);
     };
 
     return {

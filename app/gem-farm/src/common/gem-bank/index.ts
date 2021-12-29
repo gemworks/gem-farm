@@ -112,23 +112,22 @@ export class GemBank extends GemBankClient {
 
   async addToWhitelistWallet(
     bank: PublicKey,
-    bankManager: PublicKey,
     addressToWhitelist: PublicKey,
     whitelistType: WhitelistType
   ) {
     return this.addToWhitelist(
       bank,
-      bankManager,
+      this.wallet.publicKey,
       addressToWhitelist,
       whitelistType
     );
   }
 
-  async removeFromWhitelistWallet(
-    bank: PublicKey,
-    bankManager: PublicKey,
-    addressToRemove: PublicKey
-  ) {
-    return this.removeFromWhitelist(bank, bankManager, addressToRemove);
+  async removeFromWhitelistWallet(bank: PublicKey, addressToRemove: PublicKey) {
+    return this.removeFromWhitelist(
+      bank,
+      this.wallet.publicKey,
+      addressToRemove
+    );
   }
 }

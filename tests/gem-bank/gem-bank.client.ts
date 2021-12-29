@@ -20,7 +20,8 @@ export enum WhitelistType {
 }
 
 export class GemBankClient extends AccountUtils {
-  provider: anchor.Provider;
+  wallet: anchor.Wallet;
+  provider!: anchor.Provider;
   bankProgram!: anchor.Program<GemBank>;
 
   constructor(
@@ -30,9 +31,18 @@ export class GemBankClient extends AccountUtils {
     programId?: PublicKey
   ) {
     super(conn);
-    this.provider = new Provider(conn, wallet, Provider.defaultOptions());
-    anchor.setProvider(this.provider);
+    this.wallet = wallet;
+    this.setProvider();
     this.setBankProgram(idl, programId);
+  }
+
+  setProvider() {
+    this.provider = new Provider(
+      this.conn,
+      this.wallet,
+      Provider.defaultOptions()
+    );
+    anchor.setProvider(this.provider);
   }
 
   setBankProgram(idl?: Idl, programId?: PublicKey) {

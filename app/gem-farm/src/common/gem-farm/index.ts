@@ -35,14 +35,6 @@ export class GemFarm extends GemFarmClient {
     super(conn, wallet, farmIdl, farmProgId, bankIdl, bankProgId);
   }
 
-  async createTestReward(initialFundingAmount: number) {
-    return this.createMintAndFundATAWithWallet(
-      this.wallet,
-      0,
-      initialFundingAmount
-    );
-  }
-
   async initFarmWallet(
     rewardAMint: PublicKey,
     rewardAType: any,

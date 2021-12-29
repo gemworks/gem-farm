@@ -90,7 +90,7 @@ export class BrowserWallet extends AccountUtils {
 
   // --------------------------------------- Token Acc / ATA
 
-  async createMintAndFundATAWithWallet(
+  async createMintAndFundATA(
     decimals: number,
     amount: number,
     isAssociated = true
@@ -182,20 +182,21 @@ export class BrowserWallet extends AccountUtils {
 
   // ----------------- single
 
-  async sendAndConfirmTx(tx: TxWithSigners, payer: PublicKey): Promise<string> {
+  async sendAndConfirmTx(tx: TxWithSigners): Promise<string> {
     //these need to be done manually for a raw tx
     tx.tx.recentBlockhash = (await this.conn.getRecentBlockhash()).blockhash;
-    tx.tx.feePayer = payer;
+    tx.tx.feePayer = this.wallet.publicKey!;
     tx.signers.forEach((s) => {
       tx.tx.partialSign(s);
     });
-
     return sendAndConfirmRawTransaction(this.conn, tx.tx.serialize());
   }
 
   async sendTxWithWallet(tx: TxWithSigners) {
-    await this.wallet.signTransaction(tx.tx);
-    return this.sendAndConfirmTx(tx, this.wallet.publicKey!);
+    tx.signers.forEach((s) => {
+      tx.tx.partialSign(s);
+    });
+    return this.wallet.sendTransaction(tx.tx, this.conn);
   }
 
   // ----------------- multiple
@@ -223,7 +224,7 @@ export class BrowserWallet extends AccountUtils {
   async sendAndConfirmTxsSet(txs: TxWithSigners[]): Promise<string[]> {
     console.log(`attempting to send ${txs.length} transactions`);
     const signatures = await Promise.all(
-      txs.map((t) => this.sendAndConfirmTx(t, this.wallet.publicKey!))
+      txs.map((t) => this.sendAndConfirmTx(t))
     );
     const result = await Promise.all(
       signatures.map((s) => this.conn.confirmTransaction(s))
@@ -241,7 +242,6 @@ export class BrowserWallet extends AccountUtils {
 
   // (!) does NOT merge - will fail if one tx depends on another
   async sendTxsSetWithWallet(txs: TxWithSigners[]) {
-    await this.wallet.signAllTransactions(txs.map((t) => t.tx));
-    return this.sendAndConfirmTxsSet(txs);
+    return Promise.all(txs.map((tx) => this.sendTxWithWallet(tx)));
   }
 }
