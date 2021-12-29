@@ -11,7 +11,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, computed } from 'vue';
+import { computed, defineComponent } from 'vue';
 import { useRoute } from 'vue-router';
 import NavButton from '@/components/NavButton.vue';
 
@@ -22,9 +22,9 @@ export default defineComponent({
     const path = computed(() => route.path);
 
     const menu = [
-      { name: 'YOUR VAULT', url: '/' },
-      { name: 'FIND VAULT', url: '/find' },
-      { name: 'ALL VAULTS', url: '/all' },
+      { name: '/', url: '/' },
+      { name: 'BANK MANAGER', url: '/bank' },
+      { name: 'VAULT OWNER', url: '/vault' },
     ];
 
     return {

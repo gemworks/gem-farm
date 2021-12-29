@@ -258,12 +258,6 @@ export default defineComponent({
     const gdrs = ref([]);
     const vaultLocked = ref<boolean>(false);
 
-    const startBank = async () => {
-      const { bank: fetchedBank } = await gb.initBankWallet();
-      bank.value = fetchedBank.publicKey;
-      console.log('bank created', fetchedBank.publicKey.toBase58());
-    };
-
     const createVault = async () => {
       const { vault: fetchedVault } = await gb.initVaultWallet(bank.value);
       vault.value = fetchedVault;
@@ -317,7 +311,6 @@ export default defineComponent({
       bank,
       vault,
       vaultLocked,
-      startBank,
       createVault,
       setVaultLock,
     };

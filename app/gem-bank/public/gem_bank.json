@@ -206,6 +206,10 @@
       ],
       "args": [
         {
+          "name": "bumpAuth",
+          "type": "u8"
+        },
+        {
           "name": "bumpGemBox",
           "type": "u8"
         },
@@ -290,7 +294,15 @@
       ],
       "args": [
         {
-          "name": "bump",
+          "name": "bumpAuth",
+          "type": "u8"
+        },
+        {
+          "name": "bumpGemBox",
+          "type": "u8"
+        },
+        {
+          "name": "bumpGdr",
           "type": "u8"
         },
         {
@@ -323,14 +335,14 @@
           "isSigner": false
         },
         {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
           "name": "payer",
           "isMut": true,
           "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
         }
       ],
       "args": [

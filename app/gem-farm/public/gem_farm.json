@@ -180,7 +180,11 @@
       ],
       "args": [
         {
-          "name": "bump",
+          "name": "bumpAuth",
+          "type": "u8"
+        },
+        {
+          "name": "bumpTreasury",
           "type": "u8"
         },
         {
@@ -394,7 +398,11 @@
       ],
       "args": [
         {
-          "name": "bump",
+          "name": "bumpAuth",
+          "type": "u8"
+        },
+        {
+          "name": "bumpFarmer",
           "type": "u8"
         }
       ]
@@ -449,6 +457,10 @@
         }
       ],
       "args": [
+        {
+          "name": "bumpAuth",
+          "type": "u8"
+        },
         {
           "name": "bumpTreasury",
           "type": "u8"
@@ -634,6 +646,10 @@
       "args": [
         {
           "name": "bumpFarmer",
+          "type": "u8"
+        },
+        {
+          "name": "bumpVaultAuth",
           "type": "u8"
         },
         {
