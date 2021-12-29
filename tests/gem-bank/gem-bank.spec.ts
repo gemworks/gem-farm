@@ -1,14 +1,14 @@
 import * as anchor from '@project-serum/anchor';
 import { BN } from '@project-serum/anchor';
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
-import { ITokenData } from '../utils/account';
+import { ITokenData } from '../gem-common/account';
 import chai, { assert, expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { stringToBytes, toBase58 } from '../utils/types';
+import { stringToBytes, toBase58 } from '../gem-common/types';
 import { BankFlags, GemBankClient, WhitelistType } from './gem-bank.client';
 import { describe } from 'mocha';
-import { createMetadata } from '../utils/metaplex';
-import { prepGem } from '../utils/gem-common';
+import { createMetadata } from '../gem-common/metaplex';
+import { GemFarmClient } from '../gem-farm/gem-farm.client';
 
 chai.use(chaiAsPromised);
 
@@ -688,3 +688,14 @@ describe.skip('gem bank', () => {
     });
   });
 });
+
+export async function prepGem(
+  g: GemBankClient | GemFarmClient,
+  owner?: Keypair
+) {
+  const gemAmount = new BN(1 + Math.ceil(Math.random() * 100)); //min 2
+  const gemOwner = owner ?? (await g.createWallet(100 * LAMPORTS_PER_SOL));
+  const gem = await g.createMintAndFundATA(gemOwner.publicKey, gemAmount);
+
+  return { gemAmount, gemOwner, gem };
+}

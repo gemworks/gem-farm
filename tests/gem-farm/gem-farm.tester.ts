@@ -3,7 +3,7 @@ import {
   Numerical,
   stringifyPubkeysAndBNsInObject,
   toBN,
-} from '../utils/types';
+} from '../gem-common/types';
 import * as anchor from '@project-serum/anchor';
 import { BN } from '@project-serum/anchor';
 import {
@@ -14,8 +14,7 @@ import {
   VariableRateConfig,
 } from './gem-farm.client';
 import { Token } from '@solana/spl-token';
-import { ITokenData } from '../utils/account';
-import { prepGem } from '../utils/gem-common';
+import { ITokenData } from '../gem-common/account';
 import { assert } from 'chai';
 import { WhitelistType } from '../gem-bank/gem-bank.client';
 
@@ -119,14 +118,20 @@ export class GemFarmTester extends GemFarmClient {
     );
     this.rewardSecondMint = await this.createMint(0);
 
-    ({ gemAmount: this.gem1Amount, gem: this.gem1 } = await prepGem(
-      this,
+    ({ gemAmount: this.gem1Amount, gem: this.gem1 } = await this.prepGem(
       this.farmer1Identity
     ));
-    ({ gemAmount: this.gem2Amount, gem: this.gem2 } = await prepGem(
-      this,
+    ({ gemAmount: this.gem2Amount, gem: this.gem2 } = await this.prepGem(
       this.farmer2Identity
     ));
+  }
+
+  async prepGem(owner?: Keypair) {
+    const gemAmount = new BN(1 + Math.ceil(Math.random() * 100)); //min 2
+    const gemOwner = owner ?? (await this.createWallet(100 * LAMPORTS_PER_SOL));
+    const gem = await this.createMintAndFundATA(gemOwner.publicKey, gemAmount);
+
+    return { gemAmount, gemOwner, gem };
   }
 
   // --------------------------------------- getters

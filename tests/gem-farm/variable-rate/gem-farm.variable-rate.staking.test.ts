@@ -6,7 +6,7 @@ import {
   GemFarmTester,
 } from '../gem-farm.tester';
 import { BN } from '@project-serum/anchor';
-import { pause } from '../../utils/types';
+import { pause } from '../../gem-common/types';
 
 chai.use(chaiAsPromised);
 

@@ -2,9 +2,9 @@ import * as anchor from '@project-serum/anchor';
 import { BN } from '@project-serum/anchor';
 import { GemBankClient } from './gem-bank.client';
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
-import { ITokenData } from '../utils/account';
+import { ITokenData } from '../gem-common/account';
 import { assert } from 'chai';
-import { prepGem } from '../utils/gem-common';
+import { prepGem } from './gem-bank.spec';
 
 interface IGem {
   gem: ITokenData;
@@ -24,7 +24,7 @@ interface IVault {
  * 1) create A LOT of concurrent deposits -> make sure the program can handle
  * 2) test finding & deserializing appropriate PDA state accounts
  */
-describe.skip('looper', () => {
+describe.only('looper', () => {
   const _provider = anchor.Provider.env();
   const gb = new GemBankClient(
     _provider.connection,
