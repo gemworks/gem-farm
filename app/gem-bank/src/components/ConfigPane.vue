@@ -8,6 +8,7 @@
         <option :value="Cluster.Localnet">Localnet</option>
       </select>
     </div>
+
     <div class="nes-select is-dark flex-1">
       <select required id="wallet" v-model="chosenWallet">
         <option class="text-gray-500" :value="null">Choose wallet..</option>

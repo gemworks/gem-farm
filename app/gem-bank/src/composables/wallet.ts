@@ -50,7 +50,11 @@ export default function useWallet() {
         // only set the two if the call succeeds
         walletClass.value = gottenWallet;
         walletAdapter.value = connectedAdapter;
-        console.log('wallet successfully connected', newWallet, network.substr(0, 20));
+        console.log(
+          'wallet successfully connected',
+          newWallet,
+          network.substr(0, 20)
+        );
       })
       .catch(() => {
         console.log('oh no, failed to connect to wallet, try again');
