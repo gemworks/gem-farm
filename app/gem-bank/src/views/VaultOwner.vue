@@ -91,18 +91,12 @@ export default defineComponent({
 
     let gb: any;
     watch([wallet, cluster], async () => {
-      gb = await initGemBank(getConnection(), getWallet()!);
-      await fetchVault();
-      await populateWalletNFTs();
-      await populateGemBankNFTs();
+      await startFresh();
     });
 
     onMounted(async () => {
       if (getWallet()) {
-        gb = await initGemBank(getConnection(), getWallet()!);
-        await fetchVault();
-        await populateWalletNFTs();
-        await populateGemBankNFTs();
+        await startFresh();
       }
     });
 
@@ -110,28 +104,45 @@ export default defineComponent({
     const bank = ref<string>('99iLsAd6knmUtm5fpiF8ZNks4xR5SQWsPAYqA3ape5uq');
     const vault = ref<string>();
     const gdrs = ref([]);
-    //todo will need a diff way of getting
     const vaultLocked = ref<boolean>(false);
 
     watch(bank, async () => {
-      await fetchVault();
-      await populateWalletNFTs();
-      await populateGemBankNFTs();
+      await startFresh();
     });
 
+    const startFresh = async () => {
+      vault.value = undefined;
+      gdrs.value = [];
+      vaultLocked.value = false;
+
+      gb = await initGemBank(getConnection(), getWallet()!);
+      await fetchVault();
+      if (vault.value) {
+        await Promise.all([populateWalletNFTs(), populateGemBankNFTs()]);
+      }
+    };
+
     const fetchVault = async () => {
-      const [vaultAddr] = await gb.findVaultPDA(
-        new PublicKey(bank.value!),
-        getWallet()!.publicKey
-      );
       try {
-        await gb.fetchVaultAcc(vaultAddr);
-        //if this goes through, then the vault exists
-        vault.value = vaultAddr.toBase58();
-        console.log('found vault', vault.value);
+        const bankPk = new PublicKey(bank.value!);
+        const [vaultAddr] = await gb.findVaultPDA(
+          bankPk,
+          getWallet()!.publicKey
+        );
+        try {
+          //if this goes through, then the vault exists
+          const acc = await gb.fetchVaultAcc(vaultAddr);
+
+          vault.value = vaultAddr.toBase58();
+          vaultLocked.value = acc.locked;
+          console.log('found vault', vault.value);
+        } catch (e) {
+          vault.value = undefined;
+          vaultLocked.value = false;
+          console.log('looks like vault doesnt exist');
+        }
       } catch (e) {
-        vault.value = undefined;
-        console.log('looks like vault doesnt exist');
+        console.log('bad bank public key');
       }
     };
 
@@ -184,6 +195,11 @@ export default defineComponent({
     const toVaultNFTs = ref<INFT[]>([]);
 
     const populateWalletNFTs = async () => {
+      // zero out to begin with
+      currentWalletNFTs.value = [];
+      selectedWalletNFTs.value = [];
+      desiredWalletNFTs.value = [];
+
       if (getWallet()) {
         currentWalletNFTs.value = await getNFTsByOwner(
           getWallet()!.publicKey!,
@@ -194,6 +210,11 @@ export default defineComponent({
     };
 
     const populateGemBankNFTs = async () => {
+      // zero out to begin with
+      currentVaultNFTs.value = [];
+      selectedVaultNFTs.value = [];
+      desiredVaultNFTs.value = [];
+
       const foundGDRs = await gb.fetchAllGdrPDAs(new PublicKey(vault.value!));
       if (foundGDRs && foundGDRs.length) {
         gdrs.value = foundGDRs;

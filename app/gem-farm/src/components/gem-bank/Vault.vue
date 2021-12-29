@@ -101,6 +101,11 @@ export default defineComponent({
     // --------------------------------------- populate initial nfts
 
     const populateWalletNFTs = async () => {
+      // zero out to begin with
+      currentWalletNFTs.value = [];
+      selectedWalletNFTs.value = [];
+      desiredWalletNFTs.value = [];
+
       if (getWallet()) {
         currentWalletNFTs.value = await getNFTsByOwner(
           getWallet()!.publicKey!,
@@ -111,6 +116,11 @@ export default defineComponent({
     };
 
     const populateVaultNFTs = async () => {
+      // zero out to begin with
+      currentVaultNFTs.value = [];
+      selectedVaultNFTs.value = [];
+      desiredVaultNFTs.value = [];
+
       const foundGDRs = await gb.fetchAllGdrPDAs(vault.value);
       if (foundGDRs && foundGDRs.length) {
         gdrs.value = foundGDRs;
@@ -140,8 +150,7 @@ export default defineComponent({
       gb = await initGemBank(getConnection(), getWallet()!);
 
       //populate wallet + vault nfts
-      await populateWalletNFTs();
-      await populateVaultNFTs();
+      await Promise.all([populateWalletNFTs(), populateVaultNFTs()]);
     });
 
     onMounted(async () => {
@@ -151,15 +160,8 @@ export default defineComponent({
       vault.value = new PublicKey(props.vault!);
       await updateVaultState();
 
-      //check how many proofs there are for this bank
-      const proofs = await gb.fetchAllWhitelistProofPDAs(
-        new PublicKey(bank.value!)
-      );
-      console.log('proofs', proofs);
-
       //populate wallet + vault nfts
-      await populateVaultNFTs();
-      await populateWalletNFTs();
+      await Promise.all([populateWalletNFTs(), populateVaultNFTs()]);
     });
 
     // --------------------------------------- moving nfts
@@ -215,8 +217,7 @@ export default defineComponent({
       for (const nft of toWalletNFTs.value) {
         await withdrawGem(nft.mint);
       }
-      await populateWalletNFTs();
-      await populateVaultNFTs();
+      await Promise.all([populateWalletNFTs(), populateVaultNFTs()]);
     };
 
     //to vault = vault desired - vault current

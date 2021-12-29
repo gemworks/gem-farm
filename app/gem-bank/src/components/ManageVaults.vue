@@ -78,6 +78,7 @@ export default defineComponent({
     // --------------------------------------- view vault
     const selectedVault = ref<string>();
     const selectedVaultAcc = ref<any>();
+    const selectedVaultIndex = ref<number>(0);
 
     const fetchedVaultList = ref<any[]>([]);
     const fetchedVaultNFTs = ref<INFT[]>();
@@ -91,6 +92,7 @@ export default defineComponent({
       const idx = fetchedVaultList.value.findIndex(
         (fv) => fv.publicKey.toBase58() === selectedVault.value
       );
+      selectedVaultIndex.value = idx;
       selectedVaultAcc.value = fetchedVaultList.value[idx].account;
     };
 
@@ -101,7 +103,8 @@ export default defineComponent({
         fetchedVaultList.value = vaults;
         console.log('found vaults', stringifyPKsAndBNs(vaults));
 
-        selectedVault.value = vaults[0].publicKey.toBase58();
+        selectedVault.value =
+          vaults[selectedVaultIndex.value].publicKey.toBase58();
         updateVaultByPk();
         await loadNFTs();
       }

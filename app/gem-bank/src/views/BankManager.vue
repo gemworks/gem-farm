@@ -5,6 +5,7 @@
     <!--if a bank exists-->
     <div v-if="bank">
       <BankDetails
+        v-if="bankAcc"
         :key="bankAcc"
         :bank="bank"
         :bankAcc="bankAcc"
