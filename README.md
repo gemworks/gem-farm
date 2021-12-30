@@ -8,7 +8,7 @@ Currently it consists of:
 
 Gem Bank lets you manage a whitelisted collection of gems across any number of lockable vaults.
 
-# Gem Farm 🚜
+# Gem Farm 🧑‍🌾
 
 Gem Farm lets you offer a yield-bearing facility to loyal gem stakers.
 
