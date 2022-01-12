@@ -163,13 +163,21 @@ fn assert_whitelisted(ctx: &Context<DepositGem>) -> ProgramResult {
                 continue;
             }
 
-            return assert_valid_whitelist_proof(
+            // check if creator is whitelisted, returns an error if not
+            let attempted_proof = assert_valid_whitelist_proof(
                 creator_whitelist_proof_info,
                 &bank.key(),
                 &creator.address,
                 ctx.program_id,
                 WhitelistType::CREATOR,
             );
+
+            match attempted_proof {
+                //proof succeeded, return out of the function, no need to continue looping
+                Ok(()) => return Ok(()),
+                //proof failed, continue to check next creator
+                Err(_e) => continue,
+            }
         }
     }
 

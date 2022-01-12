@@ -24,7 +24,7 @@ interface IVault {
  * 1) create A LOT of concurrent deposits -> make sure the program can handle
  * 2) test finding & deserializing appropriate PDA state accounts
  */
-describe.skip('looper', () => {
+describe('looper', () => {
   const _provider = anchor.Provider.env();
   const gb = new GemBankClient(
     _provider.connection,
