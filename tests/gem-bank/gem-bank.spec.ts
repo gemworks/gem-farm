@@ -12,7 +12,7 @@ import { NodeWallet } from '../gem-common/node-wallet';
 
 chai.use(chaiAsPromised);
 
-describe.only('gem bank', () => {
+describe('gem bank', () => {
   const _provider = anchor.Provider.env();
   const gb = new GemBankClient(
     _provider.connection,

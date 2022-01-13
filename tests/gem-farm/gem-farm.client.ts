@@ -46,6 +46,11 @@ export interface VariableRateConfig {
   durationSec: BN;
 }
 
+export interface RarityConfig {
+  mint: PublicKey;
+  rarityPoints: number;
+}
+
 export class GemFarmClient extends GemBankClient {
   farmProgram!: anchor.Program<GemFarm>;
 
@@ -1020,6 +1025,55 @@ export class GemFarmClient extends GemBankClient {
     return {
       gemRarity,
       gemRarityBump,
+      txSig,
+    };
+  }
+
+  async recordMultipleRarities(
+    farm: PublicKey,
+    farmManager: PublicKey | Keypair,
+    ratityConfigs: RarityConfig[]
+  ) {
+    const completeRarityConfigs = [...ratityConfigs];
+    const remainingAccounts = [];
+
+    for (const config of completeRarityConfigs) {
+      const [gemRarity] = await this.findRarityPDA(farm, config.mint);
+      //add mint
+      remainingAccounts.push({
+        pubkey: config.mint,
+        isWritable: false,
+        isSigner: false,
+      });
+      //add rarity pda
+      remainingAccounts.push({
+        pubkey: gemRarity,
+        isWritable: true,
+        isSigner: false,
+      });
+    }
+
+    const signers = [];
+    if (isKp(farmManager)) signers.push(<Keypair>farmManager);
+
+    console.log('recording rarity for multiple mints');
+    const txSig = await this.farmProgram.rpc.recordMultipleRarities(
+      completeRarityConfigs,
+      {
+        accounts: {
+          farm,
+          farmManager: isKp(farmManager)
+            ? (<Keypair>farmManager).publicKey
+            : farmManager,
+          systemProgram: SystemProgram.programId,
+        },
+        remainingAccounts,
+        signers,
+      }
+    );
+
+    return {
+      completeRarityConfigs,
       txSig,
     };
   }

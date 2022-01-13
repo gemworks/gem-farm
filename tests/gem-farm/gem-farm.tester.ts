@@ -6,6 +6,7 @@ import {
   FarmConfig,
   FixedRateConfig,
   GemFarmClient,
+  RarityConfig,
   RewardType,
   VariableRateConfig,
 } from './gem-farm.client';
@@ -344,6 +345,25 @@ export class GemFarmTester extends GemFarmClient {
       this.farm.publicKey,
       this.farmManager,
       this.rewardMint.publicKey
+    );
+  }
+
+  // --------------------------------------- rarities
+
+  async callRecordRarity(gemMint: PublicKey, rarityPoints: number) {
+    return this.recordRarity(
+      this.farm.publicKey,
+      this.farmManager,
+      gemMint,
+      rarityPoints
+    );
+  }
+
+  async callRecordMultipleRarities(rarityConfigs: RarityConfig[]) {
+    return this.recordMultipleRarities(
+      this.farm.publicKey,
+      this.farmManager,
+      rarityConfigs
     );
   }
 

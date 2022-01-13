@@ -14,7 +14,6 @@ const farmConfig = <FarmConfig>{
   unstakingFeeLamp: new BN(LAMPORTS_PER_SOL),
 };
 
-//this test
 describe('farmer lifecycle (unstaked -> staked -> cooldown)', () => {
   let gf = new GemFarmTester();
 

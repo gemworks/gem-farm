@@ -42,10 +42,20 @@ pub fn handler<'a, 'b, 'c, 'info>(
 ) -> ProgramResult {
     let remaining_accs = &mut ctx.remaining_accounts.iter();
 
-    // todo need to figure out max per compute budget
+    // the limiting factor here is actually not compute budget, but tx size client-side
     for config in rarity_configs.iter() {
         let gem_mint = next_account_info(remaining_accs)?;
         let gem_rarity = next_account_info(remaining_accs)?;
+
+        // find bump - doing this program-side to reduce amount of info to be passed in (tx size)
+        let (_pk, bump) = Pubkey::find_program_address(
+            &[
+                b"gem_rarity".as_ref(),
+                ctx.accounts.farm.key().as_ref(),
+                gem_mint.key().as_ref(),
+            ],
+            ctx.program_id,
+        );
 
         // create the PDA if doesn't exist
         if gem_rarity.data_is_empty() {
@@ -54,7 +64,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
                     b"gem_rarity".as_ref(),
                     ctx.accounts.farm.key().as_ref(),
                     gem_mint.key().as_ref(),
-                    &[config.bump],
+                    &[bump],
                 ],
                 gem_rarity,
                 8 + std::mem::size_of::<Rarity>(),
@@ -74,10 +84,10 @@ pub fn handler<'a, 'b, 'c, 'info>(
     Ok(())
 }
 
+// try to make this as small as possible, to fit in max # of txs
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug, Default, PartialEq)]
 pub struct RarityConfig {
     pub mint: Pubkey,
-    pub bump: u8,
     pub rarity_points: u16,
 }
 
