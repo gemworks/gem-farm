@@ -142,9 +142,10 @@ export class GemFarmClient extends GemBankClient {
     ]);
   }
 
-  async findRarityPDA(mint: PublicKey) {
+  async findRarityPDA(farm: PublicKey, mint: PublicKey) {
     return this.findProgramAddress(this.farmProgram.programId, [
       'gem_rarity',
+      farm,
       mint,
     ]);
   }
@@ -215,6 +216,7 @@ export class GemFarmClient extends GemBankClient {
   }
 
   async fetchAllRarityPDAs() {
+    //todo need to add client-side (not stored in PDA) filtering based on finding PDAs for given farm and mint
     const pdas = await this.farmProgram.account.rarity.all();
     console.log(`found a total of ${pdas.length} rarity PDAs`);
     return pdas;
@@ -987,26 +989,39 @@ export class GemFarmClient extends GemBankClient {
   // --------------------------------------- rarity
 
   async recordRarity(
+    farm: PublicKey,
+    farmManager: PublicKey | Keypair,
     gemMint: PublicKey,
-    gemMetadata: PublicKey,
-    gemUpdateAuthority: PublicKey | Keypair,
-    payer: PublicKey | Keypair,
     rarityPoints: number
   ) {
-    const [rarityPDA, rarityBump] = await this.findRarityPDA(gemMint);
+    const [gemRarity, gemRarityBump] = await this.findRarityPDA(farm, gemMint);
 
     const signers = [];
-    if (isKp(gemUpdateAuthority)) signers.push(<Keypair>gemUpdateAuthority);
-    if (isKp(payer)) signers.push(<Keypair>payer);
+    if (isKp(farmManager)) signers.push(<Keypair>farmManager);
 
     console.log('recording rarity for mint', gemMint.toBase58());
     const txSig = await this.farmProgram.rpc.recordRarity(
-      rarityBump,
+      gemRarityBump,
       rarityPoints,
       {
-        accounts: {},
+        accounts: {
+          farm,
+          farmManager: isKp(farmManager)
+            ? (<Keypair>farmManager).publicKey
+            : farmManager,
+          gemMint,
+          gemRarity,
+          systemProgram: SystemProgram.programId,
+        },
+        signers,
       }
     );
+
+    return {
+      gemRarity,
+      gemRarityBump,
+      txSig,
+    };
   }
 
   // --------------------------------------- helpers
