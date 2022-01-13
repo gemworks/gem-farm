@@ -661,6 +661,10 @@ export class GemFarmClient extends GemBankClient {
     const [gemBox, gemBoxBump] = await this.findGemBoxPDA(vault, gemMint);
     const [GDR, GDRBump] = await this.findGdrPDA(vault, gemMint);
     const [vaultAuth, vaultAuthBump] = await this.findVaultAuthorityPDA(vault);
+    const [gemRarity, gemRarityBump] = await this.findRarityPDA(
+      farmAcc.bank,
+      gemMint
+    );
 
     const remainingAccounts = [];
     if (mintProof)
@@ -691,6 +695,7 @@ export class GemFarmClient extends GemBankClient {
       vaultAuthBump,
       gemBoxBump,
       GDRBump,
+      gemRarityBump,
       gemAmount,
       {
         accounts: {
@@ -705,6 +710,7 @@ export class GemFarmClient extends GemBankClient {
           gemDepositReceipt: GDR,
           gemSource,
           gemMint,
+          gemRarity,
           tokenProgram: TOKEN_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,

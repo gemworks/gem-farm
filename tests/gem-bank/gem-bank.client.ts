@@ -371,6 +371,7 @@ export class GemBankClient extends AccountUtils {
     const [gemBox, gemBoxBump] = await this.findGemBoxPDA(vault, gemMint);
     const [GDR, GDRBump] = await this.findGdrPDA(vault, gemMint);
     const [vaultAuth, vaultAuthBump] = await this.findVaultAuthorityPDA(vault);
+    const [gemRarity, gemRarityBump] = await this.findRarityPDA(bank, gemMint);
 
     const remainingAccounts = [];
     if (mintProof)
@@ -402,6 +403,7 @@ export class GemBankClient extends AccountUtils {
       vaultAuthBump,
       gemBoxBump,
       GDRBump,
+      gemRarityBump,
       gemAmount,
       {
         accounts: {
@@ -415,6 +417,7 @@ export class GemBankClient extends AccountUtils {
           gemDepositReceipt: GDR,
           gemSource,
           gemMint,
+          gemRarity,
           tokenProgram: TOKEN_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -431,6 +434,8 @@ export class GemBankClient extends AccountUtils {
       gemBoxBump,
       GDR,
       GDRBump,
+      gemRarity,
+      gemRarityBump,
       txSig,
     };
   }
@@ -446,6 +451,7 @@ export class GemBankClient extends AccountUtils {
     const [gemBox, gemBoxBump] = await this.findGemBoxPDA(vault, gemMint);
     const [GDR, GDRBump] = await this.findGdrPDA(vault, gemMint);
     const [vaultAuth, vaultAuthBump] = await this.findVaultAuthorityPDA(vault);
+    const [gemRarity, gemRarityBump] = await this.findRarityPDA(bank, gemMint);
 
     const gemDestination = await this.findATA(gemMint, receiver);
 
@@ -459,6 +465,7 @@ export class GemBankClient extends AccountUtils {
       vaultAuthBump,
       gemBoxBump,
       GDRBump,
+      gemRarityBump,
       gemAmount,
       {
         accounts: {
@@ -472,6 +479,7 @@ export class GemBankClient extends AccountUtils {
           gemDepositReceipt: GDR,
           gemDestination,
           gemMint,
+          gemRarity,
           receiver,
           tokenProgram: TOKEN_PROGRAM_ID,
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -487,6 +495,8 @@ export class GemBankClient extends AccountUtils {
       gemBoxBump,
       GDR,
       GDRBump,
+      gemRarity,
+      gemRarityBump,
       vaultAuth,
       vaultAuthBump,
       gemDestination,

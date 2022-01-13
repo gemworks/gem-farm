@@ -40,6 +40,7 @@ pub mod gem_bank {
         _bump_auth: u8,
         _bump_gem_box: u8,
         _bump_gdr: u8,
+        _bump_rarity: u8,
         amount: u64,
     ) -> ProgramResult {
         instructions::deposit_gem::handler(ctx, amount)
@@ -50,6 +51,7 @@ pub mod gem_bank {
         _bump_auth: u8,
         _bump_gem_box: u8,
         _bump_gdr: u8,
+        _bump_rarity: u8,
         amount: u64,
     ) -> ProgramResult {
         instructions::withdraw_gem::handler(ctx, amount)

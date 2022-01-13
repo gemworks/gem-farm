@@ -27,7 +27,7 @@ const shortFixedConfig = <FixedRateConfig>{
   durationSec: new BN(5), //5s only
 };
 
-describe('staking (fixed rate)', () => {
+describe.only('staking (fixed rate)', () => {
   let gf = new GemFarmTester();
 
   beforeEach('preps accs', async () => {
@@ -200,6 +200,7 @@ describe('staking (fixed rate)', () => {
 
     let vaultAcc = await gf.fetchVaultAcc(vault);
     assert(vaultAcc.gemCount.eq(initialDeposit));
+    assert(vaultAcc.rarityPoints.eq(initialDeposit));
     assert.isTrue(vaultAcc.locked);
 
     let farmAcc = await gf.fetchFarm();
@@ -226,6 +227,7 @@ describe('staking (fixed rate)', () => {
 
     vaultAcc = await gf.fetchVaultAcc(vault);
     assert(vaultAcc.gemCount.eq(initialDeposit.add(flashDeposit)));
+    assert(vaultAcc.rarityPoints.eq(initialDeposit.add(flashDeposit)));
     assert.isTrue(vaultAcc.locked);
 
     farmAcc = await gf.fetchFarm();
@@ -246,7 +248,7 @@ describe('staking (fixed rate)', () => {
     assert(originalDuration.gt(newDuration)); //since less time left on schedule
   });
 
-  it('flash deposits a gem (whitelisted mint)', async () => {
+  it.only('flash deposits a gem (whitelisted mint)', async () => {
     //get the gems back, we'll need them for 2 separate deposits
     await gf.callWithdraw(gf.gem1Amount, gf.farmer1Identity);
 
@@ -267,10 +269,11 @@ describe('staking (fixed rate)', () => {
     //this is enough to verify it worked
     const vaultAcc = await gf.fetchVaultAcc(vault);
     assert(vaultAcc.gemCount.eq(initialDeposit.add(flashDeposit)));
+    assert(vaultAcc.rarityPoints.eq(initialDeposit.add(flashDeposit)));
     assert.isTrue(vaultAcc.locked);
   });
 
-  it('flash deposits a gem (whitelisted creator)', async () => {
+  it.only('flash deposits a gem (whitelisted creator)', async () => {
     //get the gems back, we'll need them for 2 separate deposits
     await gf.callWithdraw(gf.gem1Amount, gf.farmer1Identity);
 
@@ -303,6 +306,7 @@ describe('staking (fixed rate)', () => {
     //this is enough to verify it worked
     const vaultAcc = await gf.fetchVaultAcc(vault);
     assert(vaultAcc.gemCount.eq(initialDeposit.add(flashDeposit)));
+    assert(vaultAcc.rarityPoints.eq(initialDeposit.add(flashDeposit)));
     assert.isTrue(vaultAcc.locked);
   });
 });

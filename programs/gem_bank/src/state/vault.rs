@@ -33,6 +33,10 @@ pub struct Vault {
 
     /// gem_boxes can store >1 token, see detailed explanation on GDR
     pub gem_count: u64,
+
+    /// each gem has a rarity of 1 if not specified
+    /// thus worst case, when rarities aren't enabled, this is == gem_count
+    pub rarity_points: u64,
 }
 
 impl Vault {

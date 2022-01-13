@@ -109,10 +109,18 @@ pub mod gem_farm {
         bump_vault_auth: u8,
         bump_gem_box: u8,
         bump_gdr: u8,
+        bump_rarity: u8,
         amount: u64,
     ) -> ProgramResult {
         msg!("flash deposit");
-        instructions::flash_deposit::handler(ctx, bump_vault_auth, bump_gem_box, bump_gdr, amount)
+        instructions::flash_deposit::handler(
+            ctx,
+            bump_vault_auth,
+            bump_gem_box,
+            bump_gdr,
+            bump_rarity,
+            amount,
+        )
     }
 
     pub fn refresh_farmer(ctx: Context<RefreshFarmer>, _bump: u8) -> ProgramResult {

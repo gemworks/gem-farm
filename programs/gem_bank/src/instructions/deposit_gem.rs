@@ -8,7 +8,7 @@ use metaplex_token_metadata::state::Metadata;
 use crate::state::*;
 
 #[derive(Accounts)]
-#[instruction(bump_auth: u8, bump_gem_box: u8, bump_gdr: u8)]
+#[instruction(bump_auth: u8, bump_gem_box: u8, bump_gdr: u8, bump_rarity: u8)]
 pub struct DepositGem<'info> {
     // bank
     pub bank: Box<Account<'info, Bank>>,
@@ -48,6 +48,13 @@ pub struct DepositGem<'info> {
     #[account(mut)]
     pub gem_source: Box<Account<'info, TokenAccount>>,
     pub gem_mint: Box<Account<'info, Mint>>,
+    // we MUST ask for this PDA both during deposit and withdrawal for sec reasons, even if it's zero'ed
+    #[account(seeds = [
+            b"gem_rarity".as_ref(),
+            bank.key().as_ref(),
+            gem_mint.key().as_ref()
+        ], bump = bump_rarity)]
+    pub gem_rarity: AccountInfo<'info>,
 
     // misc
     pub token_program: Program<'info, Token>,
@@ -141,7 +148,7 @@ fn assert_whitelisted(ctx: &Context<DepositGem>) -> ProgramResult {
             ctx.program_id,
             WhitelistType::MINT,
         ) {
-            msg!("mint whitelisted: {}, going ahead", &mint.key());
+            // msg!("mint whitelisted: {}, going ahead", &mint.key());
             return Ok(());
         }
     }
@@ -185,6 +192,16 @@ fn assert_whitelisted(ctx: &Context<DepositGem>) -> ProgramResult {
     Err(ErrorCode::NotWhitelisted.into())
 }
 
+/// if rarity account is present, extract rarities from there - else use 1 * amount
+pub fn calc_rarity_points(gem_rarity: &AccountInfo, amount: u64) -> Result<u64, ProgramError> {
+    if !gem_rarity.data_is_empty() {
+        let rarity_account = Account::<Rarity>::try_from(gem_rarity)?;
+        amount.try_mul(rarity_account.points as u64)
+    } else {
+        Ok(amount)
+    }
+}
+
 pub fn handler(ctx: Context<DepositGem>, amount: u64) -> ProgramResult {
     // if even a single whitelist exists, verify the token against it
     let bank = &*ctx.accounts.bank;
@@ -213,6 +230,9 @@ pub fn handler(ctx: Context<DepositGem>, amount: u64) -> ProgramResult {
     let vault = &mut ctx.accounts.vault;
     vault.gem_box_count.try_add_assign(1)?;
     vault.gem_count.try_add_assign(amount)?;
+    vault
+        .rarity_points
+        .try_add_assign(calc_rarity_points(&ctx.accounts.gem_rarity, amount)?)?;
 
     // record a gdr
     let gdr = &mut *ctx.accounts.gem_deposit_receipt;
@@ -225,10 +245,10 @@ pub fn handler(ctx: Context<DepositGem>, amount: u64) -> ProgramResult {
 
     // this check is semi-useless but won't hurt
     if gdr.gem_count != gem_box.amount + amount {
-        msg!("{} {}", gdr.gem_count, gem_box.amount);
+        // msg!("{} {}", gdr.gem_count, gem_box.amount);
         return Err(ErrorCode::AmountMismatch.into());
     }
 
-    msg!("{} gems deposited into {} gem box", amount, gem_box.key());
+    // msg!("{} gems deposited into {} gem box", amount, gem_box.key());
     Ok(())
 }
