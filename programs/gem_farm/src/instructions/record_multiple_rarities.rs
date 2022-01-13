@@ -42,14 +42,10 @@ pub fn handler<'a, 'b, 'c, 'info>(
 ) -> ProgramResult {
     let remaining_accs = &mut ctx.remaining_accounts.iter();
 
-    msg!("yay");
-
     // todo need to figure out max per compute budget
     for config in rarity_configs.iter() {
         let gem_mint = next_account_info(remaining_accs)?;
         let gem_rarity = next_account_info(remaining_accs)?;
-
-        msg!("rarity {}", gem_rarity.key());
 
         // create the PDA if doesn't exist
         if gem_rarity.data_is_empty() {
@@ -67,10 +63,12 @@ pub fn handler<'a, 'b, 'c, 'info>(
                 &ctx.accounts.system_program.to_account_info(),
             )?;
         }
-        // let gem_rarity = &mut Account::<Rarity>::try_from(gem_rarity)?;
-        // msg!("3");
-        // gem_rarity.points = config.rarity_points;
-        // msg!("4");
+
+        let disc = hash("account:Rarity".as_bytes());
+
+        let mut gem_rarity_raw = gem_rarity.data.borrow_mut();
+        gem_rarity_raw[..8].clone_from_slice(&disc.0[..8]);
+        gem_rarity_raw[8..10].clone_from_slice(&config.rarity_points.to_le_bytes());
     }
 
     Ok(())
