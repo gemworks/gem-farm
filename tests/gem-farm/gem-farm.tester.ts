@@ -137,7 +137,7 @@ export class GemFarmTester extends GemFarmClient {
   }
 
   async prepGem(owner?: Keypair) {
-    const gemAmount = new BN(1 + Math.ceil(Math.random() * 100)); //min 2
+    const gemAmount = new BN(1000 + Math.ceil(Math.random() * 100)); //min 1000
     const gemOwner =
       owner ?? (await this.nw.createFundedWallet(100 * LAMPORTS_PER_SOL));
     const gem = await this.nw.createMintAndFundATA(

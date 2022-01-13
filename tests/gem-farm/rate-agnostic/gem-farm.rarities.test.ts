@@ -8,7 +8,7 @@ import { toBN } from '../../gem-common/types';
 
 chai.use(chaiAsPromised);
 
-describe('rarities', () => {
+describe.only('rarities', () => {
   let gf = new GemFarmTester();
 
   beforeEach('preps accs', async () => {
@@ -69,7 +69,8 @@ describe('rarities', () => {
     ];
     await gf.callAddRaritiesToBank(configs);
 
-    await gf.callDeposit(gf.gem1Amount, gf.farmer1Identity);
+    //deposit
+    await gf.callDeposit(200, gf.farmer1Identity);
 
     const farm = await gf.fetchFarm();
     const [vault] = await gf.findVaultPDA(
@@ -77,13 +78,30 @@ describe('rarities', () => {
       gf.farmer1Identity.publicKey
     );
     let vaultAcc = await gf.fetchVaultAcc(vault);
-    assert(vaultAcc.gemCount.eq(gf.gem1Amount));
-    assert(vaultAcc.rarityPoints.eq(gf.gem1Amount.mul(toBN(15))));
+    assert(vaultAcc.gemCount.eq(toBN(200)));
+    assert(vaultAcc.rarityPoints.eq(toBN(200).mul(toBN(15))));
 
-    await gf.callWithdraw(gf.gem1Amount, gf.farmer1Identity);
+    //withdraw some but not all
+    await gf.callWithdraw(150, gf.farmer1Identity);
+
+    vaultAcc = await gf.fetchVaultAcc(vault);
+    assert(vaultAcc.gemCount.eq(toBN(50)));
+    assert(vaultAcc.rarityPoints.eq(toBN(50).mul(toBN(15))));
+
+    //add some more (now total 250)
+    await gf.callDeposit(200, gf.farmer1Identity);
+
+    vaultAcc = await gf.fetchVaultAcc(vault);
+    assert(vaultAcc.gemCount.eq(toBN(250)));
+    assert(vaultAcc.rarityPoints.eq(toBN(250).mul(toBN(15))));
+
+    //withdraw all
+    await gf.callWithdraw(250, gf.farmer1Identity);
 
     vaultAcc = await gf.fetchVaultAcc(vault);
     assert(vaultAcc.gemCount.eq(toBN(0)));
     assert(vaultAcc.rarityPoints.eq(toBN(0)));
+
+    //withdraw all
   });
 });

@@ -13,7 +13,7 @@ pub struct AddRaritiesToBank<'info> {
     pub farm: Box<Account<'info, Farm>>,
     #[account(mut)]
     pub farm_manager: Signer<'info>,
-    #[account(mut, seeds = [farm.key().as_ref()], bump = bump_auth)]
+    #[account(seeds = [farm.key().as_ref()], bump = bump_auth)]
     pub farm_authority: AccountInfo<'info>,
 
     // cpi

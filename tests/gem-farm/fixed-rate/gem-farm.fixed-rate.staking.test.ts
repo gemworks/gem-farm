@@ -27,7 +27,7 @@ const shortFixedConfig = <FixedRateConfig>{
   durationSec: new BN(5), //5s only
 };
 
-describe.only('staking (fixed rate)', () => {
+describe('staking (fixed rate)', () => {
   let gf = new GemFarmTester();
 
   beforeEach('preps accs', async () => {
@@ -248,7 +248,7 @@ describe.only('staking (fixed rate)', () => {
     assert(originalDuration.gt(newDuration)); //since less time left on schedule
   });
 
-  it.only('flash deposits a gem (whitelisted mint)', async () => {
+  it('flash deposits a gem (whitelisted mint)', async () => {
     //get the gems back, we'll need them for 2 separate deposits
     await gf.callWithdraw(gf.gem1Amount, gf.farmer1Identity);
 
@@ -273,7 +273,7 @@ describe.only('staking (fixed rate)', () => {
     assert.isTrue(vaultAcc.locked);
   });
 
-  it.only('flash deposits a gem (whitelisted creator)', async () => {
+  it('flash deposits a gem (whitelisted creator)', async () => {
     //get the gems back, we'll need them for 2 separate deposits
     await gf.callWithdraw(gf.gem1Amount, gf.farmer1Identity);
 
