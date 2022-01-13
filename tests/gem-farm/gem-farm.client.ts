@@ -101,6 +101,10 @@ export class GemFarmClient extends GemBankClient {
     return this.getBalance(treasury);
   }
 
+  async fetchRarity(rarity: PublicKey) {
+    return this.farmProgram.account.rarity.fetch(rarity);
+  }
+
   // --------------------------------------- find PDA addresses
 
   async findFarmerPDA(farm: PublicKey, identity: PublicKey) {
@@ -135,6 +139,13 @@ export class GemFarmClient extends GemBankClient {
       'reward_pot',
       farm,
       rewardMint,
+    ]);
+  }
+
+  async findRarityPDA(mint: PublicKey) {
+    return this.findProgramAddress(this.farmProgram.programId, [
+      'gem_rarity',
+      mint,
     ]);
   }
 
@@ -200,6 +211,12 @@ export class GemFarmClient extends GemBankClient {
     }
     const pdas = await this.farmProgram.account.authorizationProof.all(filter);
     console.log(`found a total of ${pdas.length} authorized funders`);
+    return pdas;
+  }
+
+  async fetchAllRarityPDAs() {
+    const pdas = await this.farmProgram.account.rarity.all();
+    console.log(`found a total of ${pdas.length} rarity PDAs`);
     return pdas;
   }
 
@@ -965,6 +982,31 @@ export class GemFarmClient extends GemBankClient {
     });
 
     return { txSig };
+  }
+
+  // --------------------------------------- rarity
+
+  async recordRarity(
+    gemMint: PublicKey,
+    gemMetadata: PublicKey,
+    gemUpdateAuthority: PublicKey | Keypair,
+    payer: PublicKey | Keypair,
+    rarityPoints: number
+  ) {
+    const [rarityPDA, rarityBump] = await this.findRarityPDA(gemMint);
+
+    const signers = [];
+    if (isKp(gemUpdateAuthority)) signers.push(<Keypair>gemUpdateAuthority);
+    if (isKp(payer)) signers.push(<Keypair>payer);
+
+    console.log('recording rarity for mint', gemMint.toBase58());
+    const txSig = await this.farmProgram.rpc.recordRarity(
+      rarityBump,
+      rarityPoints,
+      {
+        accounts: {},
+      }
+    );
   }
 
   // --------------------------------------- helpers

@@ -169,4 +169,15 @@ pub mod gem_farm {
         msg!("lock reward");
         instructions::lock_reward::handler(ctx)
     }
+
+    // --------------------------------------- rarity
+
+    pub fn record_rarity(
+        ctx: Context<RecordRarity>,
+        _bump: u8,
+        rarity_point: u16,
+    ) -> ProgramResult {
+        msg!("record rarity");
+        instructions::record_rarity::handler(ctx, rarity_point)
+    }
 }

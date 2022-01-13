@@ -592,6 +592,7 @@ dependencies = [
  "bytemuck",
  "gem_bank",
  "gem_common",
+ "metaplex-token-metadata",
  "static_assertions",
  "thiserror",
 ]

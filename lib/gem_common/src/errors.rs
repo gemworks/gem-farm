@@ -91,8 +91,12 @@ pub enum ErrorCode {
     #[msg("reward has insufficient funding, please top up")]
     RewardUnderfunded, //0x159
 
-    Reserved46,
-    Reserved47,
+    #[msg("update authority passed doesnt match that stored in metadata")]
+    WrongUpdateAuthority,
+
+    #[msg("wrong metadata account, gem mint doesn't match")]
+    WrongMetadata,
+
     Reserved48,
     Reserved49,
     Reserved50,
