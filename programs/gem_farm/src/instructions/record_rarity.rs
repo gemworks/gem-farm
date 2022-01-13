@@ -1,8 +1,8 @@
+// todo delete?
+
 pub use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
-pub use gem_common::errors::*;
 pub use gem_common::*;
-use metaplex_token_metadata::state::Metadata;
 
 pub use crate::state::*;
 
@@ -10,7 +10,7 @@ pub use crate::state::*;
 #[instruction(bump: u8)]
 pub struct RecordRarity<'info> {
     // farm
-    #[account(mut, has_one = farm_manager)]
+    #[account(has_one = farm_manager)]
     pub farm: Box<Account<'info, Farm>>,
     #[account(mut)]
     pub farm_manager: Signer<'info>,

@@ -180,4 +180,12 @@ pub mod gem_farm {
         msg!("record rarity");
         instructions::record_rarity::handler(ctx, rarity_point)
     }
+
+    pub fn record_multiple_rarities<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, RecordMultipleRarities<'info>>,
+        rarity_configs: Vec<RarityConfig>,
+    ) -> ProgramResult {
+        msg!("record multiple rarities");
+        instructions::record_multiple_rarities::handler(ctx, rarity_configs)
+    }
 }
