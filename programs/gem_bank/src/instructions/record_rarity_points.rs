@@ -1,16 +1,16 @@
-//! (!) a decision was made to go with the approach of recording rarities PER FARM
+//! (!) a decision was made to go with the approach of recording rarities PER BANK
 //!
 //! an alternative would be to record rarities PER COLLECTION
 //! then we'd only allow the update_authority recorded on the Metadata to store rarity scores
 //!
 //! Pros of chosen approach:
-//! - flexibility: if update_authority Keypair is lost, a collection would never be able to run a farm with rarities
+//! - flexibility: if update_authority Keypair is lost, a collection would never be able to run a bank with rarities
 //! - speed/ux: less computation needs to happen on-chain, hence can fit in more record ixs per tx
-//! - full reliance on farm manager: farm manager can offer rewards for someone else's collection,
+//! - full reliance on bank manager: bank manager can offer rewards for someone else's collection,
 //!   using their own rarity set, without asking for permission
 //!
 //! Cons:
-//! - if 2 farms are started, even by the same manager, the rarity PDAs will have to be recorded twice
+//! - if 2 banks are started, even by the same manager, the rarity PDAs will have to be recorded twice
 //!   this means fees to record them (10 sol for 10k collection) will have to be paid twice
 
 use anchor_lang::prelude::*;
@@ -21,13 +21,15 @@ use anchor_lang::solana_program::system_instruction::create_account;
 use crate::state::*;
 
 #[derive(Accounts)]
-pub struct RecordMultipleRarities<'info> {
-    // farm
-    pub farm: Box<Account<'info, Farm>>,
-    #[account(mut)]
-    pub farm_manager: Signer<'info>,
+pub struct RecordRarityPoints<'info> {
+    // bank
+    #[account(has_one = bank_manager)]
+    pub bank: Box<Account<'info, Bank>>,
+    pub bank_manager: Signer<'info>,
 
     // misc
+    #[account(mut)]
+    pub payer: Signer<'info>,
     pub system_program: Program<'info, System>,
     //
     // remaining accounts can be any number of:
@@ -37,7 +39,7 @@ pub struct RecordMultipleRarities<'info> {
 }
 
 pub fn handler<'a, 'b, 'c, 'info>(
-    ctx: Context<'a, 'b, 'c, 'info, RecordMultipleRarities<'info>>,
+    ctx: Context<'a, 'b, 'c, 'info, RecordRarityPoints<'info>>,
     rarity_configs: Vec<RarityConfig>,
 ) -> ProgramResult {
     let remaining_accs = &mut ctx.remaining_accounts.iter();
@@ -51,7 +53,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
         let (_pk, bump) = Pubkey::find_program_address(
             &[
                 b"gem_rarity".as_ref(),
-                ctx.accounts.farm.key().as_ref(),
+                ctx.accounts.bank.key().as_ref(),
                 gem_mint.key().as_ref(),
             ],
             ctx.program_id,
@@ -62,14 +64,14 @@ pub fn handler<'a, 'b, 'c, 'info>(
             create_pda_with_space(
                 &[
                     b"gem_rarity".as_ref(),
-                    ctx.accounts.farm.key().as_ref(),
+                    ctx.accounts.bank.key().as_ref(),
                     gem_mint.key().as_ref(),
                     &[bump],
                 ],
                 gem_rarity,
                 8 + std::mem::size_of::<Rarity>(),
                 ctx.program_id,
-                &ctx.accounts.farm_manager.to_account_info(),
+                &ctx.accounts.payer.to_account_info(),
                 &ctx.accounts.system_program.to_account_info(),
             )?;
         }

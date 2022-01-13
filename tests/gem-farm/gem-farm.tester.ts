@@ -350,17 +350,8 @@ export class GemFarmTester extends GemFarmClient {
 
   // --------------------------------------- rarities
 
-  async callRecordRarity(gemMint: PublicKey, rarityPoints: number) {
-    return this.recordRarity(
-      this.farm.publicKey,
-      this.farmManager,
-      gemMint,
-      rarityPoints
-    );
-  }
-
-  async callRecordMultipleRarities(rarityConfigs: RarityConfig[]) {
-    return this.recordMultipleRarities(
+  async callAddRaritiesToBank(rarityConfigs: RarityConfig[]) {
+    return this.addRaritiesToBank(
       this.farm.publicKey,
       this.farmManager,
       rarityConfigs

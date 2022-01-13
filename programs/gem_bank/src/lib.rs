@@ -73,4 +73,12 @@ pub mod gem_bank {
     ) -> ProgramResult {
         instructions::update_bank_manager::handler(ctx, new_manager)
     }
+
+    pub fn record_rarity_points<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, RecordRarityPoints<'info>>,
+        rarity_configs: Vec<RarityConfig>,
+    ) -> ProgramResult {
+        msg!("record rarity points");
+        instructions::record_rarity_points::handler(ctx, rarity_configs)
+    }
 }

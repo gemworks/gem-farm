@@ -3,7 +3,7 @@ import { BN, Idl, Program, Wallet } from '@project-serum/anchor';
 import { Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
 import { GemFarm } from '../../target/types/gem_farm';
 import { Connection } from '@metaplex/js';
-import { isKp } from '../gem-common/types';
+import { isKp, stringifyPKsAndBNs } from '../gem-common/types';
 import { GemBankClient, WhitelistType } from '../gem-bank/gem-bank.client';
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -106,10 +106,6 @@ export class GemFarmClient extends GemBankClient {
     return this.getBalance(treasury);
   }
 
-  async fetchRarity(rarity: PublicKey) {
-    return this.farmProgram.account.rarity.fetch(rarity);
-  }
-
   // --------------------------------------- find PDA addresses
 
   async findFarmerPDA(farm: PublicKey, identity: PublicKey) {
@@ -144,14 +140,6 @@ export class GemFarmClient extends GemBankClient {
       'reward_pot',
       farm,
       rewardMint,
-    ]);
-  }
-
-  async findRarityPDA(farm: PublicKey, mint: PublicKey) {
-    return this.findProgramAddress(this.farmProgram.programId, [
-      'gem_rarity',
-      farm,
-      mint,
     ]);
   }
 
@@ -217,13 +205,6 @@ export class GemFarmClient extends GemBankClient {
     }
     const pdas = await this.farmProgram.account.authorizationProof.all(filter);
     console.log(`found a total of ${pdas.length} authorized funders`);
-    return pdas;
-  }
-
-  async fetchAllRarityPDAs() {
-    //todo need to add client-side (not stored in PDA) filtering based on finding PDAs for given farm and mint
-    const pdas = await this.farmProgram.account.rarity.all();
-    console.log(`found a total of ${pdas.length} rarity PDAs`);
     return pdas;
   }
 
@@ -993,52 +974,22 @@ export class GemFarmClient extends GemBankClient {
 
   // --------------------------------------- rarity
 
-  async recordRarity(
-    farm: PublicKey,
-    farmManager: PublicKey | Keypair,
-    gemMint: PublicKey,
-    rarityPoints: number
-  ) {
-    const [gemRarity, gemRarityBump] = await this.findRarityPDA(farm, gemMint);
-
-    const signers = [];
-    if (isKp(farmManager)) signers.push(<Keypair>farmManager);
-
-    console.log('recording rarity for mint', gemMint.toBase58());
-    const txSig = await this.farmProgram.rpc.recordRarity(
-      gemRarityBump,
-      rarityPoints,
-      {
-        accounts: {
-          farm,
-          farmManager: isKp(farmManager)
-            ? (<Keypair>farmManager).publicKey
-            : farmManager,
-          gemMint,
-          gemRarity,
-          systemProgram: SystemProgram.programId,
-        },
-        signers,
-      }
-    );
-
-    return {
-      gemRarity,
-      gemRarityBump,
-      txSig,
-    };
-  }
-
-  async recordMultipleRarities(
+  async addRaritiesToBank(
     farm: PublicKey,
     farmManager: PublicKey | Keypair,
     ratityConfigs: RarityConfig[]
   ) {
+    const farmAcc = await this.fetchFarmAcc(farm);
+    const bank = farmAcc.bank;
+
+    const [farmAuth, farmAuthBump] = await this.findFarmAuthorityPDA(farm);
+
+    //prepare rarity configs
     const completeRarityConfigs = [...ratityConfigs];
     const remainingAccounts = [];
 
     for (const config of completeRarityConfigs) {
-      const [gemRarity] = await this.findRarityPDA(farm, config.mint);
+      const [gemRarity] = await this.findRarityPDA(bank, config.mint);
       //add mint
       remainingAccounts.push({
         pubkey: config.mint,
@@ -1056,8 +1007,9 @@ export class GemFarmClient extends GemBankClient {
     const signers = [];
     if (isKp(farmManager)) signers.push(<Keypair>farmManager);
 
-    console.log('recording rarity for multiple mints');
-    const txSig = await this.farmProgram.rpc.recordMultipleRarities(
+    console.log("adding rarities to farm's bank");
+    const txSig = await this.farmProgram.rpc.addRaritiesToBank(
+      farmAuthBump,
       completeRarityConfigs,
       {
         accounts: {
@@ -1065,6 +1017,9 @@ export class GemFarmClient extends GemBankClient {
           farmManager: isKp(farmManager)
             ? (<Keypair>farmManager).publicKey
             : farmManager,
+          farmAuthority: farmAuth,
+          bank,
+          gemBank: this.bankProgram.programId,
           systemProgram: SystemProgram.programId,
         },
         remainingAccounts,
@@ -1073,6 +1028,9 @@ export class GemFarmClient extends GemBankClient {
     );
 
     return {
+      bank,
+      farmAuth,
+      farmAuthBump,
       completeRarityConfigs,
       txSig,
     };

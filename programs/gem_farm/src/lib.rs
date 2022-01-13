@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use gem_bank::instructions::record_rarity_points::RarityConfig;
 use instructions::*;
 use state::*;
 
@@ -170,22 +171,14 @@ pub mod gem_farm {
         instructions::lock_reward::handler(ctx)
     }
 
-    // --------------------------------------- rarity
+    // --------------------------------------- rarities
 
-    pub fn record_rarity(
-        ctx: Context<RecordRarity>,
-        _bump: u8,
-        rarity_point: u16,
-    ) -> ProgramResult {
-        msg!("record rarity");
-        instructions::record_rarity::handler(ctx, rarity_point)
-    }
-
-    pub fn record_multiple_rarities<'a, 'b, 'c, 'info>(
-        ctx: Context<'a, 'b, 'c, 'info, RecordMultipleRarities<'info>>,
+    pub fn add_rarities_to_bank<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, AddRaritiesToBank<'info>>,
+        _bump_auth: u8,
         rarity_configs: Vec<RarityConfig>,
     ) -> ProgramResult {
-        msg!("record multiple rarities");
-        instructions::record_multiple_rarities::handler(ctx, rarity_configs)
+        msg!("add rarities to bank");
+        instructions::add_rarities_to_bank::handler(ctx, rarity_configs)
     }
 }

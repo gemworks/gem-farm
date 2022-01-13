@@ -82,6 +82,10 @@ export class GemBankClient extends AccountUtils {
     return this.bankProgram.account.whitelistProof.fetch(proof);
   }
 
+  async fetchRarity(rarity: PublicKey) {
+    return this.bankProgram.account.rarity.fetch(rarity);
+  }
+
   // --------------------------------------- find PDA addresses
 
   async findVaultPDA(bank: PublicKey, creator: PublicKey) {
@@ -117,6 +121,14 @@ export class GemBankClient extends AccountUtils {
       'whitelist',
       bank,
       whitelistedAddress,
+    ]);
+  }
+
+  async findRarityPDA(bank: PublicKey, mint: PublicKey) {
+    return this.findProgramAddress(this.bankProgram.programId, [
+      'gem_rarity',
+      bank,
+      mint,
     ]);
   }
 
@@ -184,6 +196,13 @@ export class GemBankClient extends AccountUtils {
       : [];
     const pdas = await this.bankProgram.account.whitelistProof.all(filter);
     console.log(`found a total of ${pdas.length} whitelist proofs`);
+    return pdas;
+  }
+
+  async fetchAllRarityPDAs() {
+    //todo need to add client-side (not stored in PDA) filtering based on finding PDAs for given farm and mint
+    const pdas = await this.bankProgram.account.rarity.all();
+    console.log(`found a total of ${pdas.length} rarity PDAs`);
     return pdas;
   }
 
