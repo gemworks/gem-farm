@@ -29,6 +29,6 @@ pub fn handler(ctx: Context<SetVaultLock>, vault_locked: bool) -> ProgramResult 
 
     vault.locked = vault_locked;
 
-    msg!("vault {} lock set to {}", vault.key(), vault_locked);
+    // msg!("vault {} lock set to {}", vault.key(), vault_locked);
     Ok(())
 }

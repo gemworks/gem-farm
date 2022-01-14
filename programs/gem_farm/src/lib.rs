@@ -112,7 +112,7 @@ pub mod gem_farm {
         bump_rarity: u8,
         amount: u64,
     ) -> ProgramResult {
-        msg!("flash deposit");
+        // msg!("flash deposit"); //have to remove all msgs! or run out of compute budget for this ix
         instructions::flash_deposit::handler(
             ctx,
             bump_vault_auth,

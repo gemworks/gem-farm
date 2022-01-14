@@ -81,8 +81,10 @@ export class GemFarmTester extends GemFarmClient {
   //gem 1 used by farmer 1 / gem 2 by farmer 2
   gem1Amount!: anchor.BN;
   gem1!: ITokenData;
+  gem1PerGemRarity!: number;
   gem2Amount!: anchor.BN;
   gem2!: ITokenData;
+  gem2PerGemRarity!: number;
 
   constructor() {
     super(
@@ -96,7 +98,12 @@ export class GemFarmTester extends GemFarmClient {
     this.funder = this.nw.wallet.payer;
   }
 
-  async prepAccounts(initialFundingAmount: Numerical, reward?: string) {
+  async prepAccounts(
+    initialFundingAmount: Numerical,
+    gem1PerGemRarity: number = 1,
+    gem2PerGemRarity: number = 1,
+    reward?: string
+  ) {
     reward = Math.random() < 0.5 ? 'rewardA' : 'rewardB';
     console.log('running tests for', reward);
 
@@ -128,12 +135,22 @@ export class GemFarmTester extends GemFarmClient {
     );
     this.rewardSecondMint = await this.nw.createMint(0);
 
+    //gem 1
     ({ gemAmount: this.gem1Amount, gem: this.gem1 } = await this.prepGem(
       this.farmer1Identity
     ));
+    this.gem1PerGemRarity = gem1PerGemRarity;
+
+    //gem 2
     ({ gemAmount: this.gem2Amount, gem: this.gem2 } = await this.prepGem(
       this.farmer2Identity
     ));
+    this.gem2PerGemRarity = gem2PerGemRarity;
+  }
+
+  randomInt(min: number, max: number) {
+    // min and max included
+    return Math.floor(Math.random() * (max - min + 1) + min);
   }
 
   async prepGem(owner?: Keypair) {
@@ -146,6 +163,12 @@ export class GemFarmTester extends GemFarmClient {
     );
 
     return { gemAmount, gemOwner, gem };
+  }
+
+  async prepGemRarities() {
+    if (this.gem1PerGemRarity > 1 || this.gem2PerGemRarity > 1) {
+      await this.setGemRarities(this.gem1PerGemRarity, this.gem2PerGemRarity);
+    }
   }
 
   // --------------------------------------- getters
@@ -358,6 +381,23 @@ export class GemFarmTester extends GemFarmClient {
     );
   }
 
+  async setGemRarities(
+    gem1PerGemRarity: number = 1,
+    gem2PerGemRarity: number = 1
+  ) {
+    const configs: RarityConfig[] = [
+      {
+        mint: this.gem1.tokenMint,
+        rarityPoints: gem1PerGemRarity,
+      },
+      {
+        mint: this.gem2.tokenMint,
+        rarityPoints: gem2PerGemRarity,
+      },
+    ];
+    await this.callAddRaritiesToBank(configs);
+  }
+
   // --------------------------------------- verifiers
 
   // ----------------- funding
@@ -477,11 +517,44 @@ export class GemFarmTester extends GemFarmClient {
 
   // ----------------- staking
 
-  async verifyStakedGemsAndFarmers(gems: Numerical, farmers: Numerical) {
+  calcTotalGems(gem1Amount?: Numerical, gem2Amount?: Numerical) {
+    return toBN(gem1Amount ?? this.gem1Amount).add(
+      toBN(gem2Amount ?? this.gem2Amount)
+    );
+  }
+
+  calcTotalGemRarity(gem1Amount?: Numerical, gem2Amount?: Numerical) {
+    const gem1 = toBN(gem1Amount ?? this.gem1Amount).mul(
+      toBN(this.gem1PerGemRarity)
+    );
+    const gem2 = toBN(gem2Amount ?? this.gem2Amount).mul(
+      toBN(this.gem2PerGemRarity)
+    );
+    const total = gem1.add(gem2);
+
+    // console.log(
+    //   'rarities are: (gem1, gem2, total): ',
+    //   gem1.toNumber(),
+    //   gem2.toNumber(),
+    //   total.toNumber()
+    // );
+
+    return { gem1, gem2, total };
+  }
+
+  async verifyStakedGemsAndFarmers(
+    farmers: Numerical,
+    gem1Amount?: Numerical,
+    gem2Amount?: Numerical
+  ) {
     let farmAcc = await this.fetchFarm();
     assert(farmAcc.stakedFarmerCount.eq(toBN(farmers)));
-    assert(farmAcc.gemsStaked.eq(toBN(gems)));
-    assert(farmAcc.rarityPointsStaked.eq(toBN(gems)));
+    assert(farmAcc.gemsStaked.eq(this.calcTotalGems(gem1Amount, gem2Amount)));
+    assert(
+      farmAcc.rarityPointsStaked.eq(
+        this.calcTotalGemRarity(gem1Amount, gem2Amount).total
+      )
+    );
 
     return farmAcc;
   }
@@ -568,21 +641,22 @@ export class GemFarmTester extends GemFarmClient {
     const farmer2Reward = await this.verifyFarmerReward(this.farmer2Identity);
     const farmer2Accrued = farmer2Reward.accruedReward;
 
+    const { gem1: gem1Rarity, gem2: gem2Rarity } = this.calcTotalGemRarity();
+
     //verify farmer 1
     const farmer1Ratio =
-      this.gem1Amount.toNumber() /
-      (this.gem1Amount.toNumber() + this.gem2Amount.toNumber());
+      gem1Rarity.toNumber() / (gem1Rarity.toNumber() + gem2Rarity.toNumber());
 
-    console.log('farmer 1 ratio:', farmer1Ratio.toString());
-    console.log(
-      'accrued for farmer 1 and 2:',
-      farmer1Accrued.toString(),
-      farmer2Accrued.toString()
-    );
-    console.log(
-      'accrued total for the farm:',
-      stringifyPKsAndBNs(await this.verifyFunds())
-    );
+    // console.log('farmer 1 ratio:', farmer1Ratio.toString());
+    // console.log(
+    //   'accrued for farmer 1 and 2:',
+    //   farmer1Accrued.toString(),
+    //   farmer2Accrued.toString()
+    // );
+    // console.log(
+    //   'accrued total for the farm:',
+    //   stringifyPKsAndBNs(await this.verifyFunds())
+    // );
 
     assert(farmer1Accrued.gte(new BN(farmer1Ratio * minExpectedFarmAccrued)));
 
@@ -600,24 +674,26 @@ export class GemFarmTester extends GemFarmClient {
   }
 
   async verifyAccruedRewardsFixed(perRarityPoint: Numerical) {
+    const {
+      gem1: gem1Rarity,
+      gem2: gem2Rarity,
+      total,
+    } = this.calcTotalGemRarity();
+
     //farmer 1
     const farmer1Reward = await this.verifyFarmerReward(this.farmer1Identity);
     assert(
-      farmer1Reward.accruedReward.eq(this.gem1Amount.mul(toBN(perRarityPoint)))
+      farmer1Reward.accruedReward.eq(gem1Rarity.mul(toBN(perRarityPoint)))
     );
 
     //farmer 2
     const farmer2Reward = await this.verifyFarmerReward(this.farmer2Identity);
     assert(
-      farmer2Reward.accruedReward.eq(this.gem2Amount.mul(toBN(perRarityPoint)))
+      farmer2Reward.accruedReward.eq(gem2Rarity.mul(toBN(perRarityPoint)))
     );
 
     const funds = await this.verifyFunds();
-    assert(
-      funds.totalAccruedToStakers.gte(
-        toBN(perRarityPoint).mul(this.gem1Amount.add(this.gem2Amount))
-      )
-    );
+    assert(funds.totalAccruedToStakers.gte(toBN(perRarityPoint).mul(total)));
 
     return [farmer1Reward, farmer2Reward];
   }
@@ -659,9 +735,11 @@ export class GemFarmTester extends GemFarmClient {
         identity === this.farmer1Identity ? this.gem1Amount : this.gem2Amount
       )
     );
+
+    const { gem1: gem1Rarity, gem2: gem2Rarity } = this.calcTotalGemRarity();
     assert(
       farmerAcc.rarityPointsStaked.eq(
-        identity === this.farmer1Identity ? this.gem1Amount : this.gem2Amount
+        identity === this.farmer1Identity ? gem1Rarity : gem2Rarity
       )
     );
 

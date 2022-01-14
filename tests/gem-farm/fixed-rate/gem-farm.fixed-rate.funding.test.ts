@@ -17,11 +17,11 @@ describe('funding (fixed rate)', () => {
   let totalGems: BN;
 
   beforeEach('preps accs', async () => {
-    await gf.prepAccounts(30000);
+    await gf.prepAccounts(30000, gf.randomInt(1, 3), gf.randomInt(1, 3));
     await gf.callInitFarm(defaultFarmConfig, RewardType.Fixed);
     await gf.callInitFarmer(gf.farmer1Identity);
     await gf.callAuthorize();
-    totalGems = gf.gem1Amount.add(gf.gem2Amount);
+    totalGems = gf.calcTotalGems();
   });
 
   it('funds a new reward', async () => {

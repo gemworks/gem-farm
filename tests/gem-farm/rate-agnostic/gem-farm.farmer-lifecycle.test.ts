@@ -18,7 +18,7 @@ describe('farmer lifecycle (unstaked -> staked -> cooldown)', () => {
   let gf = new GemFarmTester();
 
   beforeEach('preps accs', async () => {
-    await gf.prepAccounts(new BN(10000));
+    await gf.prepAccounts(10000);
     await gf.callInitFarm(farmConfig);
     await gf.callInitFarmer(gf.farmer1Identity);
   });

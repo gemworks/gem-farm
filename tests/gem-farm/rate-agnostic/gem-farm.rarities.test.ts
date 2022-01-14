@@ -1,4 +1,3 @@
-import { BN } from '@project-serum/anchor';
 import chai, { assert } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { defaultFarmConfig, GemFarmTester } from '../gem-farm.tester';
@@ -12,19 +11,13 @@ describe('rarities', () => {
   let gf = new GemFarmTester();
 
   beforeEach('preps accs', async () => {
-    await gf.prepAccounts(new BN(10000));
+    await gf.prepAccounts(10000);
     await gf.callInitFarm(defaultFarmConfig);
     await gf.callInitFarmer(gf.farmer1Identity);
   });
 
   it('records single rarity via MultipleRarities call', async () => {
-    const configs = [
-      {
-        mint: gf.gem1.tokenMint,
-        rarityPoints: 10,
-      } as RarityConfig,
-    ];
-    await gf.callAddRaritiesToBank(configs);
+    await gf.setGemRarities(10);
 
     const [rarityAddr] = await gf.findRarityPDA(
       gf.bank.publicKey,
@@ -61,13 +54,7 @@ describe('rarities', () => {
 
   it('correctly counts rarity points during deposits/withdrawals', async () => {
     //add rarities for gem1 mint
-    const configs = [
-      {
-        mint: gf.gem1.tokenMint,
-        rarityPoints: 15,
-      } as RarityConfig,
-    ];
-    await gf.callAddRaritiesToBank(configs);
+    await gf.setGemRarities(15);
 
     //deposit
     await gf.callDeposit(20, gf.farmer1Identity);
@@ -101,7 +88,5 @@ describe('rarities', () => {
     vaultAcc = await gf.fetchVaultAcc(vault);
     assert(vaultAcc.gemCount.eq(toBN(0)));
     assert(vaultAcc.rarityPoints.eq(toBN(0)));
-
-    //withdraw all
   });
 });

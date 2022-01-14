@@ -20,7 +20,7 @@ describe('funding (variable rate)', () => {
   let gf = new GemFarmTester();
 
   beforeEach('preps accs', async () => {
-    await gf.prepAccounts(10000);
+    await gf.prepAccounts(10000, gf.randomInt(1, 3), gf.randomInt(1, 3));
     await gf.callInitFarm(defaultFarmConfig);
     await gf.callInitFarmer(gf.farmer1Identity);
     await gf.callAuthorize();
