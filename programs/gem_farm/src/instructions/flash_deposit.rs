@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
+use gem_bank::instructions::calc_rarity_points;
 use gem_bank::{
     self,
     cpi::accounts::{DepositGem, SetVaultLock},
@@ -133,7 +134,15 @@ pub fn handler<'a, 'b, 'c, 'info>(
 
     // stake extra gems
     ctx.accounts.vault.reload()?;
-    farm.stake_extra_gems(now_ts, ctx.accounts.vault.gem_count, amount, farmer)?;
+    let extra_rarity = calc_rarity_points(&ctx.accounts.gem_rarity, amount)?;
+    farm.stake_extra_gems(
+        now_ts,
+        ctx.accounts.vault.gem_count,
+        ctx.accounts.vault.rarity_points,
+        amount,
+        extra_rarity,
+        farmer,
+    )?;
 
     // msg!("{} extra gems staked for {}", amount, farmer.key());
     Ok(())

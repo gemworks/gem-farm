@@ -137,7 +137,7 @@ export class GemFarmTester extends GemFarmClient {
   }
 
   async prepGem(owner?: Keypair) {
-    const gemAmount = new BN(1000 + Math.ceil(Math.random() * 100)); //min 1000
+    const gemAmount = new BN(100 + Math.ceil(Math.random() * 100)); //min 100
     const gemOwner =
       owner ?? (await this.nw.createFundedWallet(100 * LAMPORTS_PER_SOL));
     const gem = await this.nw.createMintAndFundATA(
@@ -407,7 +407,7 @@ export class GemFarmTester extends GemFarmClient {
   async verifyVariableReward(
     rewardRate?: Numerical,
     lastUpdated?: Numerical,
-    accruedRewardPerGem?: Numerical
+    accruedRewardPerRarityPoint?: Numerical
   ) {
     let farmAcc = (await this.fetchFarm()) as any;
     let reward = farmAcc[this.reward].variableRate;
@@ -418,11 +418,11 @@ export class GemFarmTester extends GemFarmClient {
     if (lastUpdated || lastUpdated === 0) {
       assert(reward.rewardLastUpdatedTs.eq(toBN(lastUpdated)));
     }
-    if (accruedRewardPerGem || accruedRewardPerGem === 0) {
+    if (accruedRewardPerRarityPoint || accruedRewardPerRarityPoint === 0) {
       assert(
-        reward.accruedRewardPerGem.n
+        reward.accruedRewardPerRarityPoint.n
           .div(toBN(PRECISION))
-          .eq(toBN(accruedRewardPerGem))
+          .eq(toBN(accruedRewardPerRarityPoint))
       );
     }
 
@@ -481,6 +481,7 @@ export class GemFarmTester extends GemFarmClient {
     let farmAcc = await this.fetchFarm();
     assert(farmAcc.stakedFarmerCount.eq(toBN(farmers)));
     assert(farmAcc.gemsStaked.eq(toBN(gems)));
+    assert(farmAcc.rarityPointsStaked.eq(toBN(gems)));
 
     return farmAcc;
   }
@@ -489,7 +490,7 @@ export class GemFarmTester extends GemFarmClient {
     identity: Keypair,
     paidOutReward?: Numerical,
     accruedReward?: Numerical,
-    lastRecordedAccruedRewardPerGem?: Numerical,
+    lastRecordedAccruedRewardPerRarityPoint?: Numerical,
     beginStakingTs?: Numerical,
     beginScheduleTs?: Numerical,
     lastUpdatedTs?: Numerical,
@@ -509,13 +510,13 @@ export class GemFarmTester extends GemFarmClient {
       assert(reward.accruedReward.eq(toBN(accruedReward)));
     }
     if (
-      lastRecordedAccruedRewardPerGem ||
-      lastRecordedAccruedRewardPerGem === 0
+      lastRecordedAccruedRewardPerRarityPoint ||
+      lastRecordedAccruedRewardPerRarityPoint === 0
     ) {
       assert(
-        reward.variableRate.lastRecordedAccruedRewardPerGem.n
+        reward.variableRate.lastRecordedAccruedRewardPerRarityPoint.n
           .div(toBN(PRECISION))
-          .eq(toBN(lastRecordedAccruedRewardPerGem))
+          .eq(toBN(lastRecordedAccruedRewardPerRarityPoint))
       );
     }
     if (beginStakingTs || beginStakingTs === 0) {
@@ -598,19 +599,23 @@ export class GemFarmTester extends GemFarmClient {
     return [farmer1Reward, farmer2Reward];
   }
 
-  async verifyAccruedRewardsFixed(perGem: Numerical) {
+  async verifyAccruedRewardsFixed(perRarityPoint: Numerical) {
     //farmer 1
     const farmer1Reward = await this.verifyFarmerReward(this.farmer1Identity);
-    assert(farmer1Reward.accruedReward.eq(this.gem1Amount.mul(toBN(perGem))));
+    assert(
+      farmer1Reward.accruedReward.eq(this.gem1Amount.mul(toBN(perRarityPoint)))
+    );
 
     //farmer 2
     const farmer2Reward = await this.verifyFarmerReward(this.farmer2Identity);
-    assert(farmer2Reward.accruedReward.eq(this.gem2Amount.mul(toBN(perGem))));
+    assert(
+      farmer2Reward.accruedReward.eq(this.gem2Amount.mul(toBN(perRarityPoint)))
+    );
 
     const funds = await this.verifyFunds();
     assert(
       funds.totalAccruedToStakers.gte(
-        toBN(perGem).mul(this.gem1Amount.add(this.gem2Amount))
+        toBN(perRarityPoint).mul(this.gem1Amount.add(this.gem2Amount))
       )
     );
 
@@ -654,6 +659,11 @@ export class GemFarmTester extends GemFarmClient {
         identity === this.farmer1Identity ? this.gem1Amount : this.gem2Amount
       )
     );
+    assert(
+      farmerAcc.rarityPointsStaked.eq(
+        identity === this.farmer1Identity ? this.gem1Amount : this.gem2Amount
+      )
+    );
 
     return farmerAcc;
   }
@@ -666,6 +676,7 @@ export class GemFarmTester extends GemFarmClient {
 
     const farmerAcc = await this.fetchFarmerAcc(farmer);
     assert(farmerAcc.gemsStaked.eq(new BN(0)));
+    assert(farmerAcc.rarityPointsStaked.eq(new BN(0)));
 
     return farmerAcc;
   }
@@ -678,6 +689,7 @@ export class GemFarmTester extends GemFarmClient {
 
     const farmerAcc = await this.fetchFarmerAcc(farmer);
     assert(farmerAcc.gemsStaked.eq(new BN(0)));
+    assert(farmerAcc.rarityPointsStaked.eq(new BN(0)));
 
     return farmerAcc;
   }

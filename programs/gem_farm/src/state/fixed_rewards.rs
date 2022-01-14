@@ -15,7 +15,7 @@ pub enum FixedRateRewardTier {
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct TierConfig {
-    /// tokens/denominator / sec
+    /// tokens/denominator/rarity point / sec
     pub reward_rate: u64,
 
     /// min amount of time that needs to pass for the above rate to come into effect
@@ -34,7 +34,7 @@ pub struct FixedRateSchedule {
 
     pub tier3: Option<TierConfig>,
 
-    /// needed to slow down the payout schedule (else min would be 1 token/gem/s or 86k/gem/day
+    /// needed to slow down the payout schedule (else min would be 1 token/rarity point/s or 86k/rarity point/day
     /// only used in fixed rate - in variable overall duration serves as sufficient speed regulator  
     pub denominator: u64,
 }
@@ -192,12 +192,12 @@ impl FixedRateSchedule {
         }
     }
 
-    /// calculates reward per gem, by
+    /// calculates reward per rarity point, by
     ///   1) recursively extracting tenures,
     ///   2) calling get_reward() on each which isn't None
     ///   3) calculating base rate
     ///   4) folding base rate and non-None tenure rewards
-    fn per_gem_for_reward(&self, start_from: u64, end_at: u64) -> Result<u64, ProgramError> {
+    fn reward_per_rarity_point(&self, start_from: u64, end_at: u64) -> Result<u64, ProgramError> {
         let mut cap = u64::MAX;
 
         // collect definitively held tenures for 3 periods - still missing base
@@ -226,9 +226,9 @@ impl FixedRateSchedule {
         &self,
         start_from: u64,
         end_at: u64,
-        gems: u64,
+        rarity_points: u64,
     ) -> Result<u64, ProgramError> {
-        let per_gem = self.per_gem_for_reward(start_from, end_at)?;
+        let per_rarity_point = self.reward_per_rarity_point(start_from, end_at)?;
 
         // considered making this U128, but drastically increases app's complexity
         //   (not just rust-side calc, but also js-side serde)
@@ -236,7 +236,9 @@ impl FixedRateSchedule {
         //   as well as farm.reward_x.funds and farmer.paid_out_reward / farmer.accrued_reward
         //   then we'd do payouts in u64 and subtract the amount from u128 stored (eg 123.123 - 123.0)
         // maybe in v1++, if there's demand from users
-        gems.try_mul(per_gem)?.try_div(self.denominator)
+        rarity_points
+            .try_mul(per_rarity_point)?
+            .try_div(self.denominator)
     }
 }
 
@@ -297,13 +299,13 @@ impl FixedRateReward {
         now_ts: u64,
         times: &mut TimeTracker,
         funds: &mut FundsTracker,
-        farmer_gems_staked: u64,
+        farmer_rarity_points_staked: u64,
         farmer_reward: &mut FarmerReward,
         reenroll: bool,
     ) -> ProgramResult {
         let newly_accrued_reward = farmer_reward
             .fixed_rate
-            .newly_accrued_reward(now_ts, farmer_gems_staked)?;
+            .newly_accrued_reward(now_ts, farmer_rarity_points_staked)?;
 
         // update farm (move amount from reserved to accrued)
         funds
@@ -317,7 +319,8 @@ impl FixedRateReward {
         if farmer_reward.fixed_rate.is_staked()
             && farmer_reward.fixed_rate.is_time_to_graduate(now_ts)?
         {
-            let original_staking_start = self.graduate_farmer(farmer_gems_staked, farmer_reward)?;
+            let original_staking_start =
+                self.graduate_farmer(farmer_rarity_points_staked, farmer_reward)?;
 
             // if desired, we roll them forward with original staking time
             // why would it not be desired?
@@ -328,7 +331,7 @@ impl FixedRateReward {
                     now_ts,
                     times,
                     funds,
-                    farmer_gems_staked,
+                    farmer_rarity_points_staked,
                     farmer_reward,
                     Some(original_staking_start),
                 )?;
@@ -344,7 +347,7 @@ impl FixedRateReward {
         now_ts: u64,
         times: &mut TimeTracker,
         funds: &mut FundsTracker,
-        farmer_gems_staked: u64,
+        farmer_rarity_points_staked: u64,
         farmer_reward: &mut FarmerReward,
         original_staking_start: Option<u64>, //used when we roll a farmer forward, w/o them unstaking
     ) -> ProgramResult {
@@ -362,7 +365,7 @@ impl FixedRateReward {
         let reserve_amount = self.schedule.reward_amount(
             bonus_time,
             remaining_duration.try_add(bonus_time)?,
-            farmer_gems_staked,
+            farmer_rarity_points_staked,
         )?;
         if reserve_amount > funds.pending_amount()? {
             return Err(ErrorCode::RewardUnderfunded.into());
@@ -387,13 +390,15 @@ impl FixedRateReward {
     /// returns original staking time
     pub fn graduate_farmer(
         &mut self,
-        farmer_gems_staked: u64,
+        farmer_rarity_points_staked: u64,
         farmer_reward: &mut FarmerReward,
     ) -> Result<u64, ProgramError> {
         let original_begin_staking_ts = farmer_reward.fixed_rate.begin_staking_ts;
 
         // reduce reserved amount
-        let voided_reward = farmer_reward.fixed_rate.voided_reward(farmer_gems_staked)?;
+        let voided_reward = farmer_reward
+            .fixed_rate
+            .voided_reward(farmer_rarity_points_staked)?;
 
         self.reserved_amount.try_sub_assign(voided_reward)?;
 

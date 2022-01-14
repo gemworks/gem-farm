@@ -28,7 +28,7 @@ pub struct VariableRateReward {
     /// 1) compare their latest record of flag position, with actual flag position
     /// 2) multiply the difference by the amount they have staked
     /// 3) update their record of flag position, so that next time we don't count this distance again
-    pub accrued_reward_per_gem: Number128,
+    pub accrued_reward_per_rarity_point: Number128,
 }
 
 impl VariableRateReward {
@@ -88,39 +88,40 @@ impl VariableRateReward {
         now_ts: u64,
         times: &TimeTracker,
         funds: &mut FundsTracker,
-        farm_gems_staked: u64,
-        farmer_gems_staked: Option<u64>,
+        farm_rarity_points_staked: u64,
+        farmer_rarity_points_staked: Option<u64>,
         farmer_reward: Option<&mut FarmerReward>,
     ) -> ProgramResult {
         let reward_upper_bound = times.reward_upper_bound(now_ts);
 
-        // calc & update reward per gem
-        let newly_accrued_reward_per_gem =
-            self.newly_accrued_reward_per_gem(farm_gems_staked, reward_upper_bound)?;
+        // calc & update reward per rarity point
+        let newly_accrued_reward_per_rarity_point = self
+            .newly_accrued_reward_per_rarity_point(farm_rarity_points_staked, reward_upper_bound)?;
 
-        self.accrued_reward_per_gem
-            .try_add_assign(newly_accrued_reward_per_gem)?;
+        self.accrued_reward_per_rarity_point
+            .try_add_assign(newly_accrued_reward_per_rarity_point)?;
 
         // update overall reward
         funds.total_accrued_to_stakers.try_add_assign(
-            newly_accrued_reward_per_gem
-                .try_mul(Number128::from(farm_gems_staked))?
+            newly_accrued_reward_per_rarity_point
+                .try_mul(Number128::from(farm_rarity_points_staked))?
                 .as_u64_ceil(0)?, //overestimate at farm level
         )?;
 
         // update farmer, if one was passed
         if let Some(farmer_reward) = farmer_reward {
-            let newly_accrued_to_farmer = Number128::from(farmer_gems_staked.unwrap()).try_mul(
-                self.accrued_reward_per_gem.try_sub(
-                    farmer_reward
-                        .variable_rate
-                        .last_recorded_accrued_reward_per_gem,
-                )?,
-            )?;
+            let newly_accrued_to_farmer = Number128::from(farmer_rarity_points_staked.unwrap())
+                .try_mul(
+                    self.accrued_reward_per_rarity_point.try_sub(
+                        farmer_reward
+                            .variable_rate
+                            .last_recorded_accrued_reward_per_rarity_point,
+                    )?,
+                )?;
 
             farmer_reward.update_variable_reward(
                 newly_accrued_to_farmer.as_u64(0)?, //underestimate at farmer level
-                self.accrued_reward_per_gem,
+                self.accrued_reward_per_rarity_point,
             )?;
         }
 
@@ -130,12 +131,12 @@ impl VariableRateReward {
         Ok(())
     }
 
-    fn newly_accrued_reward_per_gem(
+    fn newly_accrued_reward_per_rarity_point(
         &self,
-        farm_gems_staked: u64,
+        farm_rarity_points_staked: u64,
         reward_upper_bound: u64,
     ) -> Result<Number128, ProgramError> {
-        if farm_gems_staked == 0 {
+        if farm_rarity_points_staked == 0 {
             msg!("no gems are staked at the farm, means no new rewards accrue");
             return Ok(Number128::ZERO);
         }
@@ -144,7 +145,7 @@ impl VariableRateReward {
 
         Number128::from(time_since_last_calc)
             .try_mul(self.reward_rate)?
-            .try_div(Number128::from(farm_gems_staked))
+            .try_div(Number128::from(farm_rarity_points_staked))
     }
 }
 
@@ -153,18 +154,18 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_accrued_reward_per_gem() {
+    fn test_accrued_reward_per_rarity_point() {
         let var_reward = VariableRateReward {
             reward_rate: Number128::from(10u64),
             reward_last_updated_ts: 200,
-            accrued_reward_per_gem: Number128::from(1234u64),
+            accrued_reward_per_rarity_point: Number128::from(1234u64),
         };
 
-        let farm_gems_staked = 25;
+        let farm_points_staked = 25;
         let reward_upper_bound = 205;
 
         let newly_accrued = var_reward
-            .newly_accrued_reward_per_gem(farm_gems_staked, reward_upper_bound)
+            .newly_accrued_reward_per_rarity_point(farm_points_staked, reward_upper_bound)
             .unwrap();
 
         assert_eq!(newly_accrued, Number128::from(2u64));
@@ -192,7 +193,7 @@ mod tests {
         let mut var_reward = VariableRateReward {
             reward_rate: Number128::from(10u64),
             reward_last_updated_ts: 0,
-            accrued_reward_per_gem: Number128::from(1234u64),
+            accrued_reward_per_rarity_point: Number128::from(1234u64),
         };
 
         var_reward
@@ -204,7 +205,10 @@ mod tests {
             Number128::from_decimal(125u64, -3i32)
         );
         assert_eq!(var_reward.reward_last_updated_ts, 201);
-        assert_eq!(var_reward.accrued_reward_per_gem, Number128::from(1234u64));
+        assert_eq!(
+            var_reward.accrued_reward_per_rarity_point,
+            Number128::from(1234u64)
+        );
 
         assert_eq!(funds.total_funded, 110);
 
@@ -234,7 +238,7 @@ mod tests {
         let mut var_reward = VariableRateReward {
             reward_rate: Number128::from(10u64),
             reward_last_updated_ts: 0,
-            accrued_reward_per_gem: Number128::from(1234u64),
+            accrued_reward_per_rarity_point: Number128::from(1234u64),
         };
 
         var_reward
@@ -243,7 +247,10 @@ mod tests {
 
         assert_eq!(var_reward.reward_rate, Number128::from_decimal(5u64, -1i32));
         assert_eq!(var_reward.reward_last_updated_ts, 199);
-        assert_eq!(var_reward.accrued_reward_per_gem, Number128::from(1234u64));
+        assert_eq!(
+            var_reward.accrued_reward_per_rarity_point,
+            Number128::from(1234u64)
+        );
 
         assert_eq!(funds.total_funded, 200);
 
@@ -274,7 +281,7 @@ mod tests {
         let mut var_reward = VariableRateReward {
             reward_rate: Number128::from(10u64),
             reward_last_updated_ts: 0,
-            accrued_reward_per_gem: Number128::from(1234u64),
+            accrued_reward_per_rarity_point: Number128::from(1234u64),
         };
 
         var_reward
@@ -286,7 +293,10 @@ mod tests {
             Number128::from_decimal(375u64, -3i32)
         );
         assert_eq!(var_reward.reward_last_updated_ts, 199);
-        assert_eq!(var_reward.accrued_reward_per_gem, Number128::from(1234u64));
+        assert_eq!(
+            var_reward.accrued_reward_per_rarity_point,
+            Number128::from(1234u64)
+        );
 
         assert_eq!(funds.total_funded, 200);
 

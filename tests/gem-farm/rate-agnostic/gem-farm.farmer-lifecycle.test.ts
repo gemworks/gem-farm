@@ -54,13 +54,18 @@ describe('farmer lifecycle (unstaked -> staked -> cooldown)', () => {
     await gf.callWithdraw(gf.gem1Amount, gf.farmer1Identity);
 
     const farmAcc = await gf.fetchFarm();
+    console.log(farmAcc.gemsStaked);
+    console.log(farmAcc.rarityPointsStaked);
+
     assert(farmAcc.stakedFarmerCount.eq(new BN(0)));
     assert(farmAcc.gemsStaked.eq(new BN(0)));
+    assert(farmAcc.rarityPointsStaked.eq(new BN(0)));
 
     const vaultAcc = await gf.fetchVaultAcc(vault);
     assert.isFalse(vaultAcc.locked);
 
     const farmerAcc = await gf.fetchFarmerAcc(farmer);
     assert(farmerAcc.gemsStaked.eq(new BN(0)));
+    assert(farmerAcc.rarityPointsStaked.eq(new BN(0)));
   });
 });

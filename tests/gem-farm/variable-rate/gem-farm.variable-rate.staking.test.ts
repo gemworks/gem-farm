@@ -14,7 +14,7 @@ describe('staking (variable rate)', () => {
   let gf = new GemFarmTester();
 
   beforeEach('preps accs', async () => {
-    await gf.prepAccounts(new BN(10000));
+    await gf.prepAccounts(new BN(30000000));
     await gf.callInitFarm(defaultFarmConfig);
     await gf.callInitFarmer(gf.farmer1Identity);
     await gf.callInitFarmer(gf.farmer2Identity);

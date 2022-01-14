@@ -53,6 +53,9 @@ pub struct Farm {
     /// currently staked gem count
     pub gems_staked: u64,
 
+    /// currently staked gem count, where each gem is multiplied by its rarity score (1 if absent)
+    pub rarity_points_staked: u64,
+
     /// how many accounts can create funding schedules
     pub authorized_funder_count: u64,
 
@@ -116,15 +119,18 @@ impl Farm {
         reenroll: bool, //relevant for fixed only
     ) -> ProgramResult {
         // reward a
-        let (farmer_gems_staked, farmer_reward_a) = match farmer {
-            Some(ref mut farmer) => (Some(farmer.gems_staked), Some(&mut farmer.reward_a)),
+        let (farmer_points_staked, farmer_reward_a) = match farmer {
+            Some(ref mut farmer) => (
+                Some(farmer.rarity_points_staked),
+                Some(&mut farmer.reward_a),
+            ),
             None => (None, None),
         };
 
         self.reward_a.update_accrued_reward_by_type(
             now_ts,
-            self.gems_staked,
-            farmer_gems_staked,
+            self.rarity_points_staked,
+            farmer_points_staked,
             farmer_reward_a,
             reenroll,
         )?;
@@ -137,8 +143,8 @@ impl Farm {
 
         self.reward_b.update_accrued_reward_by_type(
             now_ts,
-            self.gems_staked,
-            farmer_gems_staked,
+            self.rarity_points_staked,
+            farmer_points_staked,
             farmer_reward_b,
             reenroll,
         )
@@ -148,14 +154,22 @@ impl Farm {
         &mut self,
         now_ts: u64,
         gems_in_vault: u64,
+        rarity_points_in_vault: u64,
         farmer: &mut Account<Farmer>,
     ) -> ProgramResult {
         // update farmer
-        farmer.begin_staking(self.config.min_staking_period_sec, now_ts, gems_in_vault)?;
+        farmer.begin_staking(
+            self.config.min_staking_period_sec,
+            now_ts,
+            gems_in_vault,
+            rarity_points_in_vault,
+        )?;
 
         // update farm
         self.staked_farmer_count.try_add_assign(1)?;
         self.gems_staked.try_add_assign(gems_in_vault)?;
+        self.rarity_points_staked
+            .try_add_assign(rarity_points_in_vault)?;
 
         // fixed-rate only - we need to do some extra book-keeping
         if self.reward_a.reward_type == RewardType::Fixed {
@@ -163,7 +177,7 @@ impl Farm {
                 now_ts,
                 &mut self.reward_a.times,
                 &mut self.reward_a.funds,
-                farmer.gems_staked,
+                farmer.rarity_points_staked,
                 &mut farmer.reward_a,
                 None,
             )?;
@@ -174,7 +188,7 @@ impl Farm {
                 now_ts,
                 &mut self.reward_b.times,
                 &mut self.reward_b.funds,
-                farmer.gems_staked,
+                farmer.rarity_points_staked,
                 &mut farmer.reward_b,
                 None,
             )?;
@@ -188,25 +202,27 @@ impl Farm {
             FarmerState::Unstaked => Ok(msg!("already unstaked!")),
             FarmerState::Staked => {
                 // fixed-rate only - we need to do some extra book-keeping
-                // (!) MUST COME BEFORE FARMER IS UPDATED - WE NEED CURRENT GEMS AMOUNT
+                // (!) MUST COME BEFORE FARMER IS UPDATED - WE NEED CURRENT RARITY POINTS AMOUNT
                 if self.reward_a.reward_type == RewardType::Fixed {
                     self.reward_a
                         .fixed_rate
-                        .graduate_farmer(farmer.gems_staked, &mut farmer.reward_a)?;
+                        .graduate_farmer(farmer.rarity_points_staked, &mut farmer.reward_a)?;
                 }
 
                 if self.reward_b.reward_type == RewardType::Fixed {
                     self.reward_b
                         .fixed_rate
-                        .graduate_farmer(farmer.gems_staked, &mut farmer.reward_b)?;
+                        .graduate_farmer(farmer.rarity_points_staked, &mut farmer.reward_b)?;
                 }
 
                 // update farmer
-                let gems_unstaked =
+                let (gems_unstaked, rarity_points_unstaked) =
                     farmer.end_staking_begin_cooldown(now_ts, self.config.cooldown_period_sec)?;
 
                 // update farm
                 self.staked_farmer_count.try_sub_assign(1)?;
+                self.rarity_points_staked
+                    .try_sub_assign(rarity_points_unstaked)?;
                 self.gems_staked.try_sub_assign(gems_unstaked)?;
 
                 Ok(())
@@ -219,48 +235,56 @@ impl Farm {
         &mut self,
         now_ts: u64,
         gems_in_vault: u64,
+        rarity_points_in_vault: u64,
         extra_gems: u64,
+        extra_rarity_points: u64,
         farmer: &mut Account<Farmer>,
     ) -> ProgramResult {
         // update farmer
-        let previous_gems_staked =
-            farmer.begin_staking(self.config.min_staking_period_sec, now_ts, gems_in_vault)?;
+        let (_previous_gems, previous_rarity_points) = farmer.begin_staking(
+            self.config.min_staking_period_sec,
+            now_ts,
+            gems_in_vault,
+            rarity_points_in_vault,
+        )?;
 
         // update farm
         self.gems_staked.try_add_assign(extra_gems)?;
+        self.rarity_points_staked
+            .try_add_assign(extra_rarity_points)?;
 
         // fixed-rate only - we need to do some extra book-keeping
         if self.reward_a.reward_type == RewardType::Fixed {
-            // graduate with PREVIOUS gems count
+            // graduate with PREVIOUS rarity points count
             let original_begin_staking_ts = self
                 .reward_a
                 .fixed_rate
-                .graduate_farmer(previous_gems_staked, &mut farmer.reward_a)?;
+                .graduate_farmer(previous_rarity_points, &mut farmer.reward_a)?;
 
-            // re-enroll with NEW gems count
+            // re-enroll with NEW rarity points count
             self.reward_a.fixed_rate.enroll_farmer(
                 now_ts,
                 &mut self.reward_a.times,
                 &mut self.reward_a.funds,
-                farmer.gems_staked,
+                farmer.rarity_points_staked,
                 &mut farmer.reward_a,
                 Some(original_begin_staking_ts),
             )?;
         }
 
         if self.reward_b.reward_type == RewardType::Fixed {
-            // graduate with PREVIOUS gems count
+            // graduate with PREVIOUS rarity points count
             let original_begin_staking_ts = self
                 .reward_b
                 .fixed_rate
-                .graduate_farmer(previous_gems_staked, &mut farmer.reward_b)?;
+                .graduate_farmer(previous_rarity_points, &mut farmer.reward_b)?;
 
-            // re-enroll with NEW gems count
+            // re-enroll with NEW rarity points count
             self.reward_b.fixed_rate.enroll_farmer(
                 now_ts,
                 &mut self.reward_b.times,
                 &mut self.reward_b.funds,
-                farmer.gems_staked,
+                farmer.rarity_points_staked,
                 &mut farmer.reward_b,
                 Some(original_begin_staking_ts),
             )?;
@@ -435,8 +459,8 @@ impl FarmReward {
     fn update_accrued_reward_by_type(
         &mut self,
         now_ts: u64,
-        farm_gems_staked: u64,
-        farmer_gems_staked: Option<u64>,
+        farm_rarity_points_staked: u64,
+        farmer_rarity_points_staked: Option<u64>,
         farmer_reward: Option<&mut FarmerReward>,
         reenroll: bool,
     ) -> ProgramResult {
@@ -445,8 +469,8 @@ impl FarmReward {
                 now_ts,
                 &self.times,
                 &mut self.funds,
-                farm_gems_staked,
-                farmer_gems_staked,
+                farm_rarity_points_staked,
+                farmer_rarity_points_staked,
                 farmer_reward,
             ),
             RewardType::Fixed => {
@@ -459,7 +483,7 @@ impl FarmReward {
                     now_ts,
                     &mut self.times,
                     &mut self.funds,
-                    farmer_gems_staked.unwrap(),
+                    farmer_rarity_points_staked.unwrap(),
                     farmer_reward.unwrap(),
                     reenroll,
                 )

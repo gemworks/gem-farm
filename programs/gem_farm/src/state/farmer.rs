@@ -28,6 +28,9 @@ pub struct Farmer {
     /// total number of gems at the time when the vault is locked
     pub gems_staked: u64,
 
+    /// total number of gems * rarity of each gem (1 if un-appraised)
+    pub rarity_points_staked: u64,
+
     /// this will be updated when they decide to unstake taking into acc. config set at farm level
     pub min_staking_ends_ts: u64,
 
@@ -46,22 +49,25 @@ impl Farmer {
         min_staking_period_sec: u64,
         now_ts: u64,
         gems_in_vault: u64,
-    ) -> Result<u64, ProgramError> {
+        rarity_points_in_vault: u64,
+    ) -> Result<(u64, u64), ProgramError> {
         self.state = FarmerState::Staked;
 
         let previous_gems_staked = self.gems_staked;
+        let previous_rarity_points_staked = self.rarity_points_staked;
         self.gems_staked = gems_in_vault;
+        self.rarity_points_staked = rarity_points_in_vault;
         self.min_staking_ends_ts = now_ts.try_add(min_staking_period_sec)?;
         self.cooldown_ends_ts = 0; //zero it out in case it was set before
 
-        Ok(previous_gems_staked)
+        Ok((previous_gems_staked, previous_rarity_points_staked))
     }
 
     pub fn end_staking_begin_cooldown(
         &mut self,
         now_ts: u64,
         cooldown_period_sec: u64,
-    ) -> Result<u64, ProgramError> {
+    ) -> Result<(u64, u64), ProgramError> {
         if !self.can_end_staking(now_ts) {
             return Err(ErrorCode::MinStakingNotPassed.into());
         }
@@ -69,7 +75,9 @@ impl Farmer {
         self.state = FarmerState::PendingCooldown;
 
         let gems_unstaked = self.gems_staked;
+        let rarity_points_unstaked = self.rarity_points_staked;
         self.gems_staked = 0; //no rewards will accrue during cooldown period
+        self.rarity_points_staked = 0;
         self.cooldown_ends_ts = now_ts.try_add(cooldown_period_sec)?;
 
         // msg!(
@@ -77,7 +85,7 @@ impl Farmer {
         //     gems_unstaked,
         //     self.identity
         // );
-        Ok(gems_unstaked)
+        Ok((gems_unstaked, rarity_points_unstaked))
     }
 
     pub fn end_cooldown(&mut self, now_ts: u64) -> ProgramResult {
@@ -89,6 +97,7 @@ impl Farmer {
 
         // zero everything out
         self.gems_staked = 0;
+        self.rarity_points_staked = 0;
         self.min_staking_ends_ts = 0;
         self.cooldown_ends_ts = 0;
 
@@ -113,10 +122,10 @@ impl Farmer {
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FarmerReward {
-    /// total, not per gem. Never goes down (ie is cumulative)
+    /// total, not per rarity point. Never goes down (ie is cumulative)
     pub paid_out_reward: u64,
 
-    /// total, not per gem. Never goes down (ie is cumulative)
+    /// total, not per rarity point. Never goes down (ie is cumulative)
     pub accrued_reward: u64,
 
     /// only one of these two (fixed and variable) will actually be used, per reward
@@ -142,11 +151,12 @@ impl FarmerReward {
     pub fn update_variable_reward(
         &mut self,
         newly_accrued_reward: u64,
-        accrued_reward_per_gem: Number128,
+        accrued_reward_per_rarity_point: Number128,
     ) -> ProgramResult {
         self.accrued_reward.try_add_assign(newly_accrued_reward)?;
 
-        self.variable_rate.last_recorded_accrued_reward_per_gem = accrued_reward_per_gem;
+        self.variable_rate
+            .last_recorded_accrued_reward_per_rarity_point = accrued_reward_per_rarity_point;
 
         Ok(())
     }
@@ -167,7 +177,7 @@ impl FarmerReward {
 pub struct FarmerVariableRateReward {
     /// used to keep track of how much of the variable reward has been updated for this farmer
     /// (read more in variable rate config)
-    pub last_recorded_accrued_reward_per_gem: Number128,
+    pub last_recorded_accrued_reward_per_rarity_point: Number128,
 }
 
 // --------------------------------------- fixed rate reward
@@ -187,7 +197,7 @@ pub struct FarmerFixedRateReward {
     pub last_updated_ts: u64,
 
     /// when a farmer stakes with the fixed schedule, at the time of staking,
-    /// we promise them a schedule for a certain duration (eg 1 token/gem/s for 100s)
+    /// we promise them a schedule for a certain duration (eg 1 token/rarity point/s for 100s)
     /// that then "reserves" a certain amount of funds so that they can't be promised to other farmers
     /// only if the farmer unstakes, will the reserve be void, and the funds become available again
     /// for either funding other farmers or withdrawing (when the reward is cancelled)
@@ -225,24 +235,28 @@ impl FarmerFixedRateReward {
 
     /// (!) intentionally uses begin_staking_ts for both start_from and end_at
     /// in doing so we increase both start_from and end_at by exactly loyal_staker_bonus_time
-    pub fn voided_reward(&self, gems: u64) -> Result<u64, ProgramError> {
+    pub fn voided_reward(&self, rarity_points: u64) -> Result<u64, ProgramError> {
         let start_from = self.time_from_staking_to_update()?;
         let end_at = self.end_schedule_ts()?.try_sub(self.begin_staking_ts)?;
 
         self.promised_schedule
-            .reward_amount(start_from, end_at, gems)
+            .reward_amount(start_from, end_at, rarity_points)
     }
 
     /// (!) intentionally uses begin_staking_ts for both start_from and end_at
     /// in doing so we increase both start_from and end_at by exactly loyal_staker_bonus_time
-    pub fn newly_accrued_reward(&self, now_ts: u64, gems: u64) -> Result<u64, ProgramError> {
+    pub fn newly_accrued_reward(
+        &self,
+        now_ts: u64,
+        rarity_points: u64,
+    ) -> Result<u64, ProgramError> {
         let start_from = self.time_from_staking_to_update()?;
         let end_at = self
             .reward_upper_bound(now_ts)?
             .try_sub(self.begin_staking_ts)?;
 
         self.promised_schedule
-            .reward_amount(start_from, end_at, gems)
+            .reward_amount(start_from, end_at, rarity_points)
     }
 }
 
@@ -284,7 +298,7 @@ mod tests {
                 paid_out_reward: 0,
                 accrued_reward: 123,
                 variable_rate: FarmerVariableRateReward {
-                    last_recorded_accrued_reward_per_gem: Number128::from(10u64),
+                    last_recorded_accrued_reward_per_rarity_point: Number128::from(10u64),
                 },
                 fixed_rate: FarmerFixedRateReward::new(),
             }
@@ -325,7 +339,8 @@ mod tests {
         assert_eq!(133, r.outstanding_reward().unwrap());
         assert_eq!(
             Number128::from(50u64),
-            r.variable_rate.last_recorded_accrued_reward_per_gem
+            r.variable_rate
+                .last_recorded_accrued_reward_per_rarity_point
         );
     }
 

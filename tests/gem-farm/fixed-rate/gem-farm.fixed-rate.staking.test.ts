@@ -31,7 +31,7 @@ describe('staking (fixed rate)', () => {
   let gf = new GemFarmTester();
 
   beforeEach('preps accs', async () => {
-    await gf.prepAccounts(new BN(30000));
+    await gf.prepAccounts(new BN(30000000));
     await gf.callInitFarm(defaultFarmConfig, RewardType.Fixed);
     await gf.callInitFarmer(gf.farmer1Identity);
     await gf.callInitFarmer(gf.farmer2Identity);
@@ -206,9 +206,11 @@ describe('staking (fixed rate)', () => {
     let farmAcc = await gf.fetchFarm();
     assert(farmAcc.stakedFarmerCount.eq(new BN(1)));
     assert(farmAcc.gemsStaked.eq(initialDeposit));
+    assert(farmAcc.rarityPointsStaked.eq(initialDeposit));
 
     let farmerAcc = (await gf.fetchFarmerAcc(farmer)) as any;
     assert(farmerAcc.gemsStaked.eq(initialDeposit));
+    assert(farmerAcc.rarityPointsStaked.eq(initialDeposit));
     const oldEndTs = farmerAcc.minStakingEndsTs;
     const originalBeginStakingTs =
       farmerAcc[gf.reward].fixedRate.beginStakingTs;
@@ -233,9 +235,11 @@ describe('staking (fixed rate)', () => {
     farmAcc = await gf.fetchFarm();
     assert(farmAcc.stakedFarmerCount.eq(new BN(1)));
     assert(farmAcc.gemsStaked.eq(initialDeposit.add(flashDeposit)));
+    assert(farmAcc.rarityPointsStaked.eq(initialDeposit.add(flashDeposit)));
 
     farmerAcc = (await gf.fetchFarmerAcc(farmer)) as any;
     assert(farmerAcc.gemsStaked.eq(initialDeposit.add(flashDeposit)));
+    assert(farmerAcc.rarityPointsStaked.eq(initialDeposit.add(flashDeposit)));
     //flash deposits resets staking time, which means it should be higher
     assert(farmerAcc.minStakingEndsTs.gt(oldEndTs));
 
