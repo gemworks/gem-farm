@@ -24,7 +24,7 @@ describe('misc', () => {
   let gf = new GemFarmTester();
 
   before('preps accs', async () => {
-    await gf.prepAccounts(new BN(45000));
+    await gf.prepAccounts(45000);
   });
 
   it('inits the farm', async () => {

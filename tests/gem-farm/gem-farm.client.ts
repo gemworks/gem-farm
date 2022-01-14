@@ -3,7 +3,7 @@ import { BN, Idl, Program, Wallet } from '@project-serum/anchor';
 import { Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
 import { GemFarm } from '../../target/types/gem_farm';
 import { Connection } from '@metaplex/js';
-import { isKp } from '../gem-common/types';
+import { isKp, stringifyPKsAndBNs } from '../gem-common/types';
 import { GemBankClient, WhitelistType } from '../gem-bank/gem-bank.client';
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -44,6 +44,11 @@ export interface FixedRateConfig {
 export interface VariableRateConfig {
   amount: BN;
   durationSec: BN;
+}
+
+export interface RarityConfig {
+  mint: PublicKey;
+  rarityPoints: number;
 }
 
 export class GemFarmClient extends GemBankClient {
@@ -656,6 +661,10 @@ export class GemFarmClient extends GemBankClient {
     const [gemBox, gemBoxBump] = await this.findGemBoxPDA(vault, gemMint);
     const [GDR, GDRBump] = await this.findGdrPDA(vault, gemMint);
     const [vaultAuth, vaultAuthBump] = await this.findVaultAuthorityPDA(vault);
+    const [gemRarity, gemRarityBump] = await this.findRarityPDA(
+      farmAcc.bank,
+      gemMint
+    );
 
     const remainingAccounts = [];
     if (mintProof)
@@ -686,6 +695,7 @@ export class GemFarmClient extends GemBankClient {
       vaultAuthBump,
       gemBoxBump,
       GDRBump,
+      gemRarityBump,
       gemAmount,
       {
         accounts: {
@@ -700,6 +710,7 @@ export class GemFarmClient extends GemBankClient {
           gemDepositReceipt: GDR,
           gemSource,
           gemMint,
+          gemRarity,
           tokenProgram: TOKEN_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -965,6 +976,70 @@ export class GemFarmClient extends GemBankClient {
     });
 
     return { txSig };
+  }
+
+  // --------------------------------------- rarity
+
+  async addRaritiesToBank(
+    farm: PublicKey,
+    farmManager: PublicKey | Keypair,
+    ratityConfigs: RarityConfig[]
+  ) {
+    const farmAcc = await this.fetchFarmAcc(farm);
+    const bank = farmAcc.bank;
+
+    const [farmAuth, farmAuthBump] = await this.findFarmAuthorityPDA(farm);
+
+    //prepare rarity configs
+    const completeRarityConfigs = [...ratityConfigs];
+    const remainingAccounts = [];
+
+    for (const config of completeRarityConfigs) {
+      const [gemRarity] = await this.findRarityPDA(bank, config.mint);
+      //add mint
+      remainingAccounts.push({
+        pubkey: config.mint,
+        isWritable: false,
+        isSigner: false,
+      });
+      //add rarity pda
+      remainingAccounts.push({
+        pubkey: gemRarity,
+        isWritable: true,
+        isSigner: false,
+      });
+    }
+
+    const signers = [];
+    if (isKp(farmManager)) signers.push(<Keypair>farmManager);
+
+    console.log("adding rarities to farm's bank");
+    const txSig = await this.farmProgram.rpc.addRaritiesToBank(
+      farmAuthBump,
+      completeRarityConfigs,
+      {
+        accounts: {
+          farm,
+          farmManager: isKp(farmManager)
+            ? (<Keypair>farmManager).publicKey
+            : farmManager,
+          farmAuthority: farmAuth,
+          bank,
+          gemBank: this.bankProgram.programId,
+          systemProgram: SystemProgram.programId,
+        },
+        remainingAccounts,
+        signers,
+      }
+    );
+
+    return {
+      bank,
+      farmAuth,
+      farmAuthBump,
+      completeRarityConfigs,
+      txSig,
+    };
   }
 
   // --------------------------------------- helpers

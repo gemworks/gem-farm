@@ -14,8 +14,9 @@ describe('staking (variable rate)', () => {
   let gf = new GemFarmTester();
 
   beforeEach('preps accs', async () => {
-    await gf.prepAccounts(new BN(10000));
+    await gf.prepAccounts(5000000000, gf.randomInt(1, 3), gf.randomInt(1, 3));
     await gf.callInitFarm(defaultFarmConfig);
+    await gf.prepGemRarities();
     await gf.callInitFarmer(gf.farmer1Identity);
     await gf.callInitFarmer(gf.farmer2Identity);
     await gf.callDeposit(gf.gem1Amount, gf.farmer1Identity);
@@ -36,7 +37,7 @@ describe('staking (variable rate)', () => {
     await gf.callRefreshFarmer(gf.farmer2Identity);
 
     //verify counts
-    await gf.verifyStakedGemsAndFarmers(gf.gem1Amount.add(gf.gem2Amount), 2);
+    await gf.verifyStakedGemsAndFarmers(2);
 
     //verify funds
     //in theory floor 500, but sometimes it's off by 1-2 due to timing
@@ -62,14 +63,14 @@ describe('staking (variable rate)', () => {
     await gf.unstakeOnceAndVerify(gf.farmer2Identity);
 
     // verify counts
-    await gf.verifyStakedGemsAndFarmers(0, 0);
+    await gf.verifyStakedGemsAndFarmers(0, 0, 0);
 
     // ----------------- unstake twice (to pass cooldown)
     await gf.unstakeTwiceAndVerify(gf.farmer1Identity);
     await gf.unstakeTwiceAndVerify(gf.farmer2Identity);
 
     //verify counts
-    await gf.verifyStakedGemsAndFarmers(0, 0);
+    await gf.verifyStakedGemsAndFarmers(0, 0, 0);
 
     //verify funds
     //in theory floor 500, but sometimes it's off by 1-2 due to timing

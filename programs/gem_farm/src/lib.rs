@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use gem_bank::instructions::record_rarity_points::RarityConfig;
 use instructions::*;
 use state::*;
 
@@ -108,10 +109,18 @@ pub mod gem_farm {
         bump_vault_auth: u8,
         bump_gem_box: u8,
         bump_gdr: u8,
+        bump_rarity: u8,
         amount: u64,
     ) -> ProgramResult {
-        msg!("flash deposit");
-        instructions::flash_deposit::handler(ctx, bump_vault_auth, bump_gem_box, bump_gdr, amount)
+        // msg!("flash deposit"); //have to remove all msgs! or run out of compute budget for this ix
+        instructions::flash_deposit::handler(
+            ctx,
+            bump_vault_auth,
+            bump_gem_box,
+            bump_gdr,
+            bump_rarity,
+            amount,
+        )
     }
 
     pub fn refresh_farmer(ctx: Context<RefreshFarmer>, _bump: u8) -> ProgramResult {
@@ -168,5 +177,16 @@ pub mod gem_farm {
     pub fn lock_reward(ctx: Context<LockReward>) -> ProgramResult {
         msg!("lock reward");
         instructions::lock_reward::handler(ctx)
+    }
+
+    // --------------------------------------- rarities
+
+    pub fn add_rarities_to_bank<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, AddRaritiesToBank<'info>>,
+        _bump_auth: u8,
+        rarity_configs: Vec<RarityConfig>,
+    ) -> ProgramResult {
+        msg!("add rarities to bank");
+        instructions::add_rarities_to_bank::handler(ctx, rarity_configs)
     }
 }

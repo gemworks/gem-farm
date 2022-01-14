@@ -27,10 +27,10 @@ impl WhitelistProof {
     pub fn contains_type(&self, expected_whitelist_type: WhitelistType) -> ProgramResult {
         let whitelist_type = WhitelistProof::read_type(self.whitelist_type)?;
         if whitelist_type.contains(expected_whitelist_type) {
-            msg!(
-                "whitelist type ({:?}) matches, going ahead",
-                expected_whitelist_type
-            );
+            // msg!(
+            //     "whitelist type ({:?}) matches, going ahead",
+            //     expected_whitelist_type
+            // );
             return Ok(());
         }
 

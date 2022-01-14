@@ -24,7 +24,7 @@ interface IVault {
  * 1) create A LOT of concurrent deposits -> make sure the program can handle
  * 2) test finding & deserializing appropriate PDA state accounts
  */
-describe('looper', () => {
+describe.skip('looper', () => {
   const _provider = anchor.Provider.env();
   const gb = new GemBankClient(
     _provider.connection,
@@ -95,7 +95,7 @@ describe('looper', () => {
   }
 
   async function prepGem(owner?: Keypair) {
-    const gemAmount = new BN(1 + Math.ceil(Math.random() * 100)); //min 2
+    const gemAmount = new BN(10); //here intentionally using 10
     const gemOwner =
       owner ?? (await nw.createFundedWallet(100 * LAMPORTS_PER_SOL));
     const gem = await nw.createMintAndFundATA(gemOwner.publicKey, gemAmount);
@@ -158,6 +158,8 @@ describe('looper', () => {
     for (const v of vaults) {
       const vaultAcc = await gb.fetchVaultAcc(v.vault);
       assert(vaultAcc.gemBoxCount.eq(new BN(nGemsPerVault)));
+      assert(vaultAcc.gemCount.eq(new BN(nGemsPerVault).mul(new BN(10))));
+      assert(vaultAcc.rarityPoints.eq(new BN(nGemsPerVault).mul(new BN(10))));
     }
 
     // --------------------------------------- w/ constraints
@@ -186,6 +188,8 @@ describe('looper', () => {
     for (const v of vaults) {
       const vaultAcc = await gb.fetchVaultAcc(v.vault);
       assert(vaultAcc.gemBoxCount.eq(new BN(0))); //reduced after closure
+      assert(vaultAcc.gemCount.eq(new BN(0)));
+      assert(vaultAcc.rarityPoints.eq(new BN(0)));
     }
   });
 });

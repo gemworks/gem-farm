@@ -31,8 +31,9 @@ describe('staking (fixed rate)', () => {
   let gf = new GemFarmTester();
 
   beforeEach('preps accs', async () => {
-    await gf.prepAccounts(new BN(30000));
+    await gf.prepAccounts(5000000000, gf.randomInt(1, 3), gf.randomInt(1, 3));
     await gf.callInitFarm(defaultFarmConfig, RewardType.Fixed);
+    await gf.prepGemRarities();
     await gf.callInitFarmer(gf.farmer1Identity);
     await gf.callInitFarmer(gf.farmer2Identity);
     await gf.callDeposit(gf.gem1Amount, gf.farmer1Identity);
@@ -53,7 +54,7 @@ describe('staking (fixed rate)', () => {
     await gf.callRefreshFarmer(gf.farmer2Identity);
 
     //verify counts
-    await gf.verifyStakedGemsAndFarmers(gf.gem1Amount.add(gf.gem2Amount), 2);
+    await gf.verifyStakedGemsAndFarmers(2);
 
     //verify funds
     await gf.verifyAccruedRewardsFixed(30);
@@ -86,14 +87,14 @@ describe('staking (fixed rate)', () => {
     await gf.unstakeOnceAndVerify(gf.farmer2Identity);
 
     // verify counts
-    await gf.verifyStakedGemsAndFarmers(0, 0);
+    await gf.verifyStakedGemsAndFarmers(0, 0, 0);
 
     // ----------------- unstake twice (to pass cooldown)
     await gf.unstakeTwiceAndVerify(gf.farmer1Identity);
     await gf.unstakeTwiceAndVerify(gf.farmer2Identity);
 
     //verify counts
-    await gf.verifyStakedGemsAndFarmers(0, 0);
+    await gf.verifyStakedGemsAndFarmers(0, 0, 0);
 
     //verify funds
     await gf.verifyAccruedRewardsFixed(30);
@@ -121,7 +122,7 @@ describe('staking (fixed rate)', () => {
   });
 
   it('voids reserved amount after farmers unstake', async () => {
-    let totalReserve = gf.gem1Amount.add(gf.gem2Amount).mul(toBN(30));
+    let totalReserve = gf.calcTotalGemRarity().total.mul(toBN(30));
 
     //both stake
     await gf.stakeAndVerify(gf.farmer1Identity);
@@ -200,14 +201,25 @@ describe('staking (fixed rate)', () => {
 
     let vaultAcc = await gf.fetchVaultAcc(vault);
     assert(vaultAcc.gemCount.eq(initialDeposit));
+    assert(
+      vaultAcc.rarityPoints.eq(initialDeposit.mul(toBN(gf.gem1PerGemRarity)))
+    );
     assert.isTrue(vaultAcc.locked);
 
     let farmAcc = await gf.fetchFarm();
     assert(farmAcc.stakedFarmerCount.eq(new BN(1)));
     assert(farmAcc.gemsStaked.eq(initialDeposit));
+    assert(
+      vaultAcc.rarityPoints.eq(initialDeposit.mul(toBN(gf.gem1PerGemRarity)))
+    );
 
     let farmerAcc = (await gf.fetchFarmerAcc(farmer)) as any;
     assert(farmerAcc.gemsStaked.eq(initialDeposit));
+    assert(
+      farmerAcc.rarityPointsStaked.eq(
+        initialDeposit.mul(toBN(gf.gem1PerGemRarity))
+      )
+    );
     const oldEndTs = farmerAcc.minStakingEndsTs;
     const originalBeginStakingTs =
       farmerAcc[gf.reward].fixedRate.beginStakingTs;
@@ -224,16 +236,24 @@ describe('staking (fixed rate)', () => {
     await gf.callFlashDeposit(flashDeposit, gf.farmer1Identity);
     // await printStructs('FLASH DEPOSITS');
 
+    let newGems = initialDeposit.add(flashDeposit);
+    let newRarity = initialDeposit
+      .add(flashDeposit)
+      .mul(toBN(gf.gem1PerGemRarity));
+
     vaultAcc = await gf.fetchVaultAcc(vault);
-    assert(vaultAcc.gemCount.eq(initialDeposit.add(flashDeposit)));
+    assert(vaultAcc.gemCount.eq(newGems));
+    assert(vaultAcc.rarityPoints.eq(newRarity));
     assert.isTrue(vaultAcc.locked);
 
     farmAcc = await gf.fetchFarm();
     assert(farmAcc.stakedFarmerCount.eq(new BN(1)));
-    assert(farmAcc.gemsStaked.eq(initialDeposit.add(flashDeposit)));
+    assert(farmAcc.gemsStaked.eq(newGems));
+    assert(farmAcc.rarityPointsStaked.eq(newRarity));
 
     farmerAcc = (await gf.fetchFarmerAcc(farmer)) as any;
-    assert(farmerAcc.gemsStaked.eq(initialDeposit.add(flashDeposit)));
+    assert(farmerAcc.gemsStaked.eq(newGems));
+    assert(farmerAcc.rarityPointsStaked.eq(newRarity));
     //flash deposits resets staking time, which means it should be higher
     assert(farmerAcc.minStakingEndsTs.gt(oldEndTs));
 
@@ -267,6 +287,11 @@ describe('staking (fixed rate)', () => {
     //this is enough to verify it worked
     const vaultAcc = await gf.fetchVaultAcc(vault);
     assert(vaultAcc.gemCount.eq(initialDeposit.add(flashDeposit)));
+    assert(
+      vaultAcc.rarityPoints.eq(
+        initialDeposit.add(flashDeposit).mul(toBN(gf.gem1PerGemRarity))
+      )
+    );
     assert.isTrue(vaultAcc.locked);
   });
 
@@ -303,6 +328,11 @@ describe('staking (fixed rate)', () => {
     //this is enough to verify it worked
     const vaultAcc = await gf.fetchVaultAcc(vault);
     assert(vaultAcc.gemCount.eq(initialDeposit.add(flashDeposit)));
+    assert(
+      vaultAcc.rarityPoints.eq(
+        initialDeposit.add(flashDeposit).mul(toBN(gf.gem1PerGemRarity))
+      )
+    );
     assert.isTrue(vaultAcc.locked);
   });
 });

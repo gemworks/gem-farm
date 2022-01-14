@@ -12,7 +12,7 @@ import { NodeWallet } from '../gem-common/node-wallet';
 
 chai.use(chaiAsPromised);
 
-describe.only('gem bank', () => {
+describe.skip('gem bank', () => {
   const _provider = anchor.Provider.env();
   const gb = new GemBankClient(
     _provider.connection,
@@ -199,6 +199,7 @@ describe.only('gem bank', () => {
       const vaultAcc = await gb.fetchVaultAcc(vault);
       assert(vaultAcc.gemBoxCount.eq(new BN(1)));
       assert(vaultAcc.gemCount.eq(gemAmount));
+      assert(vaultAcc.rarityPoints.eq(gemAmount));
 
       const gemBoxAcc = await gb.fetchGemAcc(gem.tokenMint, gemBox);
       assert(gemBoxAcc.amount.eq(gemAmount));
@@ -228,6 +229,7 @@ describe.only('gem bank', () => {
       const vaultAcc2 = await gb.fetchVaultAcc(vault);
       assert(vaultAcc2.gemBoxCount.eq(oldBoxCount.sub(new BN(1))));
       assert(vaultAcc2.gemCount.eq(oldGemCount.sub(gemAmount)));
+      assert(vaultAcc2.rarityPoints.eq(oldGemCount.sub(gemAmount)));
 
       const gemAcc = await gb.fetchGemAcc(gem.tokenMint, gem.tokenAcc);
       assert(gemAcc.amount.eq(gemAmount));

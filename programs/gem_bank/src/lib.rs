@@ -40,6 +40,7 @@ pub mod gem_bank {
         _bump_auth: u8,
         _bump_gem_box: u8,
         _bump_gdr: u8,
+        _bump_rarity: u8,
         amount: u64,
     ) -> ProgramResult {
         instructions::deposit_gem::handler(ctx, amount)
@@ -50,6 +51,7 @@ pub mod gem_bank {
         _bump_auth: u8,
         _bump_gem_box: u8,
         _bump_gdr: u8,
+        _bump_rarity: u8,
         amount: u64,
     ) -> ProgramResult {
         instructions::withdraw_gem::handler(ctx, amount)
@@ -72,5 +74,13 @@ pub mod gem_bank {
         new_manager: Pubkey,
     ) -> ProgramResult {
         instructions::update_bank_manager::handler(ctx, new_manager)
+    }
+
+    pub fn record_rarity_points<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, RecordRarityPoints<'info>>,
+        rarity_configs: Vec<RarityConfig>,
+    ) -> ProgramResult {
+        msg!("record rarity points");
+        instructions::record_rarity_points::handler(ctx, rarity_configs)
     }
 }

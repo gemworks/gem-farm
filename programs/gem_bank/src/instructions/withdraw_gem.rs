@@ -1,3 +1,4 @@
+use crate::instructions::calc_rarity_points;
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
@@ -8,7 +9,7 @@ use gem_common::{errors::ErrorCode, *};
 use crate::state::*;
 
 #[derive(Accounts)]
-#[instruction(bump_auth: u8, bump_gem_box: u8, bump_gdr: u8)]
+#[instruction(bump_auth: u8, bump_gem_box: u8, bump_gdr: u8, bump_rarity: u8)]
 pub struct WithdrawGem<'info> {
     // bank
     pub bank: Box<Account<'info, Bank>>,
@@ -43,6 +44,13 @@ pub struct WithdrawGem<'info> {
         payer = owner)]
     pub gem_destination: Box<Account<'info, TokenAccount>>,
     pub gem_mint: Box<Account<'info, Mint>>,
+    // we MUST ask for this PDA both during deposit and withdrawal for sec reasons, even if it's zero'ed
+    #[account(seeds = [
+            b"gem_rarity".as_ref(),
+            bank.key().as_ref(),
+            gem_mint.key().as_ref()
+        ], bump = bump_rarity)]
+    pub gem_rarity: AccountInfo<'info>,
     // unlike with deposits, the gem can be sent out to anyone, not just the owner
     #[account(mut)]
     pub receiver: AccountInfo<'info>,
@@ -129,6 +137,9 @@ pub fn handler(ctx: Context<WithdrawGem>, amount: u64) -> ProgramResult {
     // decrement gem count as well
     let vault = &mut ctx.accounts.vault;
     vault.gem_count.try_sub_assign(amount)?;
+    vault
+        .rarity_points
+        .try_sub_assign(calc_rarity_points(&ctx.accounts.gem_rarity, amount)?)?;
 
     msg!("{} gems withdrawn from ${} gem box", amount, gem_box.key());
     Ok(())
