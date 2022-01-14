@@ -5,7 +5,7 @@ Gemworks is a collection of Solana on-chain programs for doing all kinds of cool
 Currently it consists of:
 
 - Gem Bank 🏦 - lets you manage a whitelisted collection of gems across any number of lockable vaults.
-- Gem Farm 🧑‍🌾 - Gem Farm lets you offer a yield-bearing facility to loyal gem stakers.
+- Gem Farm 🧑‍🌾 - lets you offer a yield-bearing facility to loyal gem stakers.
 
 # Deploy your own version 🛠
 
@@ -38,6 +38,8 @@ Currently it consists of:
 # Docs ✏️
 
 Extensive documentation is available [here](https://docs.gemworks.gg/).
+
+The answer you're looking for is probably there. Pls don't DM with random questions.
 
 # License 🧾
 
