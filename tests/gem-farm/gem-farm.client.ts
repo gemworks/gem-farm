@@ -983,7 +983,7 @@ export class GemFarmClient extends GemBankClient {
   async addRaritiesToBank(
     farm: PublicKey,
     farmManager: PublicKey | Keypair,
-    ratityConfigs: RarityConfig[]
+    rarityConfigs: RarityConfig[]
   ) {
     const farmAcc = await this.fetchFarmAcc(farm);
     const bank = farmAcc.bank;
@@ -991,7 +991,7 @@ export class GemFarmClient extends GemBankClient {
     const [farmAuth, farmAuthBump] = await this.findFarmAuthorityPDA(farm);
 
     //prepare rarity configs
-    const completeRarityConfigs = [...ratityConfigs];
+    const completeRarityConfigs = [...rarityConfigs];
     const remainingAccounts = [];
 
     for (const config of completeRarityConfigs) {
