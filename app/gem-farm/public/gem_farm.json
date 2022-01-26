@@ -1,5 +1,5 @@
 {
-  "version": "0.0.0",
+  "version": "0.1.0",
   "name": "gem_farm",
   "instructions": [
     {
@@ -623,6 +623,11 @@
           "isSigner": false
         },
         {
+          "name": "gemRarity",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "tokenProgram",
           "isMut": false,
           "isSigner": false
@@ -658,6 +663,10 @@
         },
         {
           "name": "bumpGdr",
+          "type": "u8"
+        },
+        {
+          "name": "bumpRarity",
           "type": "u8"
         },
         {
@@ -955,6 +964,55 @@
         }
       ],
       "args": []
+    },
+    {
+      "name": "addRaritiesToBank",
+      "accounts": [
+        {
+          "name": "farm",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "farmManager",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "farmAuthority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "bank",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "gemBank",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "bumpAuth",
+          "type": "u8"
+        },
+        {
+          "name": "rarityConfigs",
+          "type": {
+            "vec": {
+              "defined": "RarityConfig"
+            }
+          }
+        }
+      ]
     }
   ],
   "accounts": [
@@ -1031,6 +1089,10 @@
             "type": "u64"
           },
           {
+            "name": "rarityPointsStaked",
+            "type": "u64"
+          },
+          {
             "name": "authorizedFunderCount",
             "type": "u64"
           },
@@ -1074,6 +1136,10 @@
           },
           {
             "name": "gemsStaked",
+            "type": "u64"
+          },
+          {
+            "name": "rarityPointsStaked",
             "type": "u64"
           },
           {
@@ -1241,7 +1307,7 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "lastRecordedAccruedRewardPerGem",
+            "name": "lastRecordedAccruedRewardPerRarityPoint",
             "type": {
               "defined": "Number128"
             }
@@ -1376,6 +1442,22 @@
       }
     },
     {
+      "name": "RarityConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "publicKey"
+          },
+          {
+            "name": "rarityPoints",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
       "name": "Number128",
       "type": {
         "kind": "struct",
@@ -1419,7 +1501,7 @@
             "type": "u64"
           },
           {
-            "name": "accruedRewardPerGem",
+            "name": "accruedRewardPerRarityPoint",
             "type": {
               "defined": "Number128"
             }
@@ -1480,6 +1562,6 @@
     }
   ],
   "metadata": {
-    "address": "2VMTQBkVcwaYj2VJH1EB1hSa8bv8Dij5sCEtfWJMoFGK"
+    "address": "9t5fVc99hmFP3k3gKd2NaBE6kxUuRLxwCssBxvoCXHMg"
   }
 }
