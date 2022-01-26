@@ -20,7 +20,7 @@
       <div class="mb-2">
         Accrued reward/gem:
         {{
-          numeral(reward.variableRate.accruedRewardPerGem.n / 10 ** 15).format(
+          numeral(reward.variableRate.accruedRewardPerRarityPoint.n / 10 ** 15).format(
             '0,0.0'
           )
         }}
