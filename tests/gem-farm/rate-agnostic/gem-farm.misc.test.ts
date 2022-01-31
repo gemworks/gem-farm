@@ -7,7 +7,7 @@ import {
 } from '../gem-farm.tester';
 import { BN } from '@project-serum/anchor';
 import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
-import { FarmConfig, RewardType } from '../gem-farm.client';
+import { FarmConfig, feeAccount, RewardType } from '../gem-farm.client';
 import { WhitelistType } from '../../gem-bank/gem-bank.client';
 
 chai.use(chaiAsPromised);
@@ -36,6 +36,9 @@ describe('misc', () => {
       farmAcc[gf.reward].rewardMint.toBase58(),
       gf.rewardMint.publicKey.toBase58()
     );
+
+    let bal = await gf.getBalance(feeAccount);
+    assert(bal > 0); //can't check exact amount coz depends on order of tests
   });
 
   it('updates the farm', async () => {

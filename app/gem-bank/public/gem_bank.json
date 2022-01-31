@@ -1,5 +1,5 @@
 {
-  "version": "0.0.0",
+  "version": "0.1.0",
   "name": "gem_bank",
   "instructions": [
     {
@@ -189,6 +189,11 @@
           "isSigner": false
         },
         {
+          "name": "gemRarity",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "tokenProgram",
           "isMut": false,
           "isSigner": false
@@ -215,6 +220,10 @@
         },
         {
           "name": "bumpGdr",
+          "type": "u8"
+        },
+        {
+          "name": "bumpRarity",
           "type": "u8"
         },
         {
@@ -267,6 +276,11 @@
           "isSigner": false
         },
         {
+          "name": "gemRarity",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "receiver",
           "isMut": true,
           "isSigner": false
@@ -303,6 +317,10 @@
         },
         {
           "name": "bumpGdr",
+          "type": "u8"
+        },
+        {
+          "name": "bumpRarity",
           "type": "u8"
         },
         {
@@ -407,6 +425,41 @@
           "type": "publicKey"
         }
       ]
+    },
+    {
+      "name": "recordRarityPoints",
+      "accounts": [
+        {
+          "name": "bank",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "bankManager",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "rarityConfigs",
+          "type": {
+            "vec": {
+              "defined": "RarityConfig"
+            }
+          }
+        }
+      ]
     }
   ],
   "accounts": [
@@ -438,6 +491,15 @@
           {
             "name": "vaultCount",
             "type": "u64"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
           }
         ]
       }
@@ -462,6 +524,27 @@
           {
             "name": "gemCount",
             "type": "u64"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Rarity",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "points",
+            "type": "u16"
           }
         ]
       }
@@ -520,6 +603,19 @@
           {
             "name": "gemCount",
             "type": "u64"
+          },
+          {
+            "name": "rarityPoints",
+            "type": "u64"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
           }
         ]
       }
@@ -545,7 +641,22 @@
       }
     }
   ],
-  "metadata": {
-    "address": "2Kezyz4zLTv8wDoD2t2KKsb76p5KTC3MjVpquoAxTY5V"
-  }
+  "types": [
+    {
+      "name": "RarityConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "publicKey"
+          },
+          {
+            "name": "rarityPoints",
+            "type": "u16"
+          }
+        ]
+      }
+    }
+  ]
 }

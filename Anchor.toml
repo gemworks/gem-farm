@@ -1,6 +1,6 @@
 [programs.localnet]
-gem_bank = "2Kezyz4zLTv8wDoD2t2KKsb76p5KTC3MjVpquoAxTY5V"
-gem_farm = "2VMTQBkVcwaYj2VJH1EB1hSa8bv8Dij5sCEtfWJMoFGK"
+gem_bank = "bankHHdqMuaaST4qQk6mkzxGeKPHWmqdgor6Gs8r88m"
+gem_farm = "farmL4xeBFVXJqtfxCzU9b28QACM7E2W2ctT6epAjvE"
 
 [registry]
 url = "https://anchor.projectserum.com"

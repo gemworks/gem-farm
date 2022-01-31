@@ -2,9 +2,14 @@
   <div class="nes-container with-title mb-10">
     <p class="title">Welcome to Gem Farm</p>
     <p>
-      This app is designed to illustrate the functionality of Gem Farm. It is
-      not production grade. Use at your own risk.
+      This app is designed to illustrate the functionality of Gem Farm. Play
+      around following the docs
+      <a class="text-blue-600" href="https://docs.gemworks.gg/" target="_blank"
+        >here</a
+      >
+      - but then you might want to build your own, better front-end.
     </p>
+    <p class="mt-10">Gem Farm is deployed at:</p>
   </div>
   <div class="flex flex-row">
     <div class="nes-container with-title flex-1 mr-5">

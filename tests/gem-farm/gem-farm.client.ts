@@ -10,6 +10,10 @@ import {
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token';
 
+export const feeAccount = new PublicKey(
+  '2xhBxVVuXkdq2MRKerE9mr2s1szfHSedy21MVqf8gPoM'
+);
+
 //acts as an enum
 export const RewardType = {
   Variable: { variable: {} },
@@ -257,6 +261,7 @@ export class GemFarmClient extends GemBankClient {
           farmAuthority: farmAuth,
           farmTreasury,
           payer: isKp(payer) ? (<Keypair>payer).publicKey : farmManager,
+          feeAcc: feeAccount,
           rewardAPot,
           rewardAMint,
           rewardBPot,

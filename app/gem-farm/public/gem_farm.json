@@ -1,5 +1,5 @@
 {
-  "version": "0.0.0",
+  "version": "0.1.0",
   "name": "gem_farm",
   "instructions": [
     {
@@ -59,6 +59,11 @@
           "name": "payer",
           "isMut": true,
           "isSigner": true
+        },
+        {
+          "name": "feeAcc",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "rent",
@@ -623,6 +628,11 @@
           "isSigner": false
         },
         {
+          "name": "gemRarity",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "tokenProgram",
           "isMut": false,
           "isSigner": false
@@ -658,6 +668,10 @@
         },
         {
           "name": "bumpGdr",
+          "type": "u8"
+        },
+        {
+          "name": "bumpRarity",
           "type": "u8"
         },
         {
@@ -955,6 +969,55 @@
         }
       ],
       "args": []
+    },
+    {
+      "name": "addRaritiesToBank",
+      "accounts": [
+        {
+          "name": "farm",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "farmManager",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "farmAuthority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "bank",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "gemBank",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "bumpAuth",
+          "type": "u8"
+        },
+        {
+          "name": "rarityConfigs",
+          "type": {
+            "vec": {
+              "defined": "RarityConfig"
+            }
+          }
+        }
+      ]
     }
   ],
   "accounts": [
@@ -970,6 +1033,15 @@
           {
             "name": "farm",
             "type": "publicKey"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
           }
         ]
       }
@@ -1031,6 +1103,10 @@
             "type": "u64"
           },
           {
+            "name": "rarityPointsStaked",
+            "type": "u64"
+          },
+          {
             "name": "authorizedFunderCount",
             "type": "u64"
           },
@@ -1044,6 +1120,15 @@
             "name": "rewardB",
             "type": {
               "defined": "FarmReward"
+            }
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
             }
           }
         ]
@@ -1077,6 +1162,10 @@
             "type": "u64"
           },
           {
+            "name": "rarityPointsStaked",
+            "type": "u64"
+          },
+          {
             "name": "minStakingEndsTs",
             "type": "u64"
           },
@@ -1094,6 +1183,15 @@
             "name": "rewardB",
             "type": {
               "defined": "FarmerReward"
+            }
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
             }
           }
         ]
@@ -1203,6 +1301,15 @@
             "type": {
               "defined": "TimeTracker"
             }
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
           }
         ]
       }
@@ -1231,6 +1338,15 @@
             "type": {
               "defined": "FarmerFixedRateReward"
             }
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
           }
         ]
       }
@@ -1241,9 +1357,18 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "lastRecordedAccruedRewardPerGem",
+            "name": "lastRecordedAccruedRewardPerRarityPoint",
             "type": {
               "defined": "Number128"
+            }
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                16
+              ]
             }
           }
         ]
@@ -1275,6 +1400,15 @@
           {
             "name": "promisedDuration",
             "type": "u64"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                16
+              ]
+            }
           }
         ]
       }
@@ -1371,6 +1505,31 @@
           {
             "name": "reservedAmount",
             "type": "u64"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "RarityConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "publicKey"
+          },
+          {
+            "name": "rarityPoints",
+            "type": "u16"
           }
         ]
       }
@@ -1419,9 +1578,18 @@
             "type": "u64"
           },
           {
-            "name": "accruedRewardPerGem",
+            "name": "accruedRewardPerRarityPoint",
             "type": {
               "defined": "Number128"
+            }
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
             }
           }
         ]
@@ -1478,8 +1646,5 @@
         ]
       }
     }
-  ],
-  "metadata": {
-    "address": "2VMTQBkVcwaYj2VJH1EB1hSa8bv8Dij5sCEtfWJMoFGK"
-  }
+  ]
 }

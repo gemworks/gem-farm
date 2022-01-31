@@ -1,8 +1,13 @@
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::{program::invoke, system_instruction};
 use anchor_spl::token::{Mint, Token, TokenAccount};
 use gem_bank::{self, cpi::accounts::InitBank, program::GemBank};
+use std::str::FromStr;
 
 use crate::state::*;
+
+const FEE_WALLET: &str = "2xhBxVVuXkdq2MRKerE9mr2s1szfHSedy21MVqf8gPoM"; //5th
+const FEE_LAMPORTS: u64 = 1_234_000_000;
 
 #[derive(Accounts)]
 #[instruction(bump_auth: u8, bump_treasury: u8, bump_pot_a: u8, bump_pot_b: u8)]
@@ -50,6 +55,8 @@ pub struct InitFarm<'info> {
     // misc
     #[account(mut)]
     pub payer: Signer<'info>,
+    #[account(mut, address = Pubkey::from_str(FEE_WALLET).unwrap())]
+    pub fee_acc: AccountInfo<'info>,
     pub rent: Sysvar<'info, Rent>,
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
@@ -68,6 +75,17 @@ impl<'info> InitFarm<'info> {
                 payer: self.payer.to_account_info(),
                 system_program: self.system_program.to_account_info(),
             },
+        )
+    }
+
+    fn transfer_fee(&self) -> ProgramResult {
+        invoke(
+            &system_instruction::transfer(self.payer.key, self.fee_acc.key, FEE_LAMPORTS),
+            &[
+                self.payer.to_account_info(),
+                self.fee_acc.clone(),
+                self.system_program.to_account_info(),
+            ],
         )
     }
 }
@@ -107,6 +125,9 @@ pub fn handler(
             .init_bank_ctx()
             .with_signer(&[&ctx.accounts.farm.farm_seeds()]),
     )?;
+
+    //collect a fee for starting a farm
+    ctx.accounts.transfer_fee()?;
 
     msg!("new farm initialized");
     Ok(())

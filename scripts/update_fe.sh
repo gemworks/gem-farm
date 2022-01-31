@@ -39,8 +39,7 @@ cp ./target/idl/gem_bank.json ./app/gem-farm/public
 cp ./target/idl/gem_farm.json ./app/gem-farm/public
 
 #deploy!
-solana balance #to know if enough sol left for deployment
-
-anchor deploy --provider.cluster devnet
-echo DEPLOYED TO DEVNET
-solana balance
+#solana balance #to know if enough sol left for deployment
+#anchor deploy --provider.cluster devnet
+#echo DEPLOYED TO DEVNET
+#solana balance
