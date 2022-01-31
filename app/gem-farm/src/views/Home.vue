@@ -9,7 +9,9 @@
       >
       - but then you might want to build your own, better front-end.
     </p>
-    <p class="mt-10">Gem Farm is deployed at:</p>
+    <p class="mt-10">
+      Gem Farm is deployed at: {{ DEFAULTS.GEM_FARM_PROG_ID }}
+    </p>
   </div>
   <div class="flex flex-row">
     <div class="nes-container with-title flex-1 mr-5">
@@ -37,9 +39,12 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
+import { DEFAULTS } from '@/globals';
 export default defineComponent({
   setup() {
-    return {};
+    return {
+      DEFAULTS,
+    };
   },
 });
 </script>
