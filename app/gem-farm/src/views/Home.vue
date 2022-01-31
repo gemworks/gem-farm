@@ -9,8 +9,8 @@
     </p>
     <p class="mt-5">
       That said, if you're a staker, in theory nothing is stopping you from
-      using this front-end ot access ALL the farms you're staking with. Simply
-      go to
+      using this front-end to access ALL the farms you're staking with. Simply
+      go to the
       <router-link to="/farmer" class="text-blue-700">farmer</router-link> tab
       and enter the farm address (ask your NFT project for it).
     </p>
