@@ -17,7 +17,7 @@
 import { defineComponent, ref } from 'vue';
 import useWallet from '@/composables/wallet';
 import useCluster from '@/composables/cluster';
-import { BrowserWallet } from '../../../../../tests/gem-common/browser-wallet';
+import { BrowserWallet } from '@gemworks/gem-farm-ts';
 
 export default defineComponent({
   setup() {

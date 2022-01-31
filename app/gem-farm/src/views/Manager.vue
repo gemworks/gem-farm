@@ -70,7 +70,7 @@ import TestMint from '@/components/gem-farm/TestMint.vue';
 import { initGemFarm } from '@/common/gem-farm';
 import InitFarm from '@/components/gem-farm/InitFarm.vue';
 import { PublicKey } from '@solana/web3.js';
-import { stringifyPKsAndBNs } from '../../../../tests/gem-common/types';
+import { stringifyPKsAndBNs } from '@gemworks/gem-farm-ts';
 import AuthorizeFunder from '@/components/gem-farm/AuthorizeFunder.vue';
 import FundCancelLock from '@/components/gem-farm/FundCancelLock.vue';
 import RefreshFarmer from '@/components/gem-farm/RefreshFarmer.vue';

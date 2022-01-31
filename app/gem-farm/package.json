@@ -10,6 +10,7 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
+    "@gemworks/gem-farm-ts": "^0.1.2",
     "@metaplex/js": "^4.9.0",
     "@project-serum/anchor": "^0.18.2",
     "@solana/spl-token": "^0.1.8",

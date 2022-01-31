@@ -53,7 +53,7 @@
 
 <script lang="ts">
 import { defineComponent, onMounted, ref, watch } from 'vue';
-import { WhitelistType } from '../../../../tests/gem-bank/gem-bank.client';
+import { WhitelistType } from '@gemworks/gem-farm-ts';
 import useCluster from '@/composables/cluster';
 import useWallet from '@/composables/wallet';
 import { initGemBank } from '@/common/gem-bank';

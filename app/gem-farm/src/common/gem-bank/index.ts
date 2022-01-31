@@ -1,9 +1,6 @@
 import * as anchor from '@project-serum/anchor';
 import { BN, Idl } from '@project-serum/anchor';
-import {
-  GemBankClient,
-  WhitelistType,
-} from '../../../../../tests/gem-bank/gem-bank.client';
+import { GemBankClient, WhitelistType } from '@gemworks/gem-farm-ts';
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import { SignerWalletAdapter } from '@solana/wallet-adapter-base';
 import { DEFAULTS } from '@/globals';

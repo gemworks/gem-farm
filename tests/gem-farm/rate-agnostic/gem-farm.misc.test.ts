@@ -7,8 +7,12 @@ import {
 } from '../gem-farm.tester';
 import { BN } from '@project-serum/anchor';
 import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
-import { FarmConfig, feeAccount, RewardType } from '../gem-farm.client';
-import { WhitelistType } from '../../gem-bank/gem-bank.client';
+import {
+  FarmConfig,
+  feeAccount,
+  RewardType,
+} from '../../../sdk/src/gem-farm.client';
+import { WhitelistType } from '../../../sdk/src/gem-bank.client';
 
 chai.use(chaiAsPromised);
 

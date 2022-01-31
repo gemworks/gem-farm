@@ -9,8 +9,8 @@ import {
   FarmConfig,
   VariableRateConfig,
   FixedRateConfig,
-} from '../../../../../tests/gem-farm/gem-farm.client';
-import { WhitelistType } from '../../../../../tests/gem-bank/gem-bank.client';
+  WhitelistType,
+} from '@gemworks/gem-farm-ts';
 import { programs } from '@metaplex/js';
 
 export async function initGemFarm(

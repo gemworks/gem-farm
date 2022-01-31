@@ -1,11 +1,12 @@
-# Gemworks 💎
+# Gem Farm 💎
+_by Gemworks_
 
-Gemworks is a collection of Solana on-chain programs for doing all kinds of cool stuff with NFTs ("gems" 💎).
+Gem Farm is a collection of on-chain Solana programs for NFT ("gem" 💎) staking.
 
-Currently it consists of:
+It consists of:
 
-- Gem Bank 🏦 - lets you manage a whitelisted collection of gems across any number of lockable vaults.
-- Gem Farm 🧑‍🌾 - lets you offer a yield-bearing facility to loyal gem stakers.
+- Gem Bank 🏦 - responsible for storing NFTs, lets you configure which mints are/not allowed into the vaults
+- Gem Farm 🧑‍🌾 - responsible for issuing rewards, lets you configure fixed/variable rates, lock up periods, fees, rarities & more
 
 # Official deployment 🚀
 
@@ -14,6 +15,8 @@ Both programs are now officially deployed across all 3 networks (mainnet, devnet
 bank: bankHHdqMuaaST4qQk6mkzxGeKPHWmqdgor6Gs8r88m
 farm: farmL4xeBFVXJqtfxCzU9b28QACM7E2W2ctT6epAjvE
 ```
+
+There is a one-time 1.5 SOL fee to use gem-farm for the farm manager. 
 
 # Deploy your own version 🛠
 

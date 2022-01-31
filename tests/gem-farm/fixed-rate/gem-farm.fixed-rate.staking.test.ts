@@ -6,12 +6,12 @@ import {
   GemFarmTester,
 } from '../gem-farm.tester';
 import { BN } from '@project-serum/anchor';
-import { toBN } from '../../gem-common/types';
-import { FixedRateConfig, RewardType } from '../gem-farm.client';
-import { WhitelistType } from '../../gem-bank/gem-bank.client';
+import { toBN } from '../../../sdk/src/gem-common/types';
+import { FixedRateConfig, RewardType } from '../../../sdk/src/gem-farm.client';
+import { WhitelistType } from '../../../sdk/src/gem-bank.client';
 import { PublicKey } from '@solana/web3.js';
-import { createMetadata } from '../../gem-common/metaplex';
-import { pause } from '../../gem-common/util';
+import { createMetadata } from '../../../sdk/src/gem-common/metaplex';
+import { pause } from '../../../sdk/src/gem-common/util';
 
 chai.use(chaiAsPromised);
 
