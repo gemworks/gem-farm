@@ -5,6 +5,7 @@ use crate::state::*;
 
 pub const LATEST_FARM_VERSION: u16 = 0;
 
+#[proc_macros::assert_size(24)]
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FarmConfig {
@@ -17,6 +18,7 @@ pub struct FarmConfig {
     pub unstaking_fee_lamp: u64,
 }
 
+#[proc_macros::assert_size(1000)] // + 5 to make it /8
 #[repr(C)]
 #[account]
 #[derive(Debug)]
@@ -63,6 +65,9 @@ pub struct Farm {
     pub reward_a: FarmReward,
 
     pub reward_b: FarmReward,
+
+    /// reserved for future updates, has to be /8
+    _reserved: [u8; 64],
 }
 
 impl Farm {
@@ -296,6 +301,7 @@ impl Farm {
 
 // --------------------------------------- farm reward
 
+#[proc_macros::assert_size(4)]
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize, PartialEq)]
 pub enum RewardType {
@@ -304,6 +310,7 @@ pub enum RewardType {
 }
 
 /// these numbers should only ever go up - ie they are cummulative
+#[proc_macros::assert_size(24)]
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FundsTracker {
@@ -322,6 +329,7 @@ impl FundsTracker {
     }
 }
 
+#[proc_macros::assert_size(24)]
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct TimeTracker {
@@ -375,6 +383,7 @@ impl TimeTracker {
     }
 }
 
+#[proc_macros::assert_size(352)] // +4  to make it /8
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FarmReward {
@@ -396,6 +405,9 @@ pub struct FarmReward {
     pub funds: FundsTracker,
 
     pub times: TimeTracker,
+
+    /// reserved for future updates, has to be /8
+    _reserved: [u8; 32],
 }
 
 impl FarmReward {

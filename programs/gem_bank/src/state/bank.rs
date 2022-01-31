@@ -3,6 +3,7 @@ use gem_common::errors::ErrorCode;
 
 pub const LATEST_BANK_VERSION: u16 = 0;
 
+#[proc_macros::assert_size(120)] // +2 to make it /8
 #[repr(C)]
 #[account]
 pub struct Bank {
@@ -23,6 +24,9 @@ pub struct Bank {
 
     /// total vault count registered with this bank
     pub vault_count: u64,
+
+    /// reserved for future updates, has to be /8
+    _reserved: [u8; 64],
 }
 
 impl Bank {

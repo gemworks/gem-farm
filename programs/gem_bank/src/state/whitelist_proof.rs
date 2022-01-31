@@ -13,6 +13,7 @@ pub struct WhitelistProof {
     pub whitelisted_address: Pubkey,
 
     pub bank: Pubkey,
+    //no reserved space coz super scarce space already
 }
 
 impl WhitelistProof {

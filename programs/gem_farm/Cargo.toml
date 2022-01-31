@@ -24,3 +24,4 @@ static_assertions = "1.1.0"
 thiserror = "1.0.30"
 gem_bank = { path = "../gem_bank", features = ["cpi"] }
 gem_common = {path='../../lib/gem_common'}
+proc_macros = {path='../../lib/proc_macros'}

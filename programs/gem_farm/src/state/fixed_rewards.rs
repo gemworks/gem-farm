@@ -3,6 +3,7 @@ use gem_common::{errors::ErrorCode, *};
 
 use crate::state::*;
 
+#[proc_macros::assert_size(4)]
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub enum FixedRateRewardTier {
@@ -12,6 +13,7 @@ pub enum FixedRateRewardTier {
     Tier3,
 }
 
+#[proc_macros::assert_size(16)]
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct TierConfig {
@@ -22,13 +24,14 @@ pub struct TierConfig {
     pub required_tenure: u64,
 }
 
+#[proc_macros::assert_size(88)]
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FixedRateSchedule {
     /// tokens/denominator / sec
     pub base_rate: u64,
 
-    pub tier1: Option<TierConfig>,
+    pub tier1: Option<TierConfig>, //16 + 8 overhead
 
     pub tier2: Option<TierConfig>,
 
@@ -52,6 +55,7 @@ impl Default for FixedRateSchedule {
     }
 }
 
+#[proc_macros::assert_size(104)]
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FixedRateConfig {
@@ -242,6 +246,7 @@ impl FixedRateSchedule {
     }
 }
 
+#[proc_macros::assert_size(128)]
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FixedRateReward {
@@ -250,6 +255,9 @@ pub struct FixedRateReward {
 
     /// amount that has been promised to existing stakers and hence can't be withdrawn
     pub reserved_amount: u64,
+
+    /// reserved for future updates, has to be /8
+    _reserved: [u8; 32],
 }
 
 impl FixedRateReward {

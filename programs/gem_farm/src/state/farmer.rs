@@ -3,6 +3,7 @@ use gem_common::{errors::ErrorCode, *};
 
 use crate::{number128::Number128, state::FixedRateSchedule};
 
+#[proc_macros::assert_size(4)]
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize, PartialEq)]
 pub enum FarmerState {
@@ -11,6 +12,7 @@ pub enum FarmerState {
     PendingCooldown,
 }
 
+#[proc_macros::assert_size(600)] // +4 to make it /8
 #[repr(C)]
 #[account]
 #[derive(Debug)]
@@ -41,6 +43,9 @@ pub struct Farmer {
     pub reward_a: FarmerReward,
 
     pub reward_b: FarmerReward,
+
+    /// reserved for future updates, has to be /8
+    _reserved: [u8; 32],
 }
 
 impl Farmer {
@@ -119,6 +124,7 @@ impl Farmer {
 
 // --------------------------------------- farmer reward
 
+#[proc_macros::assert_size(216)]
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FarmerReward {
@@ -132,6 +138,9 @@ pub struct FarmerReward {
     pub variable_rate: FarmerVariableRateReward,
 
     pub fixed_rate: FarmerFixedRateReward,
+
+    /// reserved for future updates, has to be /8
+    _reserved: [u8; 32],
 }
 
 impl FarmerReward {
@@ -172,16 +181,21 @@ impl FarmerReward {
 
 // --------------------------------------- variable rate reward
 
+#[proc_macros::assert_size(32)]
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct FarmerVariableRateReward {
     /// used to keep track of how much of the variable reward has been updated for this farmer
     /// (read more in variable rate config)
     pub last_recorded_accrued_reward_per_rarity_point: Number128,
+
+    /// reserved for future updates, has to be /8
+    _reserved: [u8; 16],
 }
 
 // --------------------------------------- fixed rate reward
 
+#[proc_macros::assert_size(136)]
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Default, AnchorSerialize, AnchorDeserialize)]
 pub struct FarmerFixedRateReward {
@@ -204,6 +218,9 @@ pub struct FarmerFixedRateReward {
     pub promised_schedule: FixedRateSchedule,
 
     pub promised_duration: u64,
+
+    /// reserved for future updates, has to be /8
+    _reserved: [u8; 16],
 }
 
 impl FarmerFixedRateReward {
@@ -288,6 +305,7 @@ mod tests {
                     denominator: 1,
                 },
                 promised_duration: 60,
+                _reserved: [0; 16],
             }
         }
     }
@@ -299,8 +317,10 @@ mod tests {
                 accrued_reward: 123,
                 variable_rate: FarmerVariableRateReward {
                     last_recorded_accrued_reward_per_rarity_point: Number128::from(10u64),
+                    _reserved: [0; 16],
                 },
                 fixed_rate: FarmerFixedRateReward::new(),
+                _reserved: [0; 32],
             }
         }
     }

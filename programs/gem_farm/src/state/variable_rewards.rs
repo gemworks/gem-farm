@@ -3,6 +3,7 @@ use gem_common::*;
 
 use crate::{number128::Number128, state::*};
 
+#[proc_macros::assert_size(16)]
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize, PartialEq)]
 pub struct VariableRateConfig {
@@ -13,6 +14,7 @@ pub struct VariableRateConfig {
     pub duration_sec: u64,
 }
 
+#[proc_macros::assert_size(72)]
 #[repr(C)]
 #[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct VariableRateReward {
@@ -29,6 +31,9 @@ pub struct VariableRateReward {
     /// 2) multiply the difference by the amount they have staked
     /// 3) update their record of flag position, so that next time we don't count this distance again
     pub accrued_reward_per_rarity_point: Number128,
+
+    /// reserved for future updates, has to be /8
+    _reserved: [u8; 32],
 }
 
 impl VariableRateReward {
@@ -159,6 +164,7 @@ mod tests {
             reward_rate: Number128::from(10u64),
             reward_last_updated_ts: 200,
             accrued_reward_per_rarity_point: Number128::from(1234u64),
+            _reserved: [0; 32],
         };
 
         let farm_points_staked = 25;
@@ -194,6 +200,7 @@ mod tests {
             reward_rate: Number128::from(10u64),
             reward_last_updated_ts: 0,
             accrued_reward_per_rarity_point: Number128::from(1234u64),
+            _reserved: [0; 32],
         };
 
         var_reward
@@ -239,6 +246,7 @@ mod tests {
             reward_rate: Number128::from(10u64),
             reward_last_updated_ts: 0,
             accrued_reward_per_rarity_point: Number128::from(1234u64),
+            _reserved: [0; 32],
         };
 
         var_reward
@@ -282,6 +290,7 @@ mod tests {
             reward_rate: Number128::from(10u64),
             reward_last_updated_ts: 0,
             accrued_reward_per_rarity_point: Number128::from(1234u64),
+            _reserved: [0; 32],
         };
 
         var_reward

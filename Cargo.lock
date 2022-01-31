@@ -566,6 +566,7 @@ dependencies = [
  "bytemuck",
  "gem_common",
  "metaplex-token-metadata",
+ "proc_macros",
  "static_assertions",
  "thiserror",
 ]
@@ -592,6 +593,7 @@ dependencies = [
  "bytemuck",
  "gem_bank",
  "gem_common",
+ "proc_macros",
  "static_assertions",
  "thiserror",
 ]
@@ -701,16 +703,6 @@ name = "itoa"
 version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b71991ff56294aa922b450139ee08b3bfc70982c6b2c7562771375cf73542dd4"
-
-[[package]]
-name = "jet-proc-macros"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "static_assertions",
- "syn",
-]
 
 [[package]]
 name = "keccak"
@@ -925,6 +917,16 @@ dependencies = [
  "syn",
  "version_check",
  "yansi",
+]
+
+[[package]]
+name = "proc_macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "static_assertions",
+ "syn",
 ]
 
 [[package]]

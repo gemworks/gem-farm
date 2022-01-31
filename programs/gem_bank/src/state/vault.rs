@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 
 use crate::state::{Bank, BankFlags};
 
+#[proc_macros::assert_size(288)] // + 6 to make it /8
 #[repr(C)]
 #[account]
 pub struct Vault {
@@ -37,6 +38,9 @@ pub struct Vault {
     /// each gem has a rarity of 1 if not specified
     /// thus worst case, when rarities aren't enabled, this is == gem_count
     pub rarity_points: u64,
+
+    /// reserved for future updates, has to be /8
+    _reserved: [u8; 64],
 }
 
 impl Vault {

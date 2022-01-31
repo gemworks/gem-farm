@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 
 /// GDR is necessary to locate all gem boxes for a given bank/vault
 /// see fetchAllGdrPDAs() in TS client
+#[proc_macros::assert_size(136)]
 #[repr(C)]
 #[account]
 pub struct GemDepositReceipt {
@@ -18,4 +19,7 @@ pub struct GemDepositReceipt {
     /// in theory, if each gem is actually an NFT this number would be 1
     /// but the vault is generic enough to support fungible tokens as well, so this can be >1
     pub gem_count: u64,
+
+    /// reserved for future updates, has to be /8
+    _reserved: [u8; 32],
 }
