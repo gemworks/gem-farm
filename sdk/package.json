@@ -1,0 +1,42 @@
+{
+  "name": "@gemworks/gem-farm-ts",
+  "version": "0.1.2",
+  "description": "sdk for Gem Farm (by Gemworks 💎)",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "/dist"
+  ],
+  "scripts": {
+    "pub": "tsc && npm version patch --force && npm publish --access public"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gemworks/gem-farm.git"
+  },
+  "keywords": [
+    "solana",
+    "nft",
+    "staking"
+  ],
+  "author": "ilmoi",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/gemworks/gem-farm/issues"
+  },
+  "homepage": "https://github.com/gemworks/gem-farm#readme",
+  "dependencies": {
+    "@metaplex-foundation/mpl-token-metadata": "^0.0.2",
+    "@metaplex/js": "^4.9.0",
+    "@project-serum/anchor": "^0.18.2",
+    "@solana/spl-token": "^0.1.8",
+    "@solana/wallet-adapter-base": "^0.8.1",
+    "@solana/web3.js": "^1.31.0"
+  },
+  "devDependencies": {
+    "typescript": "^4.3.5"
+  }
+}

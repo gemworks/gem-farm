@@ -6,9 +6,9 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token';
-import { AccountUtils } from '../gem-common/account-utils';
-import { GemBank } from '../../target/types/gem_bank';
-import { isKp } from '../gem-common/types';
+import { AccountUtils } from './gem-common/account-utils';
+import { GemBank } from './types/gem_bank';
+import { isKp } from './gem-common/types';
 
 export enum BankFlags {
   FreezeVaults = 1 << 0,
