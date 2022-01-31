@@ -1,9 +1,8 @@
 import chai, { assert } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { defaultFarmConfig, GemFarmTester } from '../gem-farm.tester';
-import { RarityConfig } from '../../../sdk/src/gem-farm.client';
+import { RarityConfig, toBN } from '../../../sdk/src';
 import { Keypair, PublicKey } from '@solana/web3.js';
-import { toBN } from '../../../sdk/src/gem-common/types';
 
 chai.use(chaiAsPromised);
 

@@ -1,10 +1,8 @@
 import * as anchor from '@project-serum/anchor';
 import { BN } from '@project-serum/anchor';
-import { GemBankClient } from '../../sdk/src/gem-bank.client';
+import { GemBankClient, ITokenData, NodeWallet } from '../../sdk/src';
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
-import { ITokenData } from '../../sdk/src/gem-common/account-utils';
 import { assert } from 'chai';
-import { NodeWallet } from '../../sdk/src/gem-common/node-wallet';
 
 interface IGem {
   gem: ITokenData;

@@ -11,8 +11,8 @@ import {
   FarmConfig,
   feeAccount,
   RewardType,
-} from '../../../sdk/src/gem-farm.client';
-import { WhitelistType } from '../../../sdk/src/gem-bank.client';
+  WhitelistType,
+} from '../../../sdk/src';
 
 chai.use(chaiAsPromised);
 

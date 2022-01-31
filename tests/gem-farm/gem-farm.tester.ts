@@ -1,24 +1,22 @@
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import {
-  Numerical,
-  stringifyPKsAndBNs,
-  toBN,
-} from '../../sdk/src/gem-common/types';
-import * as anchor from '@project-serum/anchor';
-import { BN } from '@project-serum/anchor';
-import {
   FarmConfig,
   FixedRateConfig,
   GemFarmClient,
+  ITokenData,
+  NodeWallet,
+  Numerical,
   RarityConfig,
   RewardType,
+  stringifyPKsAndBNs,
+  toBN,
   VariableRateConfig,
-} from '../../sdk/src/gem-farm.client';
+  WhitelistType,
+} from '../../sdk/src';
+import * as anchor from '@project-serum/anchor';
+import { BN } from '@project-serum/anchor';
 import { Token } from '@solana/spl-token';
-import { ITokenData } from '../../sdk/src/gem-common/account-utils';
 import { assert } from 'chai';
-import { WhitelistType } from '../../sdk/src/gem-bank.client';
-import { NodeWallet } from '../../sdk/src/gem-common/node-wallet';
 
 // --------------------------------------- configs
 

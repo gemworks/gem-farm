@@ -1,21 +1,19 @@
 import * as anchor from '@project-serum/anchor';
 import { BN } from '@project-serum/anchor';
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
-import { ITokenData } from '../../sdk/src/gem-common/account-utils';
-import chai, { assert, expect } from 'chai';
-import chaiAsPromised from 'chai-as-promised';
-import {
-  stringifyPKsAndBNs,
-  stringToBytes,
-} from '../../sdk/src/gem-common/types';
 import {
   BankFlags,
+  createMetadata,
   GemBankClient,
+  ITokenData,
+  NodeWallet,
+  stringifyPKsAndBNs,
+  stringToBytes,
   WhitelistType,
-} from '../../sdk/src/gem-bank.client';
+} from '../../sdk/src';
+import chai, { assert, expect } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
 import { describe } from 'mocha';
-import { createMetadata } from '../../sdk/src/gem-common/metaplex';
-import { NodeWallet } from '../../sdk/src/gem-common/node-wallet';
 
 chai.use(chaiAsPromised);
 
