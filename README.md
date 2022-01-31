@@ -1,11 +1,19 @@
 # Gemworks 💎
 
-Gemworks is a collection of Solana on-chain programs for doing all kinds of cool stuff with NFTs (gems 💎).
+Gemworks is a collection of Solana on-chain programs for doing all kinds of cool stuff with NFTs ("gems" 💎).
 
 Currently it consists of:
 
 - Gem Bank 🏦 - lets you manage a whitelisted collection of gems across any number of lockable vaults.
 - Gem Farm 🧑‍🌾 - lets you offer a yield-bearing facility to loyal gem stakers.
+
+# Official deployment 🚀
+
+Both programs are now officially deployed across all 3 networks (mainnet, devnet, testnet):
+```
+bank: bankHHdqMuaaST4qQk6mkzxGeKPHWmqdgor6Gs8r88m
+farm: farmL4xeBFVXJqtfxCzU9b28QACM7E2W2ctT6epAjvE
+```
 
 # Deploy your own version 🛠
 
@@ -34,6 +42,8 @@ Currently it consists of:
 - finally start the apps!
     - eg cd into `app/gem-bank` and run yarn && yarn serve
 - don't forget to open Chrome's console with `CMD+SHIFT+I` to get feedback from the app when you click buttons. It currently doesn't have a notifications system
+
+Note that deploying your own version will cost you ~20 SOL.
 
 # Docs ✏️
 
