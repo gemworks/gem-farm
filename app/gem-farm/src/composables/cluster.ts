@@ -28,7 +28,7 @@ export default function useCluster() {
     cluster.value = newCluster;
     // capping at 20 chars due to security (not to expose the token)
     console.log(
-      `Cluster updated, now ${newCluster} (${getClusterURL().substr(0, 20)})`
+      `Cluster updated,  now ${newCluster} (${getClusterURL().substr(0, 20)})`
     );
   };
 
