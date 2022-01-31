@@ -244,7 +244,7 @@ pub fn handler(ctx: Context<DepositGem>, amount: u64) -> ProgramResult {
     gdr.gem_count.try_add_assign(amount)?;
 
     // this check is semi-useless but won't hurt
-    if gdr.gem_count != gem_box.amount + amount {
+    if gdr.gem_count != gem_box.amount.try_add(amount)? {
         // msg!("{} {}", gdr.gem_count, gem_box.amount);
         return Err(ErrorCode::AmountMismatch.into());
     }

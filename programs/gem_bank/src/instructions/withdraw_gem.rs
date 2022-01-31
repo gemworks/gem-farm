@@ -110,7 +110,7 @@ pub fn handler(ctx: Context<WithdrawGem>, amount: u64) -> ProgramResult {
     gdr.gem_count.try_sub_assign(amount)?;
 
     // this check is semi-useless but won't hurt
-    if gdr.gem_count != gem_box.amount - amount {
+    if gdr.gem_count != gem_box.amount.try_sub(amount)? {
         return Err(ErrorCode::AmountMismatch.into());
     }
 

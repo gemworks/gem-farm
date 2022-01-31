@@ -23,8 +23,6 @@ pub fn handler(ctx: Context<UpdateVaultOwner>, new_owner: Pubkey) -> ProgramResu
         return Err(ErrorCode::VaultAccessSuspended.into());
     }
 
-    // todo is it wise that we're letting them set the owner w/o checking signature?
-    //  what if they accidentally set the wrong one? The vault will be frozen forever.
     vault.owner = new_owner;
 
     msg!("owner updated to: {}", new_owner);

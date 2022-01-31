@@ -13,7 +13,7 @@ pub struct AddToWhitelist<'info> {
 
     // whitelist
     pub address_to_whitelist: AccountInfo<'info>,
-    // todo - is there any way someone could create this pda outside of this ix to fake-whitelist themselves?
+    // must stay init_as_needed, otherwise no way to change afterwards
     #[account(init_if_needed,
         seeds = [
             b"whitelist".as_ref(),
@@ -34,19 +34,33 @@ pub struct AddToWhitelist<'info> {
 pub fn handler(ctx: Context<AddToWhitelist>, whitelist_type: u8) -> ProgramResult {
     // create/update whitelist proof
     let proof = &mut ctx.accounts.whitelist_proof;
-    let whitelist_type = WhitelistProof::read_type(whitelist_type)?;
 
-    proof.reset_type(whitelist_type);
+    // if this is an update, decrement counts from existing whitelist
+    if proof.whitelist_type > 0 {
+        let existing_whitelist = WhitelistProof::read_type(proof.whitelist_type)?;
+        let bank = &mut ctx.accounts.bank;
+
+        if existing_whitelist.contains(WhitelistType::CREATOR) {
+            bank.whitelisted_creators.try_sub_assign(1)?;
+        }
+        if existing_whitelist.contains(WhitelistType::MINT) {
+            bank.whitelisted_mints.try_sub_assign(1)?;
+        }
+    }
+
+    // record new whitelist and increment counts
+    let new_whitelist = WhitelistProof::read_type(whitelist_type)?;
+
+    proof.reset_type(new_whitelist);
     proof.whitelisted_address = ctx.accounts.address_to_whitelist.key();
     proof.bank = ctx.accounts.bank.key();
 
-    // increment whitelist count on bank
     let bank = &mut ctx.accounts.bank;
 
-    if whitelist_type.contains(WhitelistType::CREATOR) {
+    if new_whitelist.contains(WhitelistType::CREATOR) {
         bank.whitelisted_creators.try_add_assign(1)?;
     }
-    if whitelist_type.contains(WhitelistType::MINT) {
+    if new_whitelist.contains(WhitelistType::MINT) {
         bank.whitelisted_mints.try_add_assign(1)?;
     }
 

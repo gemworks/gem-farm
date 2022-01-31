@@ -12,7 +12,7 @@ import { NodeWallet } from '../gem-common/node-wallet';
 
 chai.use(chaiAsPromised);
 
-describe('gem bank', () => {
+describe.only('gem bank', () => {
   const _provider = anchor.Provider.env();
   const gb = new GemBankClient(
     _provider.connection,
@@ -438,6 +438,79 @@ describe('gem bank', () => {
         );
 
         await prepRemoveFromWhitelist(whitelistedCreator);
+        await expect(
+          gb.fetchWhitelistProofAcc(whitelistProof)
+        ).to.be.rejectedWith('Account does not exist');
+      });
+
+      it('tries to whitelist same mint twice', async () => {
+        await whitelistMint(gem.tokenMint);
+        const { whitelistedMint } = await whitelistMint(gem.tokenMint);
+
+        const bankAcc = await gb.fetchBankAcc(bank.publicKey);
+        assert.equal(bankAcc.whitelistedMints, 1);
+
+        await prepRemoveFromWhitelist(whitelistedMint);
+      });
+
+      it('tries to whitelist same creator twice', async () => {
+        await whitelistCreator(randomWallet.publicKey);
+        const { whitelistedCreator } = await whitelistCreator(
+          randomWallet.publicKey
+        );
+
+        const bankAcc = await gb.fetchBankAcc(bank.publicKey);
+        assert.equal(bankAcc.whitelistedCreators, 1);
+
+        await prepRemoveFromWhitelist(whitelistedCreator);
+      });
+
+      it('changes whitelist from mint to creator', async () => {
+        await whitelistMint(randomWallet.publicKey);
+        const { whitelistedCreator, whitelistProof } = await whitelistCreator(
+          randomWallet.publicKey
+        );
+
+        const proofAcc = await gb.fetchWhitelistProofAcc(whitelistProof);
+        assert.equal(proofAcc.whitelistType, WhitelistType.Creator);
+        assert.equal(proofAcc.bank.toBase58(), bank.publicKey.toBase58());
+        assert.equal(
+          proofAcc.whitelistedAddress.toBase58(),
+          whitelistedCreator.toBase58()
+        );
+
+        const bankAcc = await gb.fetchBankAcc(bank.publicKey);
+        assert.equal(bankAcc.whitelistedCreators, 1);
+        assert.equal(bankAcc.whitelistedMints, 0);
+
+        await prepRemoveFromWhitelist(whitelistedCreator);
+        await expect(
+          gb.fetchWhitelistProofAcc(whitelistProof)
+        ).to.be.rejectedWith('Account does not exist');
+      });
+
+      // unlikely to be ever needed, but protocol supports this
+      it('sets both mint and creator whitelists for same pk', async () => {
+        const { whitelistProof } = await gb.addToWhitelist(
+          bank.publicKey,
+          bankManager,
+          randomWallet.publicKey,
+          3
+        );
+
+        const proofAcc = await gb.fetchWhitelistProofAcc(whitelistProof);
+        assert.equal(proofAcc.whitelistType, 3);
+        assert.equal(proofAcc.bank.toBase58(), bank.publicKey.toBase58());
+        assert.equal(
+          proofAcc.whitelistedAddress.toBase58(),
+          randomWallet.publicKey.toBase58()
+        );
+
+        const bankAcc = await gb.fetchBankAcc(bank.publicKey);
+        assert.equal(bankAcc.whitelistedCreators, 1);
+        assert.equal(bankAcc.whitelistedMints, 1);
+
+        await prepRemoveFromWhitelist(randomWallet.publicKey);
         await expect(
           gb.fetchWhitelistProofAcc(whitelistProof)
         ).to.be.rejectedWith('Account does not exist');
