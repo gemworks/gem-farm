@@ -18,7 +18,7 @@ bank: bankHHdqMuaaST4qQk6mkzxGeKPHWmqdgor6Gs8r88m
 farm: farmL4xeBFVXJqtfxCzU9b28QACM7E2W2ctT6epAjvE
 ```
 
-There is a one-time 1.5 SOL fee to use gem-farm for the farm manager. 
+You can interact with them using this [front-end](https://www.gemfarm.gg/) (or build your own).
 
 # Deploy your own version 🛠
 
