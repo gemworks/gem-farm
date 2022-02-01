@@ -1,8 +1,13 @@
+use crate::instructions::FEE_WALLET;
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::{program::invoke, system_instruction};
 use gem_bank::{self, cpi::accounts::InitVault, program::GemBank, state::Bank};
 use gem_common::*;
+use std::str::FromStr;
 
 use crate::state::*;
+
+const FEE_LAMPORTS: u64 = 5_000_000; // 0.005 SOL per farmer
 
 #[derive(Accounts)]
 #[instruction(bump_farmer: u8, bump_vault: u8)]
@@ -34,6 +39,8 @@ pub struct InitFarmer<'info> {
     // misc
     #[account(mut)]
     pub payer: Signer<'info>,
+    #[account(mut, address = Pubkey::from_str(FEE_WALLET).unwrap())]
+    pub fee_acc: AccountInfo<'info>,
     pub system_program: Program<'info, System>,
 }
 
@@ -49,6 +56,17 @@ impl<'info> InitFarmer<'info> {
                 payer: self.payer.to_account_info(),
                 system_program: self.system_program.to_account_info(),
             },
+        )
+    }
+
+    fn transfer_fee(&self) -> ProgramResult {
+        invoke(
+            &system_instruction::transfer(self.payer.key, self.fee_acc.key, FEE_LAMPORTS),
+            &[
+                self.payer.to_account_info(),
+                self.fee_acc.clone(),
+                self.system_program.to_account_info(),
+            ],
         )
     }
 }
@@ -70,7 +88,7 @@ pub fn handler(ctx: Context<InitFarmer>, bump_vault: u8) -> ProgramResult {
 
     // do a cpi call to start a new vault
     let vault_owner = ctx.accounts.identity.key();
-    let vault_name = String::from("farm_vault"); //todo let them input custom
+    let vault_name = String::from("farm_vault");
 
     gem_bank::cpi::init_vault(
         ctx.accounts.init_vault_ctx(),
@@ -78,6 +96,9 @@ pub fn handler(ctx: Context<InitFarmer>, bump_vault: u8) -> ProgramResult {
         vault_owner,
         vault_name,
     )?;
+
+    //collect a fee for starting a farm
+    ctx.accounts.transfer_fee()?;
 
     msg!("new farmer initialized");
     Ok(())

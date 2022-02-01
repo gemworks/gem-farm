@@ -1,4 +1,9 @@
 {
+  "scripts": {
+    "build": "anchor build && ./scripts/cp_idl.sh",
+    "pub": "cd ./sdk && yarn pub && cd",
+    "update": "cd ./app/gem-bank && yarn update && cd ../gem-farm && yarn update"
+  },
   "dependencies": {
     "@metaplex-foundation/mpl-token-metadata": "^0.0.2",
     "@metaplex/js": "^4.9.0",

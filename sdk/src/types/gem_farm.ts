@@ -346,6 +346,11 @@ export type GemFarm = {
           "isSigner": true
         },
         {
+          "name": "feeAcc",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "systemProgram",
           "isMut": false,
           "isSigner": false
@@ -1995,6 +2000,11 @@ export const IDL: GemFarm = {
           "name": "payer",
           "isMut": true,
           "isSigner": true
+        },
+        {
+          "name": "feeAcc",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "systemProgram",

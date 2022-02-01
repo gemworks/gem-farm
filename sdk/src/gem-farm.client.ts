@@ -3,7 +3,7 @@ import { BN, Idl, Program, Wallet } from '@project-serum/anchor';
 import { Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
 import { GemFarm } from './types/gem_farm';
 import { Connection } from '@metaplex/js';
-import { isKp, stringifyPKsAndBNs } from './gem-common/types';
+import { isKp } from './gem-common';
 import { GemBankClient, WhitelistType } from './gem-bank.client';
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -475,6 +475,7 @@ export class GemFarmClient extends GemBankClient {
         farmer,
         identity: identityPk,
         payer: isKp(payer) ? (<Keypair>payer).publicKey : payer,
+        feeAcc: feeAccount,
         bank: farmAcc.bank,
         vault,
         gemBank: this.bankProgram.programId,
