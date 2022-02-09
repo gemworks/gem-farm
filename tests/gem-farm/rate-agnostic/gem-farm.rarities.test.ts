@@ -6,7 +6,7 @@ import { Keypair, PublicKey } from '@solana/web3.js';
 
 chai.use(chaiAsPromised);
 
-describe('rarities', () => {
+describe.only('rarities', () => {
   let gf = new GemFarmTester();
 
   beforeEach('preps accs', async () => {

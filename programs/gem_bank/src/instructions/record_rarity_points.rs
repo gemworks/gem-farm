@@ -79,7 +79,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
         let disc = hash("account:Rarity".as_bytes());
 
         let mut gem_rarity_raw = gem_rarity.data.borrow_mut();
-        gem_rarity_raw[..8].clone_from_slice(&disc.0[..8]);
+        gem_rarity_raw[..8].clone_from_slice(&disc.to_bytes()[..8]);
         gem_rarity_raw[8..10].clone_from_slice(&config.rarity_points.to_le_bytes());
     }
 
