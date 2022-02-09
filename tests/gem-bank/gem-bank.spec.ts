@@ -19,14 +19,8 @@ chai.use(chaiAsPromised);
 
 describe('gem bank', () => {
   const _provider = anchor.Provider.env();
-  const gb = new GemBankClient(
-    _provider.connection,
-    _provider.wallet as anchor.Wallet
-  );
-  const nw = new NodeWallet(
-    _provider.connection,
-    _provider.wallet as anchor.Wallet
-  );
+  const gb = new GemBankClient(_provider.connection, _provider.wallet as any);
+  const nw = new NodeWallet(_provider.connection, _provider.wallet as any);
 
   // --------------------------------------- bank + vault
   //global state
@@ -306,7 +300,7 @@ describe('gem bank', () => {
       let vaultAcc = await gb.fetchVaultAcc(vault);
       assert.equal(vaultAcc.locked, true);
       //deposit should fail
-      await expect(prepDeposit(vaultOwner)).to.be.rejectedWith('0x140');
+      await expect(prepDeposit(vaultOwner)).to.be.rejectedWith('0x1784');
 
       //unlock the vault
       await prepLock(false);
@@ -320,7 +314,7 @@ describe('gem bank', () => {
       //withdraw should fail
       await expect(
         prepWithdrawal(vaultOwner, gem.owner, gemAmount)
-      ).to.be.rejectedWith('0x140');
+      ).to.be.rejectedWith('0x1784');
 
       //finally unlock the vault
       await prepLock(false);
@@ -346,9 +340,9 @@ describe('gem bank', () => {
           vaultOwner,
           vaultCreator.publicKey
         )
-      ).to.be.rejectedWith('0x140');
-      await expect(prepLock(true)).to.be.rejectedWith('0x140');
-      await expect(prepDeposit(vaultOwner)).to.be.rejectedWith('0x140');
+      ).to.be.rejectedWith('0x1784');
+      await expect(prepLock(true)).to.be.rejectedWith('0x1784');
+      await expect(prepDeposit(vaultOwner)).to.be.rejectedWith('0x1784');
 
       //remove flags to be able to do a real deposit - else can't withdraw
       await prepFlags(bankManager, 0);
@@ -358,7 +352,7 @@ describe('gem bank', () => {
       await prepFlags(bankManager, BankFlags.FreezeVaults);
       await expect(
         prepWithdrawal(vaultOwner, gem.owner, gemAmount)
-      ).to.be.rejectedWith('0x140');
+      ).to.be.rejectedWith('0x1784');
 
       //unfreeze vault in the end
       await prepFlags(bankManager, 0);
@@ -640,7 +634,7 @@ describe('gem bank', () => {
             gemMetadata,
             whitelistProof
           )
-        ).to.be.rejectedWith('0x142');
+        ).to.be.rejectedWith('0x1786');
 
         //clean up after
         await prepRemoveFromWhitelist(whitelistedCreator);
@@ -655,7 +649,7 @@ describe('gem bank', () => {
 
         await expect(
           prepDeposit(vaultOwner, whitelistProof)
-        ).to.be.rejectedWith('0x142');
+        ).to.be.rejectedWith('0x1786');
 
         //clean up after
         await prepRemoveFromWhitelist(whitelistedMint);
@@ -679,7 +673,7 @@ describe('gem bank', () => {
             gemMetadata,
             whitelistProof
           )
-        ).to.be.rejectedWith('0x142');
+        ).to.be.rejectedWith('0x1786');
 
         //clean up after
         await prepRemoveFromWhitelist(whitelistedCreator);
@@ -708,7 +702,7 @@ describe('gem bank', () => {
             gemMetadata,
             whitelistProof
           )
-        ).to.be.rejectedWith('0x142');
+        ).to.be.rejectedWith('0x1786');
 
         //clean up after
         await prepRemoveFromWhitelist(whitelistedMint);
@@ -741,7 +735,7 @@ describe('gem bank', () => {
             gemMetadata,
             PublicKey.default
           )
-        ).to.be.rejectedWith('0x142');
+        ).to.be.rejectedWith('0x1786');
 
         //clean up after
         await prepRemoveFromWhitelist(whitelistedMint);

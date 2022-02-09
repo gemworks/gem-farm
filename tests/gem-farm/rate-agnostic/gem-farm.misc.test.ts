@@ -136,14 +136,10 @@ describe('misc', () => {
     //funding should not be possible now
     await expect(
       gf.callFundReward(undefined, defaultFixedConfig)
-    ).to.be.rejectedWith(
-      'The given account is not owned by the executing program'
-    );
+    ).to.be.rejectedWith('3012');
 
     //second should fail (not idempotent)
-    await expect(gf.callDeauthorize()).to.be.rejectedWith(
-      'The given account is not owned by the executing program'
-    );
+    await expect(gf.callDeauthorize()).to.be.rejectedWith('3012');
   });
 
   // --------------------------------------- treasury payout

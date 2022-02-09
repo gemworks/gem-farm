@@ -1,4 +1,3 @@
-import * as anchor from '@project-serum/anchor';
 import { BN, Idl } from '@project-serum/anchor';
 import { GemBankClient, WhitelistType } from '@gemworks/gem-farm-ts';
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
@@ -26,11 +25,11 @@ export async function initGemBank(
 ) {
   const walletToUse = wallet ?? createFakeWallet();
   const idl = await (await fetch('gem_bank.json')).json();
-  return new GemBank(conn, walletToUse as anchor.Wallet, idl);
+  return new GemBank(conn, walletToUse as any, idl);
 }
 
 export class GemBank extends GemBankClient {
-  constructor(conn: Connection, wallet: anchor.Wallet, idl: Idl) {
+  constructor(conn: Connection, wallet: any, idl: Idl) {
     const programId = DEFAULTS.GEM_BANK_PROG_ID;
     super(conn, wallet, idl, programId);
   }

@@ -54,12 +54,12 @@ Note that deploying your own version will cost you ~20 SOL.
 
 If you get a cryptic error back that looks something like this: 
 ```
-Transaction failed 0x141
+Transaction failed 0x1798
 ``` 
 The steps to take are as follows:
-- translate the 0x number into decimal (eg using [this](https://www.rapidtables.com/convert/number/hex-to-decimal.html?x=0x66)) - eg 0x141 becomes 321
-- if the first number is 3, this is a custom error from the app. Go to errors.rs found [here](https://github.com/gemworks/gem-farm/blob/main/lib/gem_common/src/errors.rs) and find the error numbered 21 (the remainder of the decimal)
-- any other number besides 3 means an anchor error - go [here](https://github.com/project-serum/anchor/blob/master/lang/src/error.rs) to decipher it
+- translate the 0x number into decimal (eg using [this](https://www.rapidtables.com/convert/number/hex-to-decimal.html?x=0x66)) - eg 0x1798 becomes 6040
+- if the number is 6XXX, this is a custom error from the app. Go to errors.rs found [here](https://github.com/gemworks/gem-farm/blob/main/lib/gem_common/src/errors.rs) and find the error numbered 40 (the remainder of the decimal)
+- any other number besides 6XXX means an anchor error - go [here](https://github.com/project-serum/anchor/blob/master/lang/src/error.rs) to decipher it
 
 # Docs ✏️
 

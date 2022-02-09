@@ -13,7 +13,7 @@ use anchor_lang::prelude::*;
 pub enum ErrorCode {
     // --------------------------------------- generic (0 - 19)
     #[msg("failed to perform some math operation safely")]
-    ArithmeticError, //0x12C
+    ArithmeticError, //0x1770
 
     #[msg("unknown instruction called")]
     UnknownInstruction,
@@ -45,7 +45,7 @@ pub enum ErrorCode {
 
     // --------------------------------------- bank specific (20 - 39)
     #[msg("vault is currently locked or frozen and cannot be accessed")]
-    VaultAccessSuspended, //0x140
+    VaultAccessSuspended, //0x1784
 
     #[msg("vault doesnt't containt any gems")]
     VaultIsEmpty,
@@ -75,13 +75,13 @@ pub enum ErrorCode {
 
     // --------------------------------------- farm specific (40 - 59)
     #[msg("passed in reward mint is not available for this farm")]
-    UnknownRewardMint, //0x154
+    UnknownRewardMint, //0x1798
 
     #[msg("the reward is locked and cannot be cancelled")]
-    RewardLocked,
+    RewardLocked, //1799
 
     #[msg("can't unstake, minimum staking period has not passed yet")]
-    MinStakingNotPassed,
+    MinStakingNotPassed, //179A
 
     #[msg("can't unstake, cooldown period has not passed yet")]
     CooldownNotPassed,
@@ -89,7 +89,7 @@ pub enum ErrorCode {
     Reserved44,
 
     #[msg("reward has insufficient funding, please top up")]
-    RewardUnderfunded, //0x159
+    RewardUnderfunded, //0x179D
 
     #[msg("update authority passed doesnt match that stored in metadata")]
     WrongUpdateAuthority,
