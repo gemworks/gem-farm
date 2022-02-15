@@ -9,8 +9,9 @@ pub struct RemoveFromWhitelist<'info> {
     // bank
     #[account(mut, has_one = bank_manager)]
     pub bank: Box<Account<'info, Bank>>,
-    #[account(mut)]
     pub bank_manager: Signer<'info>,
+    #[account(mut)]
+    pub funds_receiver: AccountInfo<'info>,
 
     // whitelist
     pub address_to_remove: AccountInfo<'info>,
@@ -36,9 +37,10 @@ pub fn handler(ctx: Context<RemoveFromWhitelist>) -> ProgramResult {
     }
 
     // delete whitelist proof
-    let manager = &mut ctx.accounts.bank_manager.to_account_info();
-
-    close_account(&mut proof.to_account_info(), manager)?;
+    close_account(
+        &mut proof.to_account_info(),
+        &mut ctx.accounts.funds_receiver,
+    )?;
 
     msg!(
         "{} removed from whitelist",

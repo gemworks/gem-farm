@@ -545,7 +545,8 @@ export class GemBankClient extends AccountUtils {
   async removeFromWhitelist(
     bank: PublicKey,
     bankManager: PublicKey | Keypair,
-    addressToRemove: PublicKey
+    addressToRemove: PublicKey,
+    fundsReceiver?: PublicKey
   ) {
     const [whitelistProof, whitelistBump] = await this.findWhitelistProofPDA(
       bank,
@@ -555,16 +556,19 @@ export class GemBankClient extends AccountUtils {
     const signers = [];
     if (isKp(bankManager)) signers.push(<Keypair>bankManager);
 
+    const bankManagerPk = isKp(bankManager)
+      ? (<Keypair>bankManager).publicKey
+      : <PublicKey>bankManager;
+
     const txSig = await this.bankProgram.rpc.removeFromWhitelist(
       whitelistBump,
       {
         accounts: {
           bank,
-          bankManager: isKp(bankManager)
-            ? (<Keypair>bankManager).publicKey
-            : bankManager,
+          bankManager: bankManagerPk,
           addressToRemove,
           whitelistProof,
+          fundsReceiver: fundsReceiver ?? bankManagerPk,
         },
         signers,
       }

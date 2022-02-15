@@ -38,6 +38,7 @@ impl<'info> RemoveFromBankWhitelist<'info> {
                 bank_manager: self.farm_authority.clone(),
                 address_to_remove: self.address_to_remove.clone(),
                 whitelist_proof: self.whitelist_proof.to_account_info(),
+                funds_receiver: self.farm_manager.to_account_info(),
             },
         )
     }
