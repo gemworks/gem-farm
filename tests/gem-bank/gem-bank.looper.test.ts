@@ -26,10 +26,12 @@ describe('looper', () => {
   const _provider = anchor.Provider.env();
   const gb = new GemBankClient(
     _provider.connection,
+    // @ts-ignore
     _provider.wallet as anchor.Wallet
   );
   const nw = new NodeWallet(
     _provider.connection,
+    // @ts-ignore
     _provider.wallet as anchor.Wallet
   );
 

@@ -384,8 +384,13 @@
         },
         {
           "name": "bankManager",
-          "isMut": true,
+          "isMut": false,
           "isSigner": true
+        },
+        {
+          "name": "fundsReceiver",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "addressToRemove",
@@ -658,5 +663,8 @@
         ]
       }
     }
-  ]
+  ],
+  "metadata": {
+    "address": "bankHHdqMuaaST4qQk6mkzxGeKPHWmqdgor6Gs8r88m"
+  }
 }

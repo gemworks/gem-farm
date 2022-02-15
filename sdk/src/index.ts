@@ -1,7 +1,7 @@
 import { PublicKey } from '@solana/web3.js';
 
-export * from './gem-bank.client';
-export * from './gem-farm.client';
+export * from './gem-bank/';
+export * from './gem-farm/';
 export * from './gem-common';
 
 export const GEM_BANK_PROG_ID = new PublicKey(

@@ -384,8 +384,13 @@ export type GemBank = {
         },
         {
           "name": "bankManager",
-          "isMut": true,
+          "isMut": false,
           "isSigner": true
+        },
+        {
+          "name": "fundsReceiver",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "addressToRemove",
@@ -1047,8 +1052,13 @@ export const IDL: GemBank = {
         },
         {
           "name": "bankManager",
-          "isMut": true,
+          "isMut": false,
           "isSigner": true
+        },
+        {
+          "name": "fundsReceiver",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "addressToRemove",

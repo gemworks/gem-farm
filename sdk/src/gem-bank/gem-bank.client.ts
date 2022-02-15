@@ -1,14 +1,14 @@
 import * as anchor from '@project-serum/anchor';
-import { BN, Idl, Program, Provider, Wallet } from '@project-serum/anchor';
+import { BN, Idl, Program, Provider } from '@project-serum/anchor';
 import { Connection, Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
 import {
   AccountInfo,
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token';
-import { AccountUtils } from './gem-common/account-utils';
-import { GemBank } from './types/gem_bank';
-import { isKp } from './gem-common/types';
+import { AccountUtils } from '../gem-common';
+import { GemBank } from '../types/gem_bank';
+import { isKp } from '../gem-common';
 
 export enum BankFlags {
   FreezeVaults = 1 << 0,
@@ -20,13 +20,15 @@ export enum WhitelistType {
 }
 
 export class GemBankClient extends AccountUtils {
+  // @ts-ignore
   wallet: anchor.Wallet;
   provider!: anchor.Provider;
   bankProgram!: anchor.Program<GemBank>;
 
   constructor(
     conn: Connection,
-    wallet: Wallet,
+    // @ts-ignore
+    wallet: anchor.Wallet,
     idl?: Idl,
     programId?: PublicKey
   ) {
@@ -56,6 +58,7 @@ export class GemBankClient extends AccountUtils {
       );
     } else {
       //means running inside test suite
+      // @ts-ignore
       this.bankProgram = anchor.workspace.GemBank as Program<GemBank>;
     }
   }

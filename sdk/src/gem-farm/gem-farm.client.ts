@@ -1,10 +1,10 @@
 import * as anchor from '@project-serum/anchor';
-import { BN, Idl, Program, Wallet } from '@project-serum/anchor';
+import { BN, Idl, Program } from '@project-serum/anchor';
 import { Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
-import { GemFarm } from './types/gem_farm';
+import { GemFarm } from '../types/gem_farm';
 import { Connection } from '@metaplex/js';
-import { isKp } from './gem-common';
-import { GemBankClient, WhitelistType } from './gem-bank.client';
+import { isKp } from '../gem-common';
+import { GemBankClient, WhitelistType } from '../gem-bank';
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
@@ -60,7 +60,8 @@ export class GemFarmClient extends GemBankClient {
 
   constructor(
     conn: Connection,
-    wallet: Wallet,
+    // @ts-ignore
+    wallet: anchor.Wallet,
     farmIdl?: Idl,
     farmProgramId?: PublicKey,
     bankIdl?: Idl,
@@ -81,6 +82,7 @@ export class GemFarmClient extends GemBankClient {
       );
     } else {
       //means running inside test suite
+      // @ts-ignore
       this.farmProgram = anchor.workspace.GemFarm as Program<GemFarm>;
     }
   }

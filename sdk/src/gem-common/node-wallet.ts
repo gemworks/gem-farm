@@ -1,3 +1,4 @@
+import * as anchor from '@project-serum/anchor';
 import {
   Connection,
   Keypair,
@@ -6,14 +7,16 @@ import {
   SystemProgram,
   Transaction,
 } from '@solana/web3.js';
-import { BN, Wallet } from '@project-serum/anchor';
+import { BN } from '@project-serum/anchor';
 import { AccountUtils, ITokenData } from './account-utils';
 import { NATIVE_MINT, Token, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 
 export class NodeWallet extends AccountUtils {
-  wallet: Wallet; //node wallet
+  // @ts-ignore
+  wallet: anchor.Wallet; //node wallet
 
-  constructor(conn: Connection, wallet: Wallet) {
+  // @ts-ignore
+  constructor(conn: Connection, wallet: anchor.Wallet) {
     super(conn);
     this.wallet = wallet;
   }
