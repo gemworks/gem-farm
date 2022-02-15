@@ -9,6 +9,14 @@ import {
 import { AccountUtils } from '../gem-common';
 import { GemBank } from '../types/gem_bank';
 import { isKp } from '../gem-common';
+import {
+  findGdrPDA,
+  findGemBoxPDA,
+  findRarityPDA,
+  findVaultAuthorityPDA,
+  findVaultPDA,
+  findWhitelistProofPDA,
+} from './gem-bank.pda';
 
 export enum BankFlags {
   FreezeVaults = 1 << 0,
@@ -87,52 +95,6 @@ export class GemBankClient extends AccountUtils {
 
   async fetchRarity(rarity: PublicKey) {
     return this.bankProgram.account.rarity.fetch(rarity);
-  }
-
-  // --------------------------------------- find PDA addresses
-
-  async findVaultPDA(bank: PublicKey, creator: PublicKey) {
-    return this.findProgramAddress(this.bankProgram.programId, [
-      'vault',
-      bank,
-      creator,
-    ]);
-  }
-
-  async findGemBoxPDA(vault: PublicKey, mint: PublicKey) {
-    return this.findProgramAddress(this.bankProgram.programId, [
-      'gem_box',
-      vault,
-      mint,
-    ]);
-  }
-
-  async findGdrPDA(vault: PublicKey, mint: PublicKey) {
-    return this.findProgramAddress(this.bankProgram.programId, [
-      'gem_deposit_receipt',
-      vault,
-      mint,
-    ]);
-  }
-
-  async findVaultAuthorityPDA(vault: PublicKey) {
-    return this.findProgramAddress(this.bankProgram.programId, [vault]);
-  }
-
-  async findWhitelistProofPDA(bank: PublicKey, whitelistedAddress: PublicKey) {
-    return this.findProgramAddress(this.bankProgram.programId, [
-      'whitelist',
-      bank,
-      whitelistedAddress,
-    ]);
-  }
-
-  async findRarityPDA(bank: PublicKey, mint: PublicKey) {
-    return this.findProgramAddress(this.bankProgram.programId, [
-      'gem_rarity',
-      bank,
-      mint,
-    ]);
   }
 
   // --------------------------------------- get all PDAs by type
@@ -268,8 +230,8 @@ export class GemBankClient extends AccountUtils {
       ? (<Keypair>creator).publicKey
       : <PublicKey>creator;
 
-    const [vault, vaultBump] = await this.findVaultPDA(bank, creatorPk);
-    const [vaultAuth, vaultAuthBump] = await this.findVaultAuthorityPDA(vault); //nice-to-have
+    const [vault, vaultBump] = await findVaultPDA(bank, creatorPk);
+    const [vaultAuth, vaultAuthBump] = await findVaultAuthorityPDA(vault); //nice-to-have
 
     const signers = [];
     if (isKp(creator)) signers.push(<Keypair>creator);
@@ -371,10 +333,10 @@ export class GemBankClient extends AccountUtils {
     metadata?: PublicKey,
     creatorProof?: PublicKey
   ) {
-    const [gemBox, gemBoxBump] = await this.findGemBoxPDA(vault, gemMint);
-    const [GDR, GDRBump] = await this.findGdrPDA(vault, gemMint);
-    const [vaultAuth, vaultAuthBump] = await this.findVaultAuthorityPDA(vault);
-    const [gemRarity, gemRarityBump] = await this.findRarityPDA(bank, gemMint);
+    const [gemBox, gemBoxBump] = await findGemBoxPDA(vault, gemMint);
+    const [GDR, GDRBump] = await findGdrPDA(vault, gemMint);
+    const [vaultAuth, vaultAuthBump] = await findVaultAuthorityPDA(vault);
+    const [gemRarity, gemRarityBump] = await findRarityPDA(bank, gemMint);
 
     const remainingAccounts = [];
     if (mintProof)
@@ -451,10 +413,10 @@ export class GemBankClient extends AccountUtils {
     gemMint: PublicKey,
     receiver: PublicKey
   ) {
-    const [gemBox, gemBoxBump] = await this.findGemBoxPDA(vault, gemMint);
-    const [GDR, GDRBump] = await this.findGdrPDA(vault, gemMint);
-    const [vaultAuth, vaultAuthBump] = await this.findVaultAuthorityPDA(vault);
-    const [gemRarity, gemRarityBump] = await this.findRarityPDA(bank, gemMint);
+    const [gemBox, gemBoxBump] = await findGemBoxPDA(vault, gemMint);
+    const [GDR, GDRBump] = await findGdrPDA(vault, gemMint);
+    const [vaultAuth, vaultAuthBump] = await findVaultAuthorityPDA(vault);
+    const [gemRarity, gemRarityBump] = await findRarityPDA(bank, gemMint);
 
     const gemDestination = await this.findATA(gemMint, receiver);
 
@@ -518,7 +480,7 @@ export class GemBankClient extends AccountUtils {
       ? (<Keypair>bankManager).publicKey
       : <PublicKey>bankManager;
 
-    const [whitelistProof, whitelistBump] = await this.findWhitelistProofPDA(
+    const [whitelistProof, whitelistBump] = await findWhitelistProofPDA(
       bank,
       addressToWhitelist
     );
@@ -551,7 +513,7 @@ export class GemBankClient extends AccountUtils {
     addressToRemove: PublicKey,
     fundsReceiver?: PublicKey
   ) {
-    const [whitelistProof, whitelistBump] = await this.findWhitelistProofPDA(
+    const [whitelistProof, whitelistBump] = await findWhitelistProofPDA(
       bank,
       addressToRemove
     );

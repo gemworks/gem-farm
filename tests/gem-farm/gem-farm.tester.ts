@@ -1,6 +1,8 @@
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import {
   FarmConfig,
+  findFarmerPDA,
+  findVaultPDA,
   FixedRateConfig,
   GemFarmClient,
   ITokenData,
@@ -118,14 +120,14 @@ export class GemFarmTester extends GemFarmClient {
     this.farmer1Identity = await this.nw.createFundedWallet(
       100 * LAMPORTS_PER_SOL
     );
-    [this.farmer1Vault] = await this.findVaultPDA(
+    [this.farmer1Vault] = await findVaultPDA(
       this.bank.publicKey,
       this.farmer1Identity.publicKey
     );
     this.farmer2Identity = await this.nw.createFundedWallet(
       100 * LAMPORTS_PER_SOL
     );
-    [this.farmer2Vault] = await this.findVaultPDA(
+    [this.farmer2Vault] = await findVaultPDA(
       this.bank.publicKey,
       this.farmer2Identity.publicKey
     );
@@ -573,7 +575,7 @@ export class GemFarmTester extends GemFarmClient {
     lastUpdatedTs?: Numerical,
     promisedDuration?: Numerical
   ) {
-    const [farmer] = await this.findFarmerPDA(
+    const [farmer] = await findFarmerPDA(
       this.farm.publicKey,
       identity.publicKey
     );
@@ -784,7 +786,7 @@ export class GemFarmTester extends GemFarmClient {
     console.log('// --------------------------------------- farm');
     console.log(stringifyPKsAndBNs(farmAcc));
 
-    const [farmer1] = await this.findFarmerPDA(
+    const [farmer1] = await findFarmerPDA(
       this.farm.publicKey,
       this.farmer1Identity.publicKey
     );
@@ -792,7 +794,7 @@ export class GemFarmTester extends GemFarmClient {
     console.log('// --------------------------------------- farmer 1');
     console.log(stringifyPKsAndBNs(farmer1Acc));
 
-    const [farmer2] = await this.findFarmerPDA(
+    const [farmer2] = await findFarmerPDA(
       this.farm.publicKey,
       this.farmer2Identity.publicKey
     );

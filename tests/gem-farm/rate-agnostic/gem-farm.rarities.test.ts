@@ -1,7 +1,12 @@
 import chai, { assert } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { defaultFarmConfig, GemFarmTester } from '../gem-farm.tester';
-import { RarityConfig, toBN } from '../../../sdk/src';
+import {
+  findRarityPDA,
+  findVaultPDA,
+  RarityConfig,
+  toBN,
+} from '../../../sdk/src';
 import { Keypair, PublicKey } from '@solana/web3.js';
 
 chai.use(chaiAsPromised);
@@ -18,7 +23,7 @@ describe('rarities', () => {
   it('records single rarity via MultipleRarities call', async () => {
     await gf.setGemRarities(10);
 
-    const [rarityAddr] = await gf.findRarityPDA(
+    const [rarityAddr] = await findRarityPDA(
       gf.bank.publicKey,
       gf.gem1.tokenMint
     );
@@ -34,7 +39,7 @@ describe('rarities', () => {
     for (let i = 0; i < 7; i++) {
       const mint = Keypair.generate().publicKey;
 
-      const [rarityAddr] = await gf.findRarityPDA(gf.bank.publicKey, mint);
+      const [rarityAddr] = await findRarityPDA(gf.bank.publicKey, mint);
 
       configs.push({
         mint,
@@ -59,10 +64,7 @@ describe('rarities', () => {
     await gf.callDeposit(20, gf.farmer1Identity);
 
     const farm = await gf.fetchFarm();
-    const [vault] = await gf.findVaultPDA(
-      farm.bank,
-      gf.farmer1Identity.publicKey
-    );
+    const [vault] = await findVaultPDA(farm.bank, gf.farmer1Identity.publicKey);
     let vaultAcc = await gf.fetchVaultAcc(vault);
     assert(vaultAcc.gemCount.eq(toBN(20)));
     assert(vaultAcc.rarityPoints.eq(toBN(20).mul(toBN(15))));

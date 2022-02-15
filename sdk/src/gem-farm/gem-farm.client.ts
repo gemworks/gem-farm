@@ -4,11 +4,27 @@ import { Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
 import { GemFarm } from '../types/gem_farm';
 import { Connection } from '@metaplex/js';
 import { isKp } from '../gem-common';
-import { GemBankClient, WhitelistType } from '../gem-bank';
+import {
+  findGdrPDA,
+  findGemBoxPDA,
+  findRarityPDA,
+  findVaultAuthorityPDA,
+  findVaultPDA,
+  findWhitelistProofPDA,
+  GemBankClient,
+  WhitelistType,
+} from '../gem-bank';
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token';
+import {
+  findAuthorizationProofPDA,
+  findFarmAuthorityPDA,
+  findFarmerPDA,
+  findFarmTreasuryPDA,
+  findRewardsPotPDA,
+} from './gem-farm.pda';
 
 export const feeAccount = new PublicKey(
   '2xhBxVVuXkdq2MRKerE9mr2s1szfHSedy21MVqf8gPoM'
@@ -108,45 +124,8 @@ export class GemFarmClient extends GemBankClient {
   }
 
   async fetchTreasuryBalance(farm: PublicKey) {
-    const [treasury] = await this.findFarmTreasuryPDA(farm);
+    const [treasury] = await findFarmTreasuryPDA(farm);
     return this.getBalance(treasury);
-  }
-
-  // --------------------------------------- find PDA addresses
-
-  async findFarmerPDA(farm: PublicKey, identity: PublicKey) {
-    return this.findProgramAddress(this.farmProgram.programId, [
-      'farmer',
-      farm,
-      identity,
-    ]);
-  }
-
-  async findFarmAuthorityPDA(farm: PublicKey) {
-    return this.findProgramAddress(this.farmProgram.programId, [farm]);
-  }
-
-  async findFarmTreasuryPDA(farm: PublicKey) {
-    return this.findProgramAddress(this.farmProgram.programId, [
-      'treasury',
-      farm,
-    ]);
-  }
-
-  async findAuthorizationProofPDA(farm: PublicKey, funder: PublicKey) {
-    return this.findProgramAddress(this.farmProgram.programId, [
-      'authorization',
-      farm,
-      funder,
-    ]);
-  }
-
-  async findRewardsPotPDA(farm: PublicKey, rewardMint: PublicKey) {
-    return this.findProgramAddress(this.farmProgram.programId, [
-      'reward_pot',
-      farm,
-      rewardMint,
-    ]);
   }
 
   // --------------------------------------- get all PDAs by type
@@ -227,17 +206,15 @@ export class GemFarmClient extends GemBankClient {
     rewardBType: any, //RewardType instance
     farmConfig: FarmConfig
   ) {
-    const [farmAuth, farmAuthBump] = await this.findFarmAuthorityPDA(
+    const [farmAuth, farmAuthBump] = await findFarmAuthorityPDA(farm.publicKey);
+    const [farmTreasury, farmTreasuryBump] = await findFarmTreasuryPDA(
       farm.publicKey
     );
-    const [farmTreasury, farmTreasuryBump] = await this.findFarmTreasuryPDA(
-      farm.publicKey
-    );
-    const [rewardAPot, rewardAPotBump] = await this.findRewardsPotPDA(
+    const [rewardAPot, rewardAPotBump] = await findRewardsPotPDA(
       farm.publicKey,
       rewardAMint
     );
-    const [rewardBPot, rewardBPotBump] = await this.findRewardsPotPDA(
+    const [rewardBPot, rewardBPotBump] = await findRewardsPotPDA(
       farm.publicKey,
       rewardBMint
     );
@@ -320,10 +297,8 @@ export class GemFarmClient extends GemBankClient {
     destination: PublicKey,
     lamports: BN
   ) {
-    const [farmAuth, farmAuthBump] = await this.findFarmAuthorityPDA(farm);
-    const [farmTreasury, farmTreasuryBump] = await this.findFarmTreasuryPDA(
-      farm
-    );
+    const [farmAuth, farmAuthBump] = await findFarmAuthorityPDA(farm);
+    const [farmTreasury, farmTreasuryBump] = await findFarmTreasuryPDA(farm);
 
     const signers = [];
     if (isKp(farmManager)) signers.push(<Keypair>farmManager);
@@ -365,9 +340,11 @@ export class GemFarmClient extends GemBankClient {
   ) {
     const farmAcc = await this.fetchFarmAcc(farm);
 
-    const [farmAuth, farmAuthBump] = await this.findFarmAuthorityPDA(farm);
-    const [whitelistProof, whitelistProofBump] =
-      await this.findWhitelistProofPDA(farmAcc.bank, addressToWhitelist);
+    const [farmAuth, farmAuthBump] = await findFarmAuthorityPDA(farm);
+    const [whitelistProof, whitelistProofBump] = await findWhitelistProofPDA(
+      farmAcc.bank,
+      addressToWhitelist
+    );
 
     const signers = [];
     if (isKp(farmManager)) signers.push(<Keypair>farmManager);
@@ -410,9 +387,11 @@ export class GemFarmClient extends GemBankClient {
   ) {
     const farmAcc = await this.fetchFarmAcc(farm);
 
-    const [farmAuth, farmAuthBump] = await this.findFarmAuthorityPDA(farm);
-    const [whitelistProof, whitelistProofBump] =
-      await this.findWhitelistProofPDA(farmAcc.bank, addressToRemove);
+    const [farmAuth, farmAuthBump] = await findFarmAuthorityPDA(farm);
+    const [whitelistProof, whitelistProofBump] = await findWhitelistProofPDA(
+      farmAcc.bank,
+      addressToRemove
+    );
 
     const signers = [];
     if (isKp(farmManager)) signers.push(<Keypair>farmManager);
@@ -459,12 +438,9 @@ export class GemFarmClient extends GemBankClient {
 
     const farmAcc = await this.fetchFarmAcc(farm);
 
-    const [farmer, farmerBump] = await this.findFarmerPDA(farm, identityPk);
-    const [vault, vaultBump] = await this.findVaultPDA(
-      farmAcc.bank,
-      identityPk
-    );
-    const [vaultAuth, vaultAuthBump] = await this.findVaultAuthorityPDA(vault); //nice-to-have
+    const [farmer, farmerBump] = await findFarmerPDA(farm, identityPk);
+    const [vault, vaultBump] = await findVaultPDA(farmAcc.bank, identityPk);
+    const [vaultAuth, vaultAuthBump] = await findVaultAuthorityPDA(vault); //nice-to-have
 
     const signers = [];
     if (isKp(farmerIdentity)) signers.push(<Keypair>farmerIdentity);
@@ -508,15 +484,10 @@ export class GemFarmClient extends GemBankClient {
 
     const farmAcc = await this.fetchFarmAcc(farm);
 
-    const [farmer, farmerBump] = await this.findFarmerPDA(farm, identityPk);
-    const [vault, vaultBump] = await this.findVaultPDA(
-      farmAcc.bank,
-      identityPk
-    );
-    const [farmAuth, farmAuthBump] = await this.findFarmAuthorityPDA(farm);
-    const [farmTreasury, farmTreasuryBump] = await this.findFarmTreasuryPDA(
-      farm
-    );
+    const [farmer, farmerBump] = await findFarmerPDA(farm, identityPk);
+    const [vault, vaultBump] = await findVaultPDA(farmAcc.bank, identityPk);
+    const [farmAuth, farmAuthBump] = await findFarmAuthorityPDA(farm);
+    const [farmTreasury, farmTreasuryBump] = await findFarmTreasuryPDA(farm);
 
     const signers = [];
     if (isKp(farmerIdentity)) signers.push(<Keypair>farmerIdentity);
@@ -590,11 +561,11 @@ export class GemFarmClient extends GemBankClient {
       ? (<Keypair>farmerIdentity).publicKey
       : <PublicKey>farmerIdentity;
 
-    const [farmAuth, farmAuthBump] = await this.findFarmAuthorityPDA(farm);
-    const [farmer, farmerBump] = await this.findFarmerPDA(farm, identityPk);
+    const [farmAuth, farmAuthBump] = await findFarmAuthorityPDA(farm);
+    const [farmer, farmerBump] = await findFarmerPDA(farm, identityPk);
 
-    const [potA, potABump] = await this.findRewardsPotPDA(farm, rewardAMint);
-    const [potB, potBBump] = await this.findRewardsPotPDA(farm, rewardBMint);
+    const [potA, potABump] = await findRewardsPotPDA(farm, rewardAMint);
+    const [potB, potBBump] = await findRewardsPotPDA(farm, rewardBMint);
 
     const rewardADestination = await this.findATA(rewardAMint, identityPk);
     const rewardBDestination = await this.findATA(rewardBMint, identityPk);
@@ -659,17 +630,14 @@ export class GemFarmClient extends GemBankClient {
 
     const farmAcc = await this.fetchFarmAcc(farm);
 
-    const [farmer, farmerBump] = await this.findFarmerPDA(farm, identityPk);
-    const [vault, vaultBump] = await this.findVaultPDA(
-      farmAcc.bank,
-      identityPk
-    );
-    const [farmAuth, farmAuthBump] = await this.findFarmAuthorityPDA(farm);
+    const [farmer, farmerBump] = await findFarmerPDA(farm, identityPk);
+    const [vault, vaultBump] = await findVaultPDA(farmAcc.bank, identityPk);
+    const [farmAuth, farmAuthBump] = await findFarmAuthorityPDA(farm);
 
-    const [gemBox, gemBoxBump] = await this.findGemBoxPDA(vault, gemMint);
-    const [GDR, GDRBump] = await this.findGdrPDA(vault, gemMint);
-    const [vaultAuth, vaultAuthBump] = await this.findVaultAuthorityPDA(vault);
-    const [gemRarity, gemRarityBump] = await this.findRarityPDA(
+    const [gemBox, gemBoxBump] = await findGemBoxPDA(vault, gemMint);
+    const [GDR, GDRBump] = await findGdrPDA(vault, gemMint);
+    const [vaultAuth, vaultAuthBump] = await findVaultAuthorityPDA(vault);
+    const [gemRarity, gemRarityBump] = await findRarityPDA(
       farmAcc.bank,
       gemMint
     );
@@ -755,7 +723,7 @@ export class GemFarmClient extends GemBankClient {
       ? (<Keypair>farmerIdentity).publicKey
       : <PublicKey>farmerIdentity;
 
-    const [farmer, farmerBump] = await this.findFarmerPDA(farm, identityPk);
+    const [farmer, farmerBump] = await findFarmerPDA(farm, identityPk);
 
     let txSig;
     if (reenroll !== null && reenroll !== undefined) {
@@ -803,7 +771,7 @@ export class GemFarmClient extends GemBankClient {
     deauthorize = false
   ) {
     const [authorizationProof, authorizationProofBump] =
-      await this.findAuthorizationProofPDA(farm, funder);
+      await findAuthorizationProofPDA(farm, funder);
 
     const signers = [];
     if (isKp(farmManager)) signers.push(<Keypair>farmManager);
@@ -878,10 +846,10 @@ export class GemFarmClient extends GemBankClient {
       ? (<Keypair>funder).publicKey
       : <PublicKey>funder;
 
-    const [farmAuth, farmAuthBump] = await this.findFarmAuthorityPDA(farm);
+    const [farmAuth, farmAuthBump] = await findFarmAuthorityPDA(farm);
     const [authorizationProof, authorizationProofBump] =
-      await this.findAuthorizationProofPDA(farm, funderPk);
-    const [pot, potBump] = await this.findRewardsPotPDA(farm, rewardMint);
+      await findAuthorizationProofPDA(farm, funderPk);
+    const [pot, potBump] = await findRewardsPotPDA(farm, rewardMint);
 
     const signers = [];
     if (isKp(funder)) signers.push(<Keypair>funder);
@@ -924,8 +892,8 @@ export class GemFarmClient extends GemBankClient {
     rewardMint: PublicKey,
     receiver: PublicKey
   ) {
-    const [farmAuth, farmAuthBump] = await this.findFarmAuthorityPDA(farm);
-    const [pot, potBump] = await this.findRewardsPotPDA(farm, rewardMint);
+    const [farmAuth, farmAuthBump] = await findFarmAuthorityPDA(farm);
+    const [pot, potBump] = await findRewardsPotPDA(farm, rewardMint);
     const rewardDestination = await this.findATA(rewardMint, receiver);
 
     const signers = [];
@@ -996,14 +964,14 @@ export class GemFarmClient extends GemBankClient {
     const farmAcc = await this.fetchFarmAcc(farm);
     const bank = farmAcc.bank;
 
-    const [farmAuth, farmAuthBump] = await this.findFarmAuthorityPDA(farm);
+    const [farmAuth, farmAuthBump] = await findFarmAuthorityPDA(farm);
 
     //prepare rarity configs
     const completeRarityConfigs = [...rarityConfigs];
     const remainingAccounts = [];
 
     for (const config of completeRarityConfigs) {
-      const [gemRarity] = await this.findRarityPDA(bank, config.mint);
+      const [gemRarity] = await findRarityPDA(bank, config.mint);
       //add mint
       remainingAccounts.push({
         pubkey: config.mint,
