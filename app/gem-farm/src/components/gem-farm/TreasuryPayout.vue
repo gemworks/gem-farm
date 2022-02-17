@@ -28,6 +28,7 @@ import useWallet from '@/composables/wallet';
 import useCluster from '@/composables/cluster';
 import { initGemFarm } from '@/common/gem-farm';
 import { PublicKey } from '@solana/web3.js';
+import { findFarmTreasuryPDA } from '@gemworks/gem-farm-ts';
 
 export default defineComponent({
   props: {
@@ -72,9 +73,7 @@ export default defineComponent({
     };
 
     const getTresauryBalance = async () => {
-      const [treasury] = await gf.findFarmTreasuryPDA(
-        new PublicKey(props.farm!)
-      );
+      const [treasury] = await findFarmTreasuryPDA(new PublicKey(props.farm!));
       console.log('treasury found:', treasury.toBase58());
       balance.value = await gf.getBalance(treasury);
     };

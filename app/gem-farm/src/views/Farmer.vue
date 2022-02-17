@@ -83,7 +83,7 @@ import ConfigPane from '@/components/ConfigPane.vue';
 import FarmerDisplay from '@/components/gem-farm/FarmerDisplay.vue';
 import Vault from '@/components/gem-bank/Vault.vue';
 import { INFT } from '@/common/web3/NFTget';
-import { stringifyPKsAndBNs } from '@gemworks/gem-farm-ts';
+import { findFarmerPDA, stringifyPKsAndBNs } from '@gemworks/gem-farm-ts';
 
 export default defineComponent({
   components: { Vault, FarmerDisplay, ConfigPane },
@@ -135,9 +135,9 @@ export default defineComponent({
     };
 
     const fetchFarmer = async () => {
-      const [farmerPDA] = await gf.findFarmerPDA(
+      const [farmerPDA] = await findFarmerPDA(
         new PublicKey(farm.value!),
-        getWallet()!.publicKey
+        getWallet()!.publicKey!
       );
       farmerIdentity.value = getWallet()!.publicKey?.toBase58();
       farmerAcc.value = await gf.fetchFarmerAcc(farmerPDA);

@@ -82,6 +82,7 @@ import { PublicKey } from '@solana/web3.js';
 import { getListDiffBasedOnMints, removeManyFromList } from '@/common/util';
 import { BN } from '@project-serum/anchor';
 import TheWhitelist from '@/components/TheWhitelist.vue';
+import { findVaultPDA } from '@gemworks/gem-farm-ts';
 
 export default defineComponent({
   components: { TheWhitelist, ArrowButton, NFTGrid, ConfigPane },
@@ -125,10 +126,7 @@ export default defineComponent({
     const fetchVault = async () => {
       try {
         const bankPk = new PublicKey(bank.value!);
-        const [vaultAddr] = await gb.findVaultPDA(
-          bankPk,
-          getWallet()!.publicKey
-        );
+        const [vaultAddr] = await findVaultPDA(bankPk, getWallet()!.publicKey!);
         try {
           //if this goes through, then the vault exists
           const acc = await gb.fetchVaultAcc(vaultAddr);
