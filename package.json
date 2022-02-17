@@ -1,6 +1,6 @@
 {
   "name": "@gemworks/gem-farm-ts",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "sdk for Gem Farm (by Gemworks 💎)",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
@@ -27,13 +27,13 @@
   "homepage": "https://github.com/gemworks/gem-farm#readme",
   "scripts": {
     "build": "anchor build && ./scripts/cp_idl.sh",
-    "pub": "tsc && npm version patch --force && npm publish --access public",
+    "pub": "rm -rf ./dist && tsc && npm version patch --force && npm publish --access public",
     "update": "cd ./app/gem-bank && yarn update && cd ../gem-farm && yarn update"
   },
   "dependencies": {
     "@metaplex-foundation/mpl-token-metadata": "^0.0.2",
     "@metaplex/js": "^4.9.0",
-    "@project-serum/anchor": "^0.19.0",
+    "@project-serum/anchor": "0.19.1-beta.1",
     "@solana/spl-token": "^0.1.8",
     "@solana/wallet-adapter-base": "^0.8.1",
     "@solana/web3.js": "^1.31.0"
