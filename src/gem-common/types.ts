@@ -42,7 +42,7 @@ export function stringToBytes(str: string) {
 }
 
 export function isKp(toCheck: PublicKey | Keypair) {
-  return toCheck instanceof Keypair;
+  return typeof (<Keypair>toCheck).publicKey !== 'undefined';
 }
 
 export function isPk(obj: any): boolean {
