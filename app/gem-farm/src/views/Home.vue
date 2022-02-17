@@ -22,7 +22,7 @@
     </p>
     <p class="mt-5">
       Gem Farm is deployed at:
-      <span class="bg-yellow-100">{{ DEFAULTS.GEM_FARM_PROG_ID }}</span>
+      <span class="bg-yellow-100">{{ GEM_FARM_PROG_ID }}</span>
     </p>
   </div>
   <div class="flex flex-row">
@@ -51,11 +51,11 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { DEFAULTS } from '@/globals';
+import { GEM_FARM_PROG_ID } from '@gemworks/gem-farm-ts';
 export default defineComponent({
   setup() {
     return {
-      DEFAULTS,
+      GEM_FARM_PROG_ID,
     };
   },
 });

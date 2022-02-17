@@ -11,9 +11,9 @@
     "update": "yarn upgrade @gemworks/gem-farm-ts --latest --check-files"
   },
   "dependencies": {
-    "@gemworks/gem-farm-ts": "^0.1.8",
+    "@gemworks/gem-farm-ts": "^0.1.9",
     "@metaplex/js": "^4.9.0",
-    "@project-serum/anchor": "^0.19.0",
+    "@project-serum/anchor": "0.19.1-beta.1",
     "@solana/spl-token": "^0.1.8",
     "@solana/wallet-adapter-base": "^0.7.1",
     "@solana/wallet-adapter-wallets": "^0.11.3",

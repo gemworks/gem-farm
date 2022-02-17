@@ -1,12 +1,12 @@
 import { BN, Idl } from '@project-serum/anchor';
 import {
   findWhitelistProofPDA,
+  GEM_BANK_PROG_ID,
   GemBankClient,
   WhitelistType,
 } from '@gemworks/gem-farm-ts';
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import { SignerWalletAdapter } from '@solana/wallet-adapter-base';
-import { DEFAULTS } from '@/globals';
 import { NodeWallet, programs } from '@metaplex/js';
 
 //when we only want to view vaults, no need to connect a real wallet.
@@ -34,8 +34,7 @@ export async function initGemBank(
 
 export class GemBank extends GemBankClient {
   constructor(conn: Connection, wallet: any, idl: Idl) {
-    const programId = DEFAULTS.GEM_BANK_PROG_ID;
-    super(conn, wallet, idl, programId);
+    super(conn, wallet, idl, GEM_BANK_PROG_ID);
   }
 
   async initBankWallet() {
