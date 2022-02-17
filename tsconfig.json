@@ -6,6 +6,9 @@
     "module": "commonjs",
     "target": "es6",
     "esModuleInterop": true,
-    "strict": true
-  }
+    "declaration": true,
+    "skipLibCheck": true,
+    "outDir": "./dist"
+  },
+  "exclude": ["app", "target", "node_modules", "migrations", "tests"]
 }

@@ -12,7 +12,7 @@ import {
   feeAccount,
   RewardType,
   WhitelistType,
-} from '../../../sdk/src';
+} from '../../../src';
 
 chai.use(chaiAsPromised);
 

@@ -1,6 +1,6 @@
 import * as anchor from '@project-serum/anchor';
 import { BN } from '@project-serum/anchor';
-import { GemBankClient, ITokenData, NodeWallet } from '../../sdk/src';
+import { GemBankClient, ITokenData, NodeWallet } from '../../src';
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import { assert } from 'chai';
 

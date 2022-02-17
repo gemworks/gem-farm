@@ -5,7 +5,7 @@ import {
   defaultVariableConfig,
   GemFarmTester,
 } from '../gem-farm.tester';
-import { pause } from '../../../sdk/src';
+import { pause } from '../../../src';
 
 chai.use(chaiAsPromised);
 

@@ -14,7 +14,7 @@ import {
   toBN,
   VariableRateConfig,
   WhitelistType,
-} from '../../sdk/src';
+} from '../../src';
 import * as anchor from '@project-serum/anchor';
 import { BN } from '@project-serum/anchor';
 import { Token } from '@solana/spl-token';

@@ -13,7 +13,7 @@ import {
   RewardType,
   toBN,
   WhitelistType,
-} from '../../../sdk/src';
+} from '../../../src';
 import { PublicKey } from '@solana/web3.js';
 
 chai.use(chaiAsPromised);

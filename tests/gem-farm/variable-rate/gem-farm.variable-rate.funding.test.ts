@@ -6,7 +6,7 @@ import {
   GemFarmTester,
 } from '../gem-farm.tester';
 import { BN } from '@project-serum/anchor';
-import { pause, VariableRateConfig } from '../../../sdk/src';
+import { pause, VariableRateConfig } from '../../../src';
 
 chai.use(chaiAsPromised);
 

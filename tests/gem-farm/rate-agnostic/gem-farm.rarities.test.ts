@@ -1,12 +1,7 @@
 import chai, { assert } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { defaultFarmConfig, GemFarmTester } from '../gem-farm.tester';
-import {
-  findRarityPDA,
-  findVaultPDA,
-  RarityConfig,
-  toBN,
-} from '../../../sdk/src';
+import { findRarityPDA, findVaultPDA, RarityConfig, toBN } from '../../../src';
 import { Keypair, PublicKey } from '@solana/web3.js';
 
 chai.use(chaiAsPromised);

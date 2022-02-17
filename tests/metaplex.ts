@@ -1,7 +1,7 @@
 import { actions, programs, Wallet } from '@metaplex/js';
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import fs from 'fs';
-import { pause } from './util';
+import { pause } from '../src';
 
 export async function createMetadata(
   connection: Connection,

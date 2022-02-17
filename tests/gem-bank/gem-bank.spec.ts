@@ -10,7 +10,7 @@ import {
   stringifyPKsAndBNs,
   stringToBytes,
   WhitelistType,
-} from '../../sdk/src';
+} from '../../src';
 import chai, { assert, expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { describe } from 'mocha';
@@ -73,9 +73,12 @@ describe('gem bank', () => {
 
     const vaultAcc = await gb.fetchVaultAcc(vault);
     expect(vaultAcc.name).to.deep.include.members(stringToBytes('test_vault'));
-    assert.equal(vaultAcc.bank.toBase58, bank.publicKey.toBase58);
-    assert.equal(vaultAcc.owner.toBase58, vaultCreator.publicKey.toBase58);
-    assert.equal(vaultAcc.creator.toBase58, vaultCreator.publicKey.toBase58);
+    assert.equal(vaultAcc.bank.toBase58(), bank.publicKey.toBase58());
+    assert.equal(vaultAcc.owner.toBase58(), vaultCreator.publicKey.toBase58());
+    assert.equal(
+      vaultAcc.creator.toBase58(),
+      vaultCreator.publicKey.toBase58()
+    );
   });
 
   it('updates bank manager', async () => {
@@ -87,7 +90,10 @@ describe('gem bank', () => {
     );
 
     const bankAcc = await gb.fetchBankAcc(bank.publicKey);
-    assert.equal(bankAcc.bankManager.toBase58, newManager.publicKey.toBase58);
+    assert.equal(
+      bankAcc.bankManager.toBase58(),
+      newManager.publicKey.toBase58()
+    );
 
     //reset back
     await gb.updateBankManager(
@@ -101,7 +107,7 @@ describe('gem bank', () => {
     const newManager = Keypair.generate();
     await expect(
       gb.updateBankManager(bank.publicKey, randomWallet, newManager.publicKey)
-    ).to.be.rejectedWith('has_one');
+    ).to.be.rejectedWith('0x7d1');
   });
 
   it('updates vault owner', async () => {
@@ -113,7 +119,7 @@ describe('gem bank', () => {
     );
 
     const vaultAcc = await gb.fetchVaultAcc(vault);
-    assert.equal(vaultAcc.owner.toBase58, vaultOwner.publicKey.toBase58);
+    assert.equal(vaultAcc.owner.toBase58(), vaultOwner.publicKey.toBase58());
   });
 
   it('FAILS to update vault owner w/ wrong existing owner', async () => {
@@ -124,7 +130,7 @@ describe('gem bank', () => {
         randomWallet,
         vaultOwner.publicKey
       )
-    ).to.be.rejectedWith('has_one');
+    ).to.be.rejectedWith('0x7d1');
   });
 
   // --------------------------------------- gem boxes
@@ -213,7 +219,7 @@ describe('gem bank', () => {
     });
 
     it('FAILS to deposit gem w/ wrong owner', async () => {
-      await expect(prepDeposit(randomWallet)).to.be.rejectedWith('has_one');
+      await expect(prepDeposit(randomWallet)).to.be.rejectedWith('0x7d1');
     });
 
     it('withdraws gem to existing ATA', async () => {
@@ -285,7 +291,7 @@ describe('gem bank', () => {
 
       await expect(
         prepWithdrawal(randomWallet, gem.owner, gemAmount)
-      ).to.be.rejectedWith('has_one');
+      ).to.be.rejectedWith('0x7d1');
     });
 
     // --------------------------------------- vault lock
@@ -361,7 +367,7 @@ describe('gem bank', () => {
     it('FAILS to set bank flags w/ wrong manager', async () => {
       await expect(
         prepFlags(randomWallet, BankFlags.FreezeVaults)
-      ).to.be.rejectedWith('has_one');
+      ).to.be.rejectedWith('0x7d1');
     });
 
     // --------------------------------------- whitelists

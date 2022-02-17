@@ -2,7 +2,7 @@ import { BN } from '@project-serum/anchor';
 import chai, { assert, expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { GemFarmTester } from '../gem-farm.tester';
-import { FarmConfig, pause } from '../../../sdk/src';
+import { FarmConfig, pause } from '../../../src';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 chai.use(chaiAsPromised);
