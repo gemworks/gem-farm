@@ -9,6 +9,7 @@ import {
   VariableRateConfig,
   FixedRateConfig,
   WhitelistType,
+  findWhitelistProofPDA,
 } from '@gemworks/gem-farm-ts';
 import { programs } from '@metaplex/js';
 
@@ -286,11 +287,8 @@ export class GemFarm extends GemFarmClient {
     const farmAcc = await this.fetchFarmAcc(farm);
     const bank = farmAcc.bank;
 
-    const [mintProof, bump] = await this.findWhitelistProofPDA(bank, gemMint);
-    const [creatorProof, bump2] = await this.findWhitelistProofPDA(
-      bank,
-      creator
-    );
+    const [mintProof, bump] = await findWhitelistProofPDA(bank, gemMint);
+    const [creatorProof, bump2] = await findWhitelistProofPDA(bank, creator);
     const metadata = await programs.metadata.Metadata.getPDA(gemMint);
 
     const result = await this.flashDeposit(

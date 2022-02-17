@@ -1,5 +1,9 @@
 import { BN, Idl } from '@project-serum/anchor';
-import { GemBankClient, WhitelistType } from '@gemworks/gem-farm-ts';
+import {
+  findWhitelistProofPDA,
+  GemBankClient,
+  WhitelistType,
+} from '@gemworks/gem-farm-ts';
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import { SignerWalletAdapter } from '@solana/wallet-adapter-base';
 import { DEFAULTS } from '@/globals';
@@ -70,11 +74,8 @@ export class GemBank extends GemBankClient {
     gemSource: PublicKey,
     creator: PublicKey
   ) {
-    const [mintProof, bump] = await this.findWhitelistProofPDA(bank, gemMint);
-    const [creatorProof, bump2] = await this.findWhitelistProofPDA(
-      bank,
-      creator
-    );
+    const [mintProof, bump] = await findWhitelistProofPDA(bank, gemMint);
+    const [creatorProof, bump2] = await findWhitelistProofPDA(bank, creator);
     const metadata = await programs.metadata.Metadata.getPDA(gemMint);
 
     return this.depositGem(
