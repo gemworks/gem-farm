@@ -1,8 +1,7 @@
 import * as anchor from '@project-serum/anchor';
 import { BN, Idl, Program } from '@project-serum/anchor';
-import { Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
+import { Connection, Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
 import { GemFarm } from '../types/gem_farm';
-import { Connection } from '@metaplex/js';
 import { isKp } from '../gem-common';
 import {
   findGdrPDA,

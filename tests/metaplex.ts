@@ -57,7 +57,7 @@ export async function createMetadata(
   return metadata;
 }
 
-export function readJSON(path: string) {
+function readJSON(path: string) {
   return JSON.parse(fs.readFileSync(path, 'utf-8'));
 }
 
