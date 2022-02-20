@@ -22,7 +22,7 @@ import { assert } from 'chai';
 
 // --------------------------------------- configs
 
-export const PRECISION = 10 ** 15;
+export const PRECISION = 10 ** 3;
 
 export const defaultFarmConfig = <FarmConfig>{
   minStakingPeriodSec: new BN(0),

@@ -5,7 +5,7 @@
 //!
 //! Pros: generates IDL, no need for manual serde
 //! Cons:
-//!  1) can't use https://docs.rs/uint/0.9.1/uint/ so droppped to u128
+//!  1) can't use https://docs.rs/uint/0.9.1/uint/ so dropped to u128
 //!  2) have to keep the file inside the crate, can't have as separate lib
 
 use std::{
@@ -16,8 +16,8 @@ use std::{
 use anchor_lang::prelude::*;
 use gem_common::{errors::ErrorCode, TryAdd, TryDiv, TryMul, TryPow, TryRem, TrySub};
 
-const ONE: u128 = 1_000_000_000_000_000;
-const PRECISION: i32 = 15;
+const ONE: u128 = 1_000;
+const PRECISION: i32 = 3;
 const U64_MAX: u128 = u64::MAX as u128;
 
 #[derive(
@@ -128,7 +128,7 @@ impl TryDiv for Number128 {
             .n
             .checked_mul(ONE)
             .ok_or_else(|| {
-                msg!("tried dividing {} by {}", self, rhs);
+                msg!("tried dividing {} by {} (scale up)", self, rhs);
                 ProgramError::from(ErrorCode::ArithmeticError)
             })?
             .checked_div(rhs.n)

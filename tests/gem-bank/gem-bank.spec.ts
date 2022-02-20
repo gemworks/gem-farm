@@ -3,7 +3,6 @@ import { BN } from '@project-serum/anchor';
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import {
   BankFlags,
-  createMetadata,
   GemBankClient,
   ITokenData,
   NodeWallet,
@@ -14,6 +13,7 @@ import {
 import chai, { assert, expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { describe } from 'mocha';
+import { createMetadata } from '../metaplex';
 
 chai.use(chaiAsPromised);
 

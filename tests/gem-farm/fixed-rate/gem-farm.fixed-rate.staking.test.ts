@@ -7,7 +7,6 @@ import {
 } from '../gem-farm.tester';
 import { BN } from '@project-serum/anchor';
 import {
-  createMetadata,
   FixedRateConfig,
   pause,
   RewardType,
@@ -15,6 +14,7 @@ import {
   WhitelistType,
 } from '../../../src';
 import { PublicKey } from '@solana/web3.js';
+import { createMetadata } from '../../metaplex';
 
 chai.use(chaiAsPromised);
 
