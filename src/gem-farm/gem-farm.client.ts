@@ -1,6 +1,13 @@
 import * as anchor from '@project-serum/anchor';
 import { BN, Idl, Program } from '@project-serum/anchor';
-import { Connection, Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
+import {
+  Connection,
+  Keypair,
+  PublicKey,
+  SystemProgram,
+  Transaction,
+  TransactionInstruction,
+} from '@solana/web3.js';
 import { GemFarm } from '../types/gem_farm';
 import { isKp } from '../gem-common';
 import {
@@ -665,7 +672,7 @@ export class GemFarmClient extends GemBankClient {
     if (isKp(farmerIdentity)) signers.push(<Keypair>farmerIdentity);
 
     console.log('flash depositing on behalf of', identityPk.toBase58());
-    const txSig = await this.farmProgram.rpc.flashDeposit(
+    const flashDepositIx = await this.farmProgram.instruction.flashDeposit(
       farmerBump,
       vaultAuthBump,
       gemBoxBump,
@@ -692,9 +699,17 @@ export class GemFarmClient extends GemBankClient {
           gemBank: this.bankProgram.programId,
         },
         remainingAccounts,
-        signers,
       }
     );
+
+    //will have no effect on solana networks < 1.9.2
+    const extraComputeIx = this.createExtraComputeIx(256000);
+
+    const tx = new Transaction();
+    tx.add(extraComputeIx);
+    tx.add(flashDepositIx);
+
+    const txSig = await this.conn.sendTransaction(tx, signers);
 
     return {
       farmer,
@@ -1027,5 +1042,17 @@ export class GemFarmClient extends GemBankClient {
   //returns "staked" / "unstaked" / "pendingCooldown"
   parseFarmerState(farmer: any): string {
     return Object.keys(farmer.state)[0];
+  }
+
+  createExtraComputeIx(newComputeBudget: number): TransactionInstruction {
+    const data = Buffer.from(
+      Uint8Array.of(0, ...new BN(newComputeBudget).toArray('le', 4))
+    );
+
+    return new TransactionInstruction({
+      keys: [],
+      programId: new PublicKey('ComputeBudget111111111111111111111111111111'),
+      data,
+    });
   }
 }

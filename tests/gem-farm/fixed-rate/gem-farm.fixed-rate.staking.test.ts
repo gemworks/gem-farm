@@ -244,6 +244,7 @@ describe('staking (fixed rate)', () => {
       .add(flashDeposit)
       .mul(toBN(gf.gem1PerGemRarity));
 
+    await pause(1000);
     vaultAcc = await gf.fetchVaultAcc(vault);
     assert(vaultAcc.gemCount.eq(newGems));
     assert(vaultAcc.rarityPoints.eq(newRarity));
@@ -288,6 +289,7 @@ describe('staking (fixed rate)', () => {
     await gf.callFlashDeposit(flashDeposit, gf.farmer1Identity, whitelistProof);
 
     //this is enough to verify it worked
+    await pause(1000);
     const vaultAcc = await gf.fetchVaultAcc(vault);
     assert(vaultAcc.gemCount.eq(initialDeposit.add(flashDeposit)));
     assert(
@@ -329,6 +331,7 @@ describe('staking (fixed rate)', () => {
     );
 
     //this is enough to verify it worked
+    await pause(1000);
     const vaultAcc = await gf.fetchVaultAcc(vault);
     assert(vaultAcc.gemCount.eq(initialDeposit.add(flashDeposit)));
     assert(
