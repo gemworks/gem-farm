@@ -976,10 +976,10 @@
   dependencies:
     purgecss "^3.1.3"
 
-"@gemworks/gem-farm-ts@^0.1.10":
-  version "0.1.10"
-  resolved "https://registry.yarnpkg.com/@gemworks/gem-farm-ts/-/gem-farm-ts-0.1.10.tgz#a06c45a66d492c6992a9dc9704eab342371e1406"
-  integrity sha512-4WMaVimO619n5YziOW7aXtwNqNflqYMU2m/Ip2eL0rNZAZOMeNgOEHz27In6Ysjl7PGPs8tXlmF56v1DrghlIQ==
+"@gemworks/gem-farm-ts@^0.1.12":
+  version "0.1.12"
+  resolved "https://registry.yarnpkg.com/@gemworks/gem-farm-ts/-/gem-farm-ts-0.1.12.tgz#3bdf7ec0668ebc4860222d0d63283f327441bbfa"
+  integrity sha512-NVY2Wjy+Fl3NVSXRkKjse8ANfVngz1Q3fMWpzP1WNGNQ8bZAyWgOOojDqGgxe3g/eaNu3gHhG6o7Q8Cazu/uUA==
   dependencies:
     "@metaplex-foundation/mpl-token-metadata" "^0.0.2"
     "@metaplex/js" "^4.9.0"
