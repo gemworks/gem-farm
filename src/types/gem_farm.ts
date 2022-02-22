@@ -478,6 +478,10 @@ export type GemFarm = {
         {
           "name": "bumpFarmer",
           "type": "u8"
+        },
+        {
+          "name": "skipRewards",
+          "type": "bool"
         }
       ]
     },
@@ -2134,6 +2138,10 @@ export const IDL: GemFarm = {
         {
           "name": "bumpFarmer",
           "type": "u8"
+        },
+        {
+          "name": "skipRewards",
+          "type": "bool"
         }
       ]
     },

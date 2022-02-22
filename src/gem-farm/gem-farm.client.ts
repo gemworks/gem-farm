@@ -482,7 +482,8 @@ export class GemFarmClient extends GemBankClient {
   async stakeCommon(
     farm: PublicKey,
     farmerIdentity: PublicKey | Keypair,
-    unstake = false
+    unstake = false,
+    skipRewards = false
   ) {
     const identityPk = isKp(farmerIdentity)
       ? (<Keypair>farmerIdentity).publicKey
@@ -505,6 +506,7 @@ export class GemFarmClient extends GemBankClient {
         farmAuthBump,
         farmTreasuryBump,
         farmerBump,
+        skipRewards,
         {
           accounts: {
             farm,
@@ -553,8 +555,12 @@ export class GemFarmClient extends GemBankClient {
     return this.stakeCommon(farm, farmerIdentity, false);
   }
 
-  async unstake(farm: PublicKey, farmerIdentity: PublicKey | Keypair) {
-    return this.stakeCommon(farm, farmerIdentity, true);
+  async unstake(
+    farm: PublicKey,
+    farmerIdentity: PublicKey | Keypair,
+    skipRewards = false
+  ) {
+    return this.stakeCommon(farm, farmerIdentity, true, skipRewards);
   }
 
   async claim(

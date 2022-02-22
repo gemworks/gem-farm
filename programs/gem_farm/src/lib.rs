@@ -87,9 +87,10 @@ pub mod gem_farm {
         _bump_auth: u8,
         _bump_treasury: u8,
         _bump_farmer: u8,
+        skip_rewards: bool,
     ) -> ProgramResult {
         msg!("unstake");
-        instructions::unstake::handler(ctx)
+        instructions::unstake::handler(ctx, skip_rewards)
     }
 
     pub fn claim(

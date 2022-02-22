@@ -70,7 +70,7 @@ impl<'info> Unstake<'info> {
     }
 }
 
-pub fn handler(ctx: Context<Unstake>) -> ProgramResult {
+pub fn handler(ctx: Context<Unstake>, skip_rewards: bool) -> ProgramResult {
     // collect any unstaking fee
     let farm = &ctx.accounts.farm;
 
@@ -83,7 +83,12 @@ pub fn handler(ctx: Context<Unstake>) -> ProgramResult {
     let farmer = &mut ctx.accounts.farmer;
     let now_ts = now_ts()?;
 
-    farm.update_rewards(now_ts, Some(farmer), false)?;
+    // FIXME: this ix is exactly like "unstake" except it comments out this line
+    //  needed coz sometimes a farmer gets overflowed when converting u128 to u64
+    //  and can't unstake anymore. This is basically a way to release their assets
+    if !skip_rewards {
+        farm.update_rewards(now_ts, Some(farmer), false)?;
+    }
 
     // end staking (will cycle through state on repeated calls)
     farm.end_staking(now_ts, farmer)?;

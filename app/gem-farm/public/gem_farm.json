@@ -478,6 +478,10 @@
         {
           "name": "bumpFarmer",
           "type": "u8"
+        },
+        {
+          "name": "skipRewards",
+          "type": "bool"
         }
       ]
     },
@@ -1651,8 +1655,5 @@
         ]
       }
     }
-  ],
-  "metadata": {
-    "address": "farmL4xeBFVXJqtfxCzU9b28QACM7E2W2ctT6epAjvE"
-  }
+  ]
 }
