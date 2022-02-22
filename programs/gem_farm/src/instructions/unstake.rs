@@ -83,9 +83,8 @@ pub fn handler(ctx: Context<Unstake>, skip_rewards: bool) -> ProgramResult {
     let farmer = &mut ctx.accounts.farmer;
     let now_ts = now_ts()?;
 
-    // FIXME: this ix is exactly like "unstake" except it comments out this line
-    //  needed coz sometimes a farmer gets overflowed when converting u128 to u64
-    //  and can't unstake anymore. This is basically a way to release their assets
+    // skipping rewards is an EMERGENCY measure in case farmer's rewards are overflowing
+    // at least this lets them get their assets out
     if !skip_rewards {
         farm.update_rewards(now_ts, Some(farmer), false)?;
     }
