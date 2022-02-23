@@ -9,7 +9,7 @@ use anchor_lang::prelude::*;
 /// Unfortunately I wasn't able to get that working, last leg is failing.
 ///
 /// todo to revisit in v1
-#[error]
+#[error_code]
 pub enum ErrorCode {
     // --------------------------------------- generic (0 - 19)
     #[msg("failed to perform some math operation safely")]

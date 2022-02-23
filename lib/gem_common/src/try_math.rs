@@ -8,78 +8,78 @@ use crate::errors::ErrorCode;
 // --------------------------------------- traits
 
 pub trait TrySub: Sized + Copy {
-    fn try_sub(self, rhs: Self) -> Result<Self, ProgramError>;
-    fn try_sub_assign(&mut self, rhs: Self) -> ProgramResult {
+    fn try_sub(self, rhs: Self) -> Result<Self>;
+    fn try_sub_assign(&mut self, rhs: Self) -> Result<()> {
         *self = self.try_sub(rhs)?;
         Ok(())
     }
 }
 
 pub trait TryAdd: Sized + Copy {
-    fn try_add(self, rhs: Self) -> Result<Self, ProgramError>;
-    fn try_add_assign(&mut self, rhs: Self) -> ProgramResult {
+    fn try_add(self, rhs: Self) -> Result<Self>;
+    fn try_add_assign(&mut self, rhs: Self) -> Result<()> {
         *self = self.try_add(rhs)?;
         Ok(())
     }
 }
 
 pub trait TryDiv: Sized + Copy {
-    fn try_div(self, rhs: Self) -> Result<Self, ProgramError>;
-    fn try_div_assign(&mut self, rhs: Self) -> ProgramResult {
+    fn try_div(self, rhs: Self) -> Result<Self>;
+    fn try_div_assign(&mut self, rhs: Self) -> Result<()> {
         *self = self.try_div(rhs)?;
         Ok(())
     }
 
-    fn try_ceil_div(self, rhs: Self) -> Result<Self, ProgramError>;
-    fn try_ceil_div_assign(&mut self, rhs: Self) -> ProgramResult {
+    fn try_ceil_div(self, rhs: Self) -> Result<Self>;
+    fn try_ceil_div_assign(&mut self, rhs: Self) -> Result<()> {
         *self = self.try_ceil_div(rhs)?;
         Ok(())
     }
 
-    fn try_rounded_div(self, rhs: Self) -> Result<Self, ProgramError>;
-    fn try_rounded_div_assign(&mut self, rhs: Self) -> ProgramResult {
+    fn try_rounded_div(self, rhs: Self) -> Result<Self>;
+    fn try_rounded_div_assign(&mut self, rhs: Self) -> Result<()> {
         *self = self.try_rounded_div(rhs)?;
         Ok(())
     }
 }
 
 pub trait TryMul: Sized + Copy {
-    fn try_mul(self, rhs: Self) -> Result<Self, ProgramError>;
-    fn try_mul_assign(&mut self, rhs: Self) -> ProgramResult {
+    fn try_mul(self, rhs: Self) -> Result<Self>;
+    fn try_mul_assign(&mut self, rhs: Self) -> Result<()> {
         *self = self.try_mul(rhs)?;
         Ok(())
     }
 }
 
 pub trait TryPow: Sized + Copy {
-    fn try_pow(self, rhs: u32) -> Result<Self, ProgramError>;
-    fn try_pow_assign(&mut self, rhs: u32) -> ProgramResult {
+    fn try_pow(self, rhs: u32) -> Result<Self>;
+    fn try_pow_assign(&mut self, rhs: u32) -> Result<()> {
         *self = self.try_pow(rhs)?;
         Ok(())
     }
 }
 
 pub trait TrySqrt: Sized + Copy {
-    fn try_sqrt(self) -> Result<Self, ProgramError>;
-    fn try_sqrt_assign(&mut self) -> ProgramResult {
+    fn try_sqrt(self) -> Result<Self>;
+    fn try_sqrt_assign(&mut self) -> Result<()> {
         *self = self.try_sqrt()?;
         Ok(())
     }
 }
 
 pub trait TryRem: Sized + Copy {
-    fn try_rem(self, rhs: Self) -> Result<Self, ProgramError>;
+    fn try_rem(self, rhs: Self) -> Result<Self>;
 }
 
 pub trait TryCast<Into>: Sized + Copy {
-    fn try_cast(self) -> Result<Into, ProgramError>;
+    fn try_cast(self) -> Result<Into>;
 }
 
 pub trait TrySum: Sized + Copy + TryAdd {
-    fn sum<I: Iterator<Item = Self>>(iter: I) -> Result<Self, ProgramError> {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Result<Self> {
         // todo for now using unwrap() since can't "?" inside an iterator
         iter.reduce(|a, b| a.try_add(b).unwrap())
-            .ok_or(ErrorCode::ArithmeticError.into())
+            .ok_or(error!(ErrorCode::ArithmeticError))
     }
 }
 
@@ -88,61 +88,61 @@ pub trait TrySum: Sized + Copy + TryAdd {
 macro_rules! try_math {
     ($our_type:ty) => {
         impl TrySub for $our_type {
-            fn try_sub(self, rhs: Self) -> Result<Self, ProgramError> {
+            fn try_sub(self, rhs: Self) -> Result<Self> {
                 self.checked_sub(rhs).ok_or_else(|| {
                     msg!("tried subtracting {} from {}", rhs, self);
-                    ErrorCode::ArithmeticError.into()
+                    error!(ErrorCode::ArithmeticError)
                 })
             }
         }
 
         impl TryAdd for $our_type {
-            fn try_add(self, rhs: Self) -> Result<Self, ProgramError> {
+            fn try_add(self, rhs: Self) -> Result<Self> {
                 self.checked_add(rhs).ok_or_else(|| {
                     msg!("tried adding {} and {}", rhs, self);
-                    ErrorCode::ArithmeticError.into()
+                    error!(ErrorCode::ArithmeticError)
                 })
             }
         }
 
         impl TryDiv for $our_type {
-            fn try_div(self, rhs: Self) -> Result<Self, ProgramError> {
+            fn try_div(self, rhs: Self) -> Result<Self> {
                 self.checked_div(rhs).ok_or_else(|| {
                     msg!("tried dividing {} by {}", self, rhs);
-                    ErrorCode::ArithmeticError.into()
+                    error!(ErrorCode::ArithmeticError)
                 })
             }
-            fn try_ceil_div(self, rhs: Self) -> Result<Self, ProgramError> {
+            fn try_ceil_div(self, rhs: Self) -> Result<Self> {
                 self.try_sub(1)?.try_div(rhs)?.try_add(1)
             }
-            fn try_rounded_div(self, rhs: Self) -> Result<Self, ProgramError> {
+            fn try_rounded_div(self, rhs: Self) -> Result<Self> {
                 rhs.try_div(2)?.try_add(self)?.try_div(rhs)
             }
         }
 
         impl TryMul for $our_type {
-            fn try_mul(self, rhs: Self) -> Result<Self, ProgramError> {
+            fn try_mul(self, rhs: Self) -> Result<Self> {
                 self.checked_mul(rhs).ok_or_else(|| {
                     msg!("tried multiplying {} and {}", self, rhs);
-                    ErrorCode::ArithmeticError.into()
+                    error!(ErrorCode::ArithmeticError)
                 })
             }
         }
 
         impl TryPow for $our_type {
-            fn try_pow(self, rhs: u32) -> Result<Self, ProgramError> {
+            fn try_pow(self, rhs: u32) -> Result<Self> {
                 self.checked_pow(rhs).ok_or_else(|| {
                     msg!("tried raising {} to power {}", self, rhs);
-                    ErrorCode::ArithmeticError.into()
+                    error!(ErrorCode::ArithmeticError)
                 })
             }
         }
 
         impl TryRem for $our_type {
-            fn try_rem(self, rhs: Self) -> Result<Self, ProgramError> {
+            fn try_rem(self, rhs: Self) -> Result<Self> {
                 self.checked_rem(rhs).ok_or_else(|| {
                     msg!("tried getting the remainder of {} / {}", self, rhs);
-                    ErrorCode::ArithmeticError.into()
+                    error!(ErrorCode::ArithmeticError)
                 })
             }
         }
@@ -150,10 +150,10 @@ macro_rules! try_math {
         // based on solana's spl math crate
         // https://github.com/solana-labs/solana-program-library/blob/master/libraries/math/src/approximations.rs
         impl TrySqrt for $our_type {
-            fn try_sqrt(self) -> Result<Self, ProgramError> {
+            fn try_sqrt(self) -> Result<Self> {
                 sqrt(self).ok_or_else(|| {
                     msg!("tried taking the square root of {}", self);
-                    ErrorCode::ArithmeticError.into()
+                    error!(ErrorCode::ArithmeticError)
                 })
             }
         }
@@ -174,14 +174,14 @@ try_math! {u128}
 try_math! {i128}
 
 impl TryCast<u64> for u128 {
-    fn try_cast(self) -> Result<u64, ProgramError> {
-        u64::try_from(self).map_err(|_| ErrorCode::ArithmeticError.into())
+    fn try_cast(self) -> Result<u64> {
+        u64::try_from(self).map_err(|_| error!(ErrorCode::ArithmeticError))
     }
 }
 
 impl TryCast<u32> for u64 {
-    fn try_cast(self) -> Result<u32, ProgramError> {
-        u32::try_from(self).map_err(|_| ErrorCode::ArithmeticError.into())
+    fn try_cast(self) -> Result<u32> {
+        u32::try_from(self).map_err(|_| error!(ErrorCode::ArithmeticError))
     }
 }
 

@@ -31,7 +31,7 @@ impl Number128 {
     pub const ONE: Self = Self { n: ONE };
     pub const ZERO: Self = Self { n: 0 };
 
-    pub fn as_u64(&self, exponent: impl Into<i32>) -> Result<u64, ProgramError> {
+    pub fn as_u64(&self, exponent: impl Into<i32>) -> Result<u64> {
         let extra_precision = PRECISION + exponent.into();
         let mut prec_value = Self::ten_pow(extra_precision.abs() as u32);
 
@@ -44,10 +44,10 @@ impl Number128 {
             panic!("cannot convert to u64 due to overflow");
         }
 
-        u64::try_from(target_value).map_err(|_| ErrorCode::ArithmeticError.into())
+        u64::try_from(target_value).map_err(|_| error!(ErrorCode::ArithmeticError))
     }
 
-    pub fn as_u64_ceil(&self, exponent: impl Into<i32>) -> Result<u64, ProgramError> {
+    pub fn as_u64_ceil(&self, exponent: impl Into<i32>) -> Result<u64> {
         let extra_precision = PRECISION + exponent.into();
         let mut prec_value = Self::ten_pow(extra_precision.abs() as u32);
 
@@ -60,7 +60,7 @@ impl Number128 {
             panic!("cannot convert to u64 due to overflow");
         }
 
-        u64::try_from(target_value).map_err(|_| ErrorCode::ArithmeticError.into())
+        u64::try_from(target_value).map_err(|_| error!(ErrorCode::ArithmeticError))
     }
 
     pub fn from_decimal(value: impl Into<u128>, exponent: impl Into<i32>) -> Self {
@@ -103,98 +103,98 @@ impl Number128 {
 }
 
 impl TrySub for Number128 {
-    fn try_sub(self, rhs: Self) -> Result<Self, ProgramError> {
+    fn try_sub(self, rhs: Self) -> Result<Self> {
         let result = self.n.checked_sub(rhs.n).ok_or_else(|| {
             msg!("tried subtracting {} from {}", rhs, self);
-            ProgramError::from(ErrorCode::ArithmeticError)
+            error!(ErrorCode::ArithmeticError)
         })?;
         Ok(Self { n: result })
     }
 }
 
 impl TryAdd for Number128 {
-    fn try_add(self, rhs: Self) -> Result<Self, ProgramError> {
+    fn try_add(self, rhs: Self) -> Result<Self> {
         let result = self.n.checked_add(rhs.n).ok_or_else(|| {
             msg!("tried adding {} and {}", rhs, self);
-            ProgramError::from(ErrorCode::ArithmeticError)
+            error!(ErrorCode::ArithmeticError)
         })?;
         Ok(Self { n: result })
     }
 }
 
 impl TryDiv for Number128 {
-    fn try_div(self, rhs: Self) -> Result<Self, ProgramError> {
+    fn try_div(self, rhs: Self) -> Result<Self> {
         let result = self
             .n
             .checked_mul(ONE)
             .ok_or_else(|| {
                 msg!("tried dividing {} by {} (scale up)", self, rhs);
-                ProgramError::from(ErrorCode::ArithmeticError)
+                error!(ErrorCode::ArithmeticError)
             })?
             .checked_div(rhs.n)
             .ok_or_else(|| {
                 msg!("tried dividing {} by {}", self, rhs);
-                ProgramError::from(ErrorCode::ArithmeticError)
+                error!(ErrorCode::ArithmeticError)
             })?;
         Ok(Self { n: result })
     }
-    fn try_ceil_div(self, rhs: Self) -> Result<Self, ProgramError> {
+    fn try_ceil_div(self, rhs: Self) -> Result<Self> {
         self.try_div(rhs)
     }
-    fn try_rounded_div(self, rhs: Self) -> Result<Self, ProgramError> {
+    fn try_rounded_div(self, rhs: Self) -> Result<Self> {
         self.try_div(rhs)
     }
 }
 
 impl TryMul for Number128 {
-    fn try_mul(self, rhs: Self) -> Result<Self, ProgramError> {
+    fn try_mul(self, rhs: Self) -> Result<Self> {
         let result = self
             .n
             .checked_mul(rhs.n)
             .ok_or_else(|| {
                 msg!("tried multiplying {} and {}", self, rhs);
-                ProgramError::from(ErrorCode::ArithmeticError)
+                error!(ErrorCode::ArithmeticError)
             })?
             .checked_div(ONE)
             .ok_or_else(|| {
                 msg!("tried multiplying {} and {}", self, rhs);
-                ProgramError::from(ErrorCode::ArithmeticError)
+                error!(ErrorCode::ArithmeticError)
             })?;
         Ok(Self { n: result })
     }
 }
 
 impl TryPow for Number128 {
-    fn try_pow(self, rhs: u32) -> Result<Self, ProgramError> {
+    fn try_pow(self, rhs: u32) -> Result<Self> {
         let result = self
             .n
             .checked_pow(rhs)
             .ok_or_else(|| {
                 msg!("tried raising {} to power {}", self, rhs);
-                ProgramError::from(ErrorCode::ArithmeticError)
+                error!(ErrorCode::ArithmeticError)
             })?
             .checked_div(ONE)
             .ok_or_else(|| {
                 msg!("tried raising {} to power {}", self, rhs);
-                ProgramError::from(ErrorCode::ArithmeticError)
+                error!(ErrorCode::ArithmeticError)
             })?;
         Ok(Self { n: result })
     }
 }
 
 impl TryRem for Number128 {
-    fn try_rem(self, rhs: Self) -> Result<Self, ProgramError> {
+    fn try_rem(self, rhs: Self) -> Result<Self> {
         let result = self
             .n
             .checked_mul(ONE)
             .ok_or_else(|| {
                 msg!("tried getting the remainder of {} / {}", self, rhs);
-                ProgramError::from(ErrorCode::ArithmeticError)
+                error!(ErrorCode::ArithmeticError)
             })?
             .checked_rem(rhs.n)
             .ok_or_else(|| {
                 msg!("tried getting the remainder of {} / {}", self, rhs);
-                ProgramError::from(ErrorCode::ArithmeticError)
+                error!(ErrorCode::ArithmeticError)
             })?;
         Ok(Self { n: result })
     }

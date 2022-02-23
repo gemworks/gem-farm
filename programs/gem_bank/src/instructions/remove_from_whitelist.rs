@@ -10,10 +10,12 @@ pub struct RemoveFromWhitelist<'info> {
     #[account(mut, has_one = bank_manager)]
     pub bank: Box<Account<'info, Bank>>,
     pub bank_manager: Signer<'info>,
+    /// CHECK:
     #[account(mut)]
     pub funds_receiver: AccountInfo<'info>,
 
     // whitelist
+    /// CHECK:
     pub address_to_remove: AccountInfo<'info>,
     #[account(mut, has_one = bank, seeds = [
             b"whitelist".as_ref(),
@@ -24,7 +26,7 @@ pub struct RemoveFromWhitelist<'info> {
     pub whitelist_proof: Box<Account<'info, WhitelistProof>>,
 }
 
-pub fn handler(ctx: Context<RemoveFromWhitelist>) -> ProgramResult {
+pub fn handler(ctx: Context<RemoveFromWhitelist>) -> Result<()> {
     // decrement whitelist counter on bank
     let bank = &mut ctx.accounts.bank;
     let proof = &mut ctx.accounts.whitelist_proof;

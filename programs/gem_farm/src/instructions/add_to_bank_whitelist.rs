@@ -11,14 +11,17 @@ pub struct AddToBankWhitelist<'info> {
     pub farm: Box<Account<'info, Farm>>,
     #[account(mut)]
     pub farm_manager: Signer<'info>,
+    /// CHECK:
     #[account(seeds = [farm.key().as_ref()], bump = bump_auth)]
     pub farm_authority: AccountInfo<'info>,
 
     // cpi
     #[account(mut)]
     pub bank: Box<Account<'info, Bank>>,
+    /// CHECK:
     pub address_to_whitelist: AccountInfo<'info>,
     // trying to deserialize here leads to errors (doesn't exist yet)
+    /// CHECK:
     #[account(mut)]
     pub whitelist_proof: AccountInfo<'info>,
     pub system_program: Program<'info, System>,
@@ -41,12 +44,11 @@ impl<'info> AddToBankWhitelist<'info> {
     }
 }
 
-pub fn handler(ctx: Context<AddToBankWhitelist>, bump_wl: u8, whitelist_type: u8) -> ProgramResult {
+pub fn handler(ctx: Context<AddToBankWhitelist>, whitelist_type: u8) -> Result<()> {
     gem_bank::cpi::add_to_whitelist(
         ctx.accounts
             .add_to_whitelist_ctx()
             .with_signer(&[&ctx.accounts.farm.farm_seeds()]),
-        bump_wl,
         whitelist_type,
     )?;
 

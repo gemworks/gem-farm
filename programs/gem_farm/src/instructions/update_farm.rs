@@ -14,7 +14,7 @@ pub fn handler(
     ctx: Context<UpdateFarm>,
     config: Option<FarmConfig>,
     manager: Option<Pubkey>,
-) -> ProgramResult {
+) -> Result<()> {
     let farm = &mut ctx.accounts.farm;
 
     if let Some(config) = config {

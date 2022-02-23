@@ -12,7 +12,7 @@ pub struct FundReward<'info> {
     pub farm: Box<Account<'info, Farm>>,
 
     // funder
-    #[account(has_one = farm, has_one = authorized_funder ,seeds = [
+    #[account(has_one = farm, has_one = authorized_funder, seeds = [
             b"authorization".as_ref(),
             farm.key().as_ref(),
             authorized_funder.key().as_ref(),
@@ -56,7 +56,7 @@ pub fn handler(
     ctx: Context<FundReward>,
     variable_rate_config: Option<VariableRateConfig>,
     fixed_rate_config: Option<FixedRateConfig>,
-) -> ProgramResult {
+) -> Result<()> {
     let amount = if let Some(config) = variable_rate_config {
         config.amount
     } else {

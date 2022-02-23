@@ -30,8 +30,8 @@ pub struct Bank {
 }
 
 impl Bank {
-    pub fn read_flags(flags: u32) -> Result<BankFlags, ProgramError> {
-        BankFlags::from_bits(flags).ok_or(ErrorCode::InvalidParameter.into())
+    pub fn read_flags(flags: u32) -> Result<BankFlags> {
+        BankFlags::from_bits(flags).ok_or(error!(ErrorCode::InvalidParameter))
     }
 
     pub fn reset_flags(&mut self, flags: BankFlags) {

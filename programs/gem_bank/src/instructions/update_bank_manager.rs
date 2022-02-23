@@ -10,7 +10,7 @@ pub struct UpdateBankManager<'info> {
     pub bank_manager: Signer<'info>,
 }
 
-pub fn handler(ctx: Context<UpdateBankManager>, new_manager: Pubkey) -> ProgramResult {
+pub fn handler(ctx: Context<UpdateBankManager>, new_manager: Pubkey) -> Result<()> {
     let bank = &mut ctx.accounts.bank;
 
     bank.bank_manager = new_manager;

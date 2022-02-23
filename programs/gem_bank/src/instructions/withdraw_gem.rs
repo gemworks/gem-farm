@@ -20,6 +20,7 @@ pub struct WithdrawGem<'info> {
     pub vault: Box<Account<'info, Vault>>,
     #[account(mut)]
     pub owner: Signer<'info>,
+    /// CHECK:
     #[account(seeds = [vault.key().as_ref()], bump = bump_auth)]
     pub authority: AccountInfo<'info>,
 
@@ -45,6 +46,7 @@ pub struct WithdrawGem<'info> {
     pub gem_destination: Box<Account<'info, TokenAccount>>,
     pub gem_mint: Box<Account<'info, Mint>>,
     // we MUST ask for this PDA both during deposit and withdrawal for sec reasons, even if it's zero'ed
+    /// CHECK:
     #[account(seeds = [
             b"gem_rarity".as_ref(),
             bank.key().as_ref(),
@@ -52,6 +54,7 @@ pub struct WithdrawGem<'info> {
         ], bump = bump_rarity)]
     pub gem_rarity: AccountInfo<'info>,
     // unlike with deposits, the gem can be sent out to anyone, not just the owner
+    /// CHECK:
     #[account(mut)]
     pub receiver: AccountInfo<'info>,
 
@@ -86,13 +89,13 @@ impl<'info> WithdrawGem<'info> {
     }
 }
 
-pub fn handler(ctx: Context<WithdrawGem>, amount: u64) -> ProgramResult {
+pub fn handler(ctx: Context<WithdrawGem>, amount: u64) -> Result<()> {
     // verify vault not suspended
     let bank = &*ctx.accounts.bank;
     let vault = &ctx.accounts.vault;
 
     if vault.access_suspended(bank.flags)? {
-        return Err(ErrorCode::VaultAccessSuspended.into());
+        return Err(error!(ErrorCode::VaultAccessSuspended));
     }
 
     // do the transfer
@@ -111,7 +114,7 @@ pub fn handler(ctx: Context<WithdrawGem>, amount: u64) -> ProgramResult {
 
     // this check is semi-useless but won't hurt
     if gdr.gem_count != gem_box.amount.try_sub(amount)? {
-        return Err(ErrorCode::AmountMismatch.into());
+        return Err(error!(ErrorCode::AmountMismatch));
     }
 
     // if gembox empty, close both the box and the GDR, and return funds to user

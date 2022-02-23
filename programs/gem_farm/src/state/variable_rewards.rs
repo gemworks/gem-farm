@@ -43,7 +43,7 @@ impl VariableRateReward {
         times: &mut TimeTracker,
         funds: &mut FundsTracker,
         new_config: VariableRateConfig,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         let VariableRateConfig {
             amount,
             duration_sec,
@@ -75,7 +75,7 @@ impl VariableRateReward {
         now_ts: u64,
         times: &mut TimeTracker,
         funds: &mut FundsTracker,
-    ) -> Result<u64, ProgramError> {
+    ) -> Result<u64> {
         let refund_amount = funds.pending_amount()?;
         funds.total_refunded.try_add_assign(refund_amount)?;
 
@@ -96,7 +96,7 @@ impl VariableRateReward {
         farm_rarity_points_staked: u64,
         farmer_rarity_points_staked: Option<u64>,
         farmer_reward: Option<&mut FarmerReward>,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         let reward_upper_bound = times.reward_upper_bound(now_ts);
 
         // calc & update reward per rarity point
@@ -140,7 +140,7 @@ impl VariableRateReward {
         &self,
         farm_rarity_points_staked: u64,
         reward_upper_bound: u64,
-    ) -> Result<Number128, ProgramError> {
+    ) -> Result<Number128> {
         if farm_rarity_points_staked == 0 {
             msg!("no gems are staked at the farm, means no new rewards accrue");
             return Ok(Number128::ZERO);

@@ -13,6 +13,7 @@ pub struct Claim<'info> {
     // farm
     #[account(mut, has_one = farm_authority)]
     pub farm: Box<Account<'info, Farm>>,
+    /// CHECK:
     #[account(seeds = [farm.key().as_ref()], bump = bump_auth)]
     pub farm_authority: AccountInfo<'info>,
 
@@ -88,7 +89,7 @@ impl<'info> Claim<'info> {
     }
 }
 
-pub fn handler(ctx: Context<Claim>) -> ProgramResult {
+pub fn handler(ctx: Context<Claim>) -> Result<()> {
     // update accrued rewards before claiming
     let farm = &mut ctx.accounts.farm;
     let farmer = &mut ctx.accounts.farmer;

@@ -105,7 +105,7 @@ impl HeldTenure {
     }
 
     /// multiplies definitive start & end by the rate
-    pub fn get_reward(&self) -> Result<u64, ProgramError> {
+    pub fn get_reward(&self) -> Result<u64> {
         let duration = self.definitive_end.try_sub(self.definitive_start)?;
         self.reward_rate.try_mul(duration)
     }
@@ -166,7 +166,7 @@ impl FixedRateSchedule {
         }
     }
 
-    pub fn get_base_reward(&self, start: u64, end: u64) -> Result<u64, ProgramError> {
+    pub fn get_base_reward(&self, start: u64, end: u64) -> Result<u64> {
         let duration = end.try_sub(start)?;
         self.base_rate.try_mul(duration)
     }
@@ -201,7 +201,7 @@ impl FixedRateSchedule {
     ///   2) calling get_reward() on each which isn't None
     ///   3) calculating base rate
     ///   4) folding base rate and non-None tenure rewards
-    fn reward_per_rarity_point(&self, start_from: u64, end_at: u64) -> Result<u64, ProgramError> {
+    fn reward_per_rarity_point(&self, start_from: u64, end_at: u64) -> Result<u64> {
         let mut cap = u64::MAX;
 
         // collect definitively held tenures for 3 periods - still missing base
@@ -226,12 +226,7 @@ impl FixedRateSchedule {
         iter.fold(init, |last, this| last?.try_add(this?))
     }
 
-    pub fn reward_amount(
-        &self,
-        start_from: u64,
-        end_at: u64,
-        rarity_points: u64,
-    ) -> Result<u64, ProgramError> {
+    pub fn reward_amount(&self, start_from: u64, end_at: u64, rarity_points: u64) -> Result<u64> {
         let per_rarity_point = self.reward_per_rarity_point(start_from, end_at)?;
 
         // considered making this U128, but drastically increases app's complexity
@@ -267,7 +262,7 @@ impl FixedRateReward {
         times: &mut TimeTracker,
         funds: &mut FundsTracker,
         new_config: FixedRateConfig,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         let FixedRateConfig {
             schedule,
             amount,
@@ -292,7 +287,7 @@ impl FixedRateReward {
         now_ts: u64,
         times: &mut TimeTracker,
         funds: &mut FundsTracker,
-    ) -> Result<u64, ProgramError> {
+    ) -> Result<u64> {
         let refund_amount = funds.pending_amount()?.try_sub(self.reserved_amount)?;
         funds.total_refunded.try_add_assign(refund_amount)?;
 
@@ -310,7 +305,7 @@ impl FixedRateReward {
         farmer_rarity_points_staked: u64,
         farmer_reward: &mut FarmerReward,
         reenroll: bool,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         let newly_accrued_reward = farmer_reward
             .fixed_rate
             .newly_accrued_reward(now_ts, farmer_rarity_points_staked)?;
@@ -358,7 +353,7 @@ impl FixedRateReward {
         farmer_rarity_points_staked: u64,
         farmer_reward: &mut FarmerReward,
         original_staking_start: Option<u64>, //used when we roll a farmer forward, w/o them unstaking
-    ) -> ProgramResult {
+    ) -> Result<()> {
         // calc time left
         // do NOT throw an error if 0 - A might hav ended but B not
         // do NOT return OK(()) - this prevents us from passing down original_staking_start when next reward not ready
@@ -376,7 +371,7 @@ impl FixedRateReward {
             farmer_rarity_points_staked,
         )?;
         if reserve_amount > funds.pending_amount()? {
-            return Err(ErrorCode::RewardUnderfunded.into());
+            return Err(error!(ErrorCode::RewardUnderfunded));
         }
 
         // update farmer
@@ -400,7 +395,7 @@ impl FixedRateReward {
         &mut self,
         farmer_rarity_points_staked: u64,
         farmer_reward: &mut FarmerReward,
-    ) -> Result<u64, ProgramError> {
+    ) -> Result<u64> {
         let original_begin_staking_ts = farmer_reward.fixed_rate.begin_staking_ts;
 
         // reduce reserved amount

@@ -13,6 +13,7 @@ pub struct DeauthorizeFunder<'info> {
     pub farm_manager: Signer<'info>,
 
     // funder
+    /// CHECK:
     pub funder_to_deauthorize: AccountInfo<'info>,
     #[account(mut, has_one = farm,
         constraint = authorization_proof.authorized_funder == funder_to_deauthorize.key(),
@@ -28,7 +29,7 @@ pub struct DeauthorizeFunder<'info> {
     system_program: Program<'info, System>,
 }
 
-pub fn handler(ctx: Context<DeauthorizeFunder>) -> ProgramResult {
+pub fn handler(ctx: Context<DeauthorizeFunder>) -> Result<()> {
     // close authorization proof
     close_account(
         &mut ctx.accounts.authorization_proof.to_account_info(),

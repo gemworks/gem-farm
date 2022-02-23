@@ -232,8 +232,6 @@ export class GemFarmClient extends GemBankClient {
     const txSig = await this.farmProgram.rpc.initFarm(
       farmAuthBump,
       farmTreasuryBump,
-      rewardAPotBump,
-      rewardBPotBump,
       rewardAType,
       rewardBType,
       farmConfig,
@@ -358,7 +356,6 @@ export class GemFarmClient extends GemBankClient {
     console.log(`adding ${addressToWhitelist.toBase58()} to whitelist`);
     const txSig = await this.farmProgram.rpc.addToBankWhitelist(
       farmAuthBump,
-      whitelistProofBump,
       whitelistType,
       {
         accounts: {
@@ -453,7 +450,7 @@ export class GemFarmClient extends GemBankClient {
     if (isKp(payer)) signers.push(<Keypair>payer);
 
     console.log('adding farmer', identityPk.toBase58());
-    const txSig = await this.farmProgram.rpc.initFarmer(farmerBump, vaultBump, {
+    const txSig = await this.farmProgram.rpc.initFarmer({
       accounts: {
         farm,
         farmer,
@@ -681,8 +678,6 @@ export class GemFarmClient extends GemBankClient {
     const flashDepositIx = await this.farmProgram.instruction.flashDeposit(
       farmerBump,
       vaultAuthBump,
-      gemBoxBump,
-      GDRBump,
       gemRarityBump,
       gemAmount,
       {
@@ -816,21 +811,18 @@ export class GemFarmClient extends GemBankClient {
       );
     } else {
       console.log('authorizing funder', funder.toBase58());
-      txSig = await this.farmProgram.rpc.authorizeFunder(
-        authorizationProofBump,
-        {
-          accounts: {
-            farm,
-            farmManager: isKp(farmManager)
-              ? (<Keypair>farmManager).publicKey
-              : farmManager,
-            funderToAuthorize: funder,
-            authorizationProof,
-            systemProgram: SystemProgram.programId,
-          },
-          signers,
-        }
-      );
+      txSig = await this.farmProgram.rpc.authorizeFunder({
+        accounts: {
+          farm,
+          farmManager: isKp(farmManager)
+            ? (<Keypair>farmManager).publicKey
+            : farmManager,
+          funderToAuthorize: funder,
+          authorizationProof,
+          systemProgram: SystemProgram.programId,
+        },
+        signers,
+      });
     }
 
     return { authorizationProof, authorizationProofBump, txSig };

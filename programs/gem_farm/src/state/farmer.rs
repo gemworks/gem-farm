@@ -55,7 +55,7 @@ impl Farmer {
         now_ts: u64,
         gems_in_vault: u64,
         rarity_points_in_vault: u64,
-    ) -> Result<(u64, u64), ProgramError> {
+    ) -> Result<(u64, u64)> {
         self.state = FarmerState::Staked;
 
         let previous_gems_staked = self.gems_staked;
@@ -72,9 +72,9 @@ impl Farmer {
         &mut self,
         now_ts: u64,
         cooldown_period_sec: u64,
-    ) -> Result<(u64, u64), ProgramError> {
+    ) -> Result<(u64, u64)> {
         if !self.can_end_staking(now_ts) {
-            return Err(ErrorCode::MinStakingNotPassed.into());
+            return Err(error!(ErrorCode::MinStakingNotPassed));
         }
 
         self.state = FarmerState::PendingCooldown;
@@ -93,9 +93,9 @@ impl Farmer {
         Ok((gems_unstaked, rarity_points_unstaked))
     }
 
-    pub fn end_cooldown(&mut self, now_ts: u64) -> ProgramResult {
+    pub fn end_cooldown(&mut self, now_ts: u64) -> Result<()> {
         if !self.can_end_cooldown(now_ts) {
-            return Err(ErrorCode::CooldownNotPassed.into());
+            return Err(error!(ErrorCode::CooldownNotPassed));
         }
 
         self.state = FarmerState::Unstaked;
@@ -144,11 +144,11 @@ pub struct FarmerReward {
 }
 
 impl FarmerReward {
-    pub fn outstanding_reward(&self) -> Result<u64, ProgramError> {
+    pub fn outstanding_reward(&self) -> Result<u64> {
         self.accrued_reward.try_sub(self.paid_out_reward)
     }
 
-    pub fn claim_reward(&mut self, pot_balance: u64) -> Result<u64, ProgramError> {
+    pub fn claim_reward(&mut self, pot_balance: u64) -> Result<u64> {
         let outstanding = self.outstanding_reward()?;
         let to_claim = std::cmp::min(outstanding, pot_balance);
 
@@ -161,7 +161,7 @@ impl FarmerReward {
         &mut self,
         newly_accrued_reward: u64,
         accrued_reward_per_rarity_point: Number128,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         self.accrued_reward.try_add_assign(newly_accrued_reward)?;
 
         self.variable_rate
@@ -170,7 +170,7 @@ impl FarmerReward {
         Ok(())
     }
 
-    pub fn update_fixed_reward(&mut self, now_ts: u64, newly_accrued_reward: u64) -> ProgramResult {
+    pub fn update_fixed_reward(&mut self, now_ts: u64, newly_accrued_reward: u64) -> Result<()> {
         self.accrued_reward.try_add_assign(newly_accrued_reward)?;
 
         self.fixed_rate.last_updated_ts = self.fixed_rate.reward_upper_bound(now_ts)?;
@@ -225,11 +225,11 @@ pub struct FarmerFixedRateReward {
 
 impl FarmerFixedRateReward {
     /// accrued to rolled stakers, whose begin_staking_ts < begin_schedule_ts
-    pub fn loyal_staker_bonus_time(&self) -> Result<u64, ProgramError> {
+    pub fn loyal_staker_bonus_time(&self) -> Result<u64> {
         self.begin_schedule_ts.try_sub(self.begin_staking_ts)
     }
 
-    pub fn end_schedule_ts(&self) -> Result<u64, ProgramError> {
+    pub fn end_schedule_ts(&self) -> Result<u64> {
         self.begin_schedule_ts.try_add(self.promised_duration)
     }
 
@@ -238,21 +238,21 @@ impl FarmerFixedRateReward {
         self.begin_staking_ts > 0 && self.begin_schedule_ts > 0
     }
 
-    pub fn is_time_to_graduate(&self, now_ts: u64) -> Result<bool, ProgramError> {
+    pub fn is_time_to_graduate(&self, now_ts: u64) -> Result<bool> {
         Ok(now_ts >= self.end_schedule_ts()?)
     }
 
-    pub fn reward_upper_bound(&self, now_ts: u64) -> Result<u64, ProgramError> {
+    pub fn reward_upper_bound(&self, now_ts: u64) -> Result<u64> {
         Ok(std::cmp::min(now_ts, self.end_schedule_ts()?))
     }
 
-    pub fn time_from_staking_to_update(&self) -> Result<u64, ProgramError> {
+    pub fn time_from_staking_to_update(&self) -> Result<u64> {
         self.last_updated_ts.try_sub(self.begin_staking_ts)
     }
 
     /// (!) intentionally uses begin_staking_ts for both start_from and end_at
     /// in doing so we increase both start_from and end_at by exactly loyal_staker_bonus_time
-    pub fn voided_reward(&self, rarity_points: u64) -> Result<u64, ProgramError> {
+    pub fn voided_reward(&self, rarity_points: u64) -> Result<u64> {
         let start_from = self.time_from_staking_to_update()?;
         let end_at = self.end_schedule_ts()?.try_sub(self.begin_staking_ts)?;
 
@@ -262,11 +262,7 @@ impl FarmerFixedRateReward {
 
     /// (!) intentionally uses begin_staking_ts for both start_from and end_at
     /// in doing so we increase both start_from and end_at by exactly loyal_staker_bonus_time
-    pub fn newly_accrued_reward(
-        &self,
-        now_ts: u64,
-        rarity_points: u64,
-    ) -> Result<u64, ProgramError> {
+    pub fn newly_accrued_reward(&self, now_ts: u64, rarity_points: u64) -> Result<u64> {
         let start_from = self.time_from_staking_to_update()?;
         let end_at = self
             .reward_upper_bound(now_ts)?

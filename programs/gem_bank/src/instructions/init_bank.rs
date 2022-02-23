@@ -15,7 +15,7 @@ pub struct InitBank<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(ctx: Context<InitBank>) -> ProgramResult {
+pub fn handler(ctx: Context<InitBank>) -> Result<()> {
     let bank = &mut ctx.accounts.bank;
 
     bank.version = LATEST_BANK_VERSION;

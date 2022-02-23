@@ -8,7 +8,7 @@ use metaplex_token_metadata::state::Metadata;
 use crate::state::*;
 
 #[derive(Accounts)]
-#[instruction(bump_auth: u8, bump_gem_box: u8, bump_gdr: u8, bump_rarity: u8)]
+#[instruction(bump_auth: u8, bump_rarity: u8)]
 pub struct DepositGem<'info> {
     // bank
     pub bank: Box<Account<'info, Bank>>,
@@ -22,6 +22,7 @@ pub struct DepositGem<'info> {
     // add a "depositor" account, and remove Signer from vault owner to let anyone to deposit
     #[account(mut)]
     pub owner: Signer<'info>,
+    /// CHECK:
     #[account(seeds = [vault.key().as_ref()], bump = bump_auth)]
     pub authority: AccountInfo<'info>,
 
@@ -31,7 +32,7 @@ pub struct DepositGem<'info> {
             vault.key().as_ref(),
             gem_mint.key().as_ref(),
         ],
-        bump = bump_gem_box,
+        bump,
         token::mint = gem_mint,
         token::authority = authority,
         payer = owner)]
@@ -41,7 +42,7 @@ pub struct DepositGem<'info> {
             vault.key().as_ref(),
             gem_mint.key().as_ref(),
         ],
-        bump = bump_gdr,
+        bump,
         payer = owner,
         space = 8 + std::mem::size_of::<GemDepositReceipt>())]
     pub gem_deposit_receipt: Box<Account<'info, GemDepositReceipt>>,
@@ -49,11 +50,13 @@ pub struct DepositGem<'info> {
     pub gem_source: Box<Account<'info, TokenAccount>>,
     pub gem_mint: Box<Account<'info, Mint>>,
     // we MUST ask for this PDA both during deposit and withdrawal for sec reasons, even if it's zero'ed
+    /// CHECK:
     #[account(seeds = [
             b"gem_rarity".as_ref(),
             bank.key().as_ref(),
             gem_mint.key().as_ref()
-        ], bump = bump_rarity)]
+        ],
+        bump = bump_rarity)]
     pub gem_rarity: AccountInfo<'info>,
 
     // misc
@@ -83,7 +86,7 @@ impl<'info> DepositGem<'info> {
 fn assert_valid_metadata(
     gem_metadata: &AccountInfo,
     gem_mint: &Pubkey,
-) -> Result<Metadata, ProgramError> {
+) -> core::result::Result<Metadata, ProgramError> {
     let metadata_program = Pubkey::from_str("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s").unwrap();
 
     // 1 verify the owner of the account is metaplex's metadata program
@@ -108,7 +111,7 @@ fn assert_valid_whitelist_proof<'info>(
     address_to_whitelist: &Pubkey,
     program_id: &Pubkey,
     expected_whitelist_type: WhitelistType,
-) -> ProgramResult {
+) -> Result<()> {
     // 1 verify the PDA seeds match
     let seed = &[
         b"whitelist".as_ref(),
@@ -119,7 +122,7 @@ fn assert_valid_whitelist_proof<'info>(
 
     // we can't use an assert_eq statement, we want to catch this error and continue along to creator testing
     if whitelist_addr != whitelist_proof.key() {
-        return Err(ErrorCode::NotWhitelisted.into());
+        return Err(error!(ErrorCode::NotWhitelisted));
     }
 
     // 2 no need to verify ownership, deserialization does that for us
@@ -130,7 +133,7 @@ fn assert_valid_whitelist_proof<'info>(
     proof.contains_type(expected_whitelist_type)
 }
 
-fn assert_whitelisted(ctx: &Context<DepositGem>) -> ProgramResult {
+fn assert_whitelisted(ctx: &Context<DepositGem>) -> Result<()> {
     let bank = &*ctx.accounts.bank;
     let mint = &*ctx.accounts.gem_mint;
     let remaining_accs = &mut ctx.remaining_accounts.iter();
@@ -189,11 +192,11 @@ fn assert_whitelisted(ctx: &Context<DepositGem>) -> ProgramResult {
     }
 
     // if both conditions above failed tok return Ok(()), then verification failed
-    Err(ErrorCode::NotWhitelisted.into())
+    Err(error!(ErrorCode::NotWhitelisted))
 }
 
 /// if rarity account is present, extract rarities from there - else use 1 * amount
-pub fn calc_rarity_points(gem_rarity: &AccountInfo, amount: u64) -> Result<u64, ProgramError> {
+pub fn calc_rarity_points(gem_rarity: &AccountInfo, amount: u64) -> Result<u64> {
     if !gem_rarity.data_is_empty() {
         let rarity_account = Account::<Rarity>::try_from(gem_rarity)?;
         amount.try_mul(rarity_account.points as u64)
@@ -202,7 +205,7 @@ pub fn calc_rarity_points(gem_rarity: &AccountInfo, amount: u64) -> Result<u64, 
     }
 }
 
-pub fn handler(ctx: Context<DepositGem>, amount: u64) -> ProgramResult {
+pub fn handler(ctx: Context<DepositGem>, amount: u64) -> Result<()> {
     // if even a single whitelist exists, verify the token against it
     let bank = &*ctx.accounts.bank;
 
@@ -215,7 +218,7 @@ pub fn handler(ctx: Context<DepositGem>, amount: u64) -> ProgramResult {
     let vault = &ctx.accounts.vault;
 
     if vault.access_suspended(bank.flags)? {
-        return Err(ErrorCode::VaultAccessSuspended.into());
+        return Err(error!(ErrorCode::VaultAccessSuspended));
     }
 
     // do the transfer
@@ -246,7 +249,7 @@ pub fn handler(ctx: Context<DepositGem>, amount: u64) -> ProgramResult {
     // this check is semi-useless but won't hurt
     if gdr.gem_count != gem_box.amount.try_add(amount)? {
         // msg!("{} {}", gdr.gem_count, gem_box.amount);
-        return Err(ErrorCode::AmountMismatch.into());
+        return Err(error!(ErrorCode::AmountMismatch));
     }
 
     // msg!("{} gems deposited into {} gem box", amount, gem_box.key());

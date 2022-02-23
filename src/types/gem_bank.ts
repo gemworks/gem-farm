@@ -80,10 +80,6 @@ export type GemBank = {
       ],
       "args": [
         {
-          "name": "bump",
-          "type": "u8"
-        },
-        {
           "name": "owner",
           "type": "publicKey"
         },
@@ -212,14 +208,6 @@ export type GemBank = {
       "args": [
         {
           "name": "bumpAuth",
-          "type": "u8"
-        },
-        {
-          "name": "bumpGemBox",
-          "type": "u8"
-        },
-        {
-          "name": "bumpGdr",
           "type": "u8"
         },
         {
@@ -364,10 +352,6 @@ export type GemBank = {
         }
       ],
       "args": [
-        {
-          "name": "bump",
-          "type": "u8"
-        },
         {
           "name": "whitelistType",
           "type": "u8"
@@ -748,10 +732,6 @@ export const IDL: GemBank = {
       ],
       "args": [
         {
-          "name": "bump",
-          "type": "u8"
-        },
-        {
           "name": "owner",
           "type": "publicKey"
         },
@@ -880,14 +860,6 @@ export const IDL: GemBank = {
       "args": [
         {
           "name": "bumpAuth",
-          "type": "u8"
-        },
-        {
-          "name": "bumpGemBox",
-          "type": "u8"
-        },
-        {
-          "name": "bumpGdr",
           "type": "u8"
         },
         {
@@ -1032,10 +1004,6 @@ export const IDL: GemBank = {
         }
       ],
       "args": [
-        {
-          "name": "bump",
-          "type": "u8"
-        },
         {
           "name": "whitelistType",
           "type": "u8"

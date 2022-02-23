@@ -19,12 +19,12 @@ pub struct SetVaultLock<'info> {
     pub vault: Box<Account<'info, Vault>>,
 }
 
-pub fn handler(ctx: Context<SetVaultLock>, vault_locked: bool) -> ProgramResult {
+pub fn handler(ctx: Context<SetVaultLock>, vault_locked: bool) -> Result<()> {
     let bank = &ctx.accounts.bank;
     let vault = &mut ctx.accounts.vault;
 
     if Bank::read_flags(bank.flags)?.contains(BankFlags::FREEZE_VAULTS) {
-        return Err(ErrorCode::VaultAccessSuspended.into());
+        return Err(error!(ErrorCode::VaultAccessSuspended));
     }
 
     vault.locked = vault_locked;

@@ -78,21 +78,18 @@ impl Farm {
         ]
     }
 
-    pub fn match_reward_by_mint(
-        &mut self,
-        reward_mint: Pubkey,
-    ) -> Result<&mut FarmReward, ProgramError> {
+    pub fn match_reward_by_mint(&mut self, reward_mint: Pubkey) -> Result<&mut FarmReward> {
         let reward_a_mint = self.reward_a.reward_mint;
         let reward_b_mint = self.reward_b.reward_mint;
 
         match reward_mint {
             _ if reward_mint == reward_a_mint => Ok(&mut self.reward_a),
             _ if reward_mint == reward_b_mint => Ok(&mut self.reward_b),
-            _ => Err(ErrorCode::UnknownRewardMint.into()),
+            _ => Err(error!(ErrorCode::UnknownRewardMint)),
         }
     }
 
-    pub fn lock_reward_by_mint(&mut self, reward_mint: Pubkey) -> ProgramResult {
+    pub fn lock_reward_by_mint(&mut self, reward_mint: Pubkey) -> Result<()> {
         let reward = self.match_reward_by_mint(reward_mint)?;
         reward.lock_reward()
     }
@@ -103,16 +100,12 @@ impl Farm {
         reward_mint: Pubkey,
         variable_rate_config: Option<VariableRateConfig>,
         fixed_rate_config: Option<FixedRateConfig>,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         let reward = self.match_reward_by_mint(reward_mint)?;
         reward.fund_reward_by_type(now_ts, variable_rate_config, fixed_rate_config)
     }
 
-    pub fn cancel_reward_by_mint(
-        &mut self,
-        now_ts: u64,
-        reward_mint: Pubkey,
-    ) -> Result<u64, ProgramError> {
+    pub fn cancel_reward_by_mint(&mut self, now_ts: u64, reward_mint: Pubkey) -> Result<u64> {
         let reward = self.match_reward_by_mint(reward_mint)?;
         reward.cancel_reward_by_type(now_ts)
     }
@@ -122,7 +115,7 @@ impl Farm {
         now_ts: u64,
         mut farmer: Option<&mut Account<Farmer>>,
         reenroll: bool, //relevant for fixed only
-    ) -> ProgramResult {
+    ) -> Result<()> {
         // reward a
         let (farmer_points_staked, farmer_reward_a) = match farmer {
             Some(ref mut farmer) => (
@@ -161,7 +154,7 @@ impl Farm {
         gems_in_vault: u64,
         rarity_points_in_vault: u64,
         farmer: &mut Account<Farmer>,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         // update farmer
         farmer.begin_staking(
             self.config.min_staking_period_sec,
@@ -202,7 +195,7 @@ impl Farm {
         Ok(())
     }
 
-    pub fn end_staking(&mut self, now_ts: u64, farmer: &mut Account<Farmer>) -> ProgramResult {
+    pub fn end_staking(&mut self, now_ts: u64, farmer: &mut Account<Farmer>) -> Result<()> {
         match farmer.state {
             FarmerState::Unstaked => Ok(msg!("already unstaked!")),
             FarmerState::Staked => {
@@ -244,7 +237,7 @@ impl Farm {
         extra_gems: u64,
         extra_rarity_points: u64,
         farmer: &mut Account<Farmer>,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         // update farmer
         let (_previous_gems, previous_rarity_points) = farmer.begin_staking(
             self.config.min_staking_period_sec,
@@ -322,7 +315,7 @@ pub struct FundsTracker {
 }
 
 impl FundsTracker {
-    pub fn pending_amount(&self) -> Result<u64, ProgramError> {
+    pub fn pending_amount(&self) -> Result<u64> {
         self.total_funded
             .try_sub(self.total_refunded)?
             .try_sub(self.total_accrued_to_stakers)
@@ -345,11 +338,11 @@ pub struct TimeTracker {
 }
 
 impl TimeTracker {
-    pub fn reward_begin_ts(&self) -> Result<u64, ProgramError> {
+    pub fn reward_begin_ts(&self) -> Result<u64> {
         self.reward_end_ts.try_sub(self.duration_sec)
     }
 
-    pub fn remaining_duration(&self, now_ts: u64) -> Result<u64, ProgramError> {
+    pub fn remaining_duration(&self, now_ts: u64) -> Result<u64> {
         if now_ts >= self.reward_end_ts {
             return Ok(0);
         }
@@ -357,11 +350,11 @@ impl TimeTracker {
         self.reward_end_ts.try_sub(now_ts)
     }
 
-    pub fn passed_duration(&self, now_ts: u64) -> Result<u64, ProgramError> {
+    pub fn passed_duration(&self, now_ts: u64) -> Result<u64> {
         self.duration_sec.try_sub(self.remaining_duration(now_ts)?)
     }
 
-    pub fn end_reward(&mut self, now_ts: u64) -> ProgramResult {
+    pub fn end_reward(&mut self, now_ts: u64) -> Result<()> {
         self.duration_sec
             .try_sub_assign(self.remaining_duration(now_ts)?)?;
         self.reward_end_ts = std::cmp::min(now_ts, self.reward_end_ts);
@@ -375,7 +368,7 @@ impl TimeTracker {
     }
 
     /// returns whichever comes last - beginning of the reward, or beginning of farmer's staking
-    pub fn reward_lower_bound(&self, farmer_begin_staking_ts: u64) -> Result<u64, ProgramError> {
+    pub fn reward_lower_bound(&self, farmer_begin_staking_ts: u64) -> Result<u64> {
         Ok(std::cmp::max(
             self.reward_begin_ts()?,
             farmer_begin_staking_ts,
@@ -414,7 +407,7 @@ impl FarmReward {
     /// (!) THIS OPERATION IS IRREVERSIBLE
     /// locking ensures the committed reward cannot be withdrawn/changed by a malicious farm operator
     /// once locked, any funding / cancellation ixs become non executable until reward_ned_ts is reached
-    fn lock_reward(&mut self) -> ProgramResult {
+    fn lock_reward(&mut self) -> Result<()> {
         self.times.lock_end_ts = self.times.reward_end_ts;
 
         // msg!("locked reward up to {}", self.times.reward_end_ts);
@@ -430,9 +423,9 @@ impl FarmReward {
         now_ts: u64,
         variable_rate_config: Option<VariableRateConfig>,
         fixed_rate_config: Option<FixedRateConfig>,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         if self.is_locked(now_ts) {
-            return Err(ErrorCode::RewardLocked.into());
+            return Err(error!(ErrorCode::RewardLocked));
         }
 
         match self.reward_type {
@@ -451,9 +444,9 @@ impl FarmReward {
         }
     }
 
-    fn cancel_reward_by_type(&mut self, now_ts: u64) -> Result<u64, ProgramError> {
+    fn cancel_reward_by_type(&mut self, now_ts: u64) -> Result<u64> {
         if self.is_locked(now_ts) {
-            return Err(ErrorCode::RewardLocked.into());
+            return Err(error!(ErrorCode::RewardLocked));
         }
 
         match self.reward_type {
@@ -475,7 +468,7 @@ impl FarmReward {
         farmer_rarity_points_staked: Option<u64>,
         farmer_reward: Option<&mut FarmerReward>,
         reenroll: bool,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         match self.reward_type {
             RewardType::Variable => self.variable_rate.update_accrued_reward(
                 now_ts,

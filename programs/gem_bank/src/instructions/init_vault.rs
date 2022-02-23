@@ -6,7 +6,6 @@ use gem_common::*;
 use crate::state::*;
 
 #[derive(Accounts)]
-#[instruction(bump: u8)]
 pub struct InitVault<'info> {
     // bank
     #[account(mut)]
@@ -18,7 +17,7 @@ pub struct InitVault<'info> {
             bank.key().as_ref(),
             creator.key().as_ref(),
         ],
-        bump = bump,
+        bump,
         payer = payer,
         space = 8 + std::mem::size_of::<Vault>())]
     pub vault: Box<Account<'info, Vault>>,
@@ -30,7 +29,7 @@ pub struct InitVault<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(ctx: Context<InitVault>, owner: Pubkey, name: String) -> ProgramResult {
+pub fn handler(ctx: Context<InitVault>, owner: Pubkey, name: String) -> Result<()> {
     // record total number of vaults in bank's state
     let bank = &mut ctx.accounts.bank;
     let vault = &mut ctx.accounts.vault;

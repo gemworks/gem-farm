@@ -18,6 +18,7 @@ pub struct FlashDeposit<'info> {
     #[account(mut, has_one = farm_authority)]
     pub farm: Box<Account<'info, Farm>>,
     //skipping seeds verification to save compute budget, has_one check above should be enough
+    /// CHECK:
     pub farm_authority: AccountInfo<'info>,
 
     // farmer
@@ -36,16 +37,20 @@ pub struct FlashDeposit<'info> {
     pub bank: Box<Account<'info, Bank>>,
     #[account(mut)]
     pub vault: Box<Account<'info, Vault>>,
+    /// CHECK:
     pub vault_authority: AccountInfo<'info>,
     // trying to deserialize here leads to errors (doesn't exist yet)
+    /// CHECK:
     #[account(mut)]
     pub gem_box: AccountInfo<'info>,
     // trying to deserialize here leads to errors (doesn't exist yet)
+    /// CHECK:
     #[account(mut)]
     pub gem_deposit_receipt: AccountInfo<'info>,
     #[account(mut)]
     pub gem_source: Box<Account<'info, TokenAccount>>,
     pub gem_mint: Box<Account<'info, Mint>>,
+    /// CHECK:
     pub gem_rarity: AccountInfo<'info>,
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
@@ -94,11 +99,9 @@ impl<'info> FlashDeposit<'info> {
 pub fn handler<'a, 'b, 'c, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, FlashDeposit<'info>>,
     bump_vault_auth: u8,
-    bump_gem_box: u8,
-    bump_gdr: u8,
     bump_rarity: u8,
     amount: u64,
-) -> ProgramResult {
+) -> Result<()> {
     // flash deposit a gem into a locked vault
     gem_bank::cpi::set_vault_lock(
         ctx.accounts
@@ -112,8 +115,6 @@ pub fn handler<'a, 'b, 'c, 'info>(
             .deposit_gem_ctx()
             .with_remaining_accounts(ctx.remaining_accounts.to_vec()),
         bump_vault_auth,
-        bump_gem_box,
-        bump_gdr,
         bump_rarity,
         amount,
     )?;

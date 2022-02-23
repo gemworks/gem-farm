@@ -10,7 +10,6 @@ use crate::state::*;
 const FEE_LAMPORTS: u64 = 5_000_000; // 0.005 SOL per farmer
 
 #[derive(Accounts)]
-#[instruction(bump_farmer: u8, bump_vault: u8)]
 pub struct InitFarmer<'info> {
     // farm
     #[account(mut, has_one = bank)]
@@ -22,7 +21,7 @@ pub struct InitFarmer<'info> {
             farm.key().as_ref(),
             identity.key().as_ref(),
         ],
-        bump = bump_farmer,
+        bump,
         payer = payer,
         space = 8 + std::mem::size_of::<Farmer>())]
     pub farmer: Box<Account<'info, Farmer>>,
@@ -32,6 +31,7 @@ pub struct InitFarmer<'info> {
     #[account(mut)]
     pub bank: Box<Account<'info, Bank>>,
     // trying to deserialize here leads to errors (doesn't exist yet)
+    /// CHECK:
     #[account(mut)]
     pub vault: AccountInfo<'info>,
     pub gem_bank: Program<'info, GemBank>,
@@ -39,6 +39,7 @@ pub struct InitFarmer<'info> {
     // misc
     #[account(mut)]
     pub payer: Signer<'info>,
+    /// CHECK:
     #[account(mut, address = Pubkey::from_str(FEE_WALLET).unwrap())]
     pub fee_acc: AccountInfo<'info>,
     pub system_program: Program<'info, System>,
@@ -59,7 +60,7 @@ impl<'info> InitFarmer<'info> {
         )
     }
 
-    fn transfer_fee(&self) -> ProgramResult {
+    fn transfer_fee(&self) -> Result<()> {
         invoke(
             &system_instruction::transfer(self.payer.key, self.fee_acc.key, FEE_LAMPORTS),
             &[
@@ -68,10 +69,11 @@ impl<'info> InitFarmer<'info> {
                 self.system_program.to_account_info(),
             ],
         )
+        .map_err(Into::into)
     }
 }
 
-pub fn handler(ctx: Context<InitFarmer>, bump_vault: u8) -> ProgramResult {
+pub fn handler(ctx: Context<InitFarmer>) -> Result<()> {
     // record new farmer details
     let farmer = &mut ctx.accounts.farmer;
 
@@ -90,12 +92,7 @@ pub fn handler(ctx: Context<InitFarmer>, bump_vault: u8) -> ProgramResult {
     let vault_owner = ctx.accounts.identity.key();
     let vault_name = String::from("farm_vault");
 
-    gem_bank::cpi::init_vault(
-        ctx.accounts.init_vault_ctx(),
-        bump_vault,
-        vault_owner,
-        vault_name,
-    )?;
+    gem_bank::cpi::init_vault(ctx.accounts.init_vault_ctx(), vault_owner, vault_name)?;
 
     //collect a fee for starting a farm
     ctx.accounts.transfer_fee()?;

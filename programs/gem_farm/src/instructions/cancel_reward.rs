@@ -15,6 +15,7 @@ pub struct CancelReward<'info> {
     pub farm: Box<Account<'info, Farm>>,
     #[account(mut)]
     pub farm_manager: Signer<'info>,
+    /// CHECK:
     #[account(seeds = [farm.key().as_ref()], bump = bump_auth)]
     pub farm_authority: AccountInfo<'info>,
 
@@ -33,6 +34,7 @@ pub struct CancelReward<'info> {
     pub reward_destination: Box<Account<'info, TokenAccount>>,
     pub reward_mint: Box<Account<'info, Mint>>,
     // unlike with funding, cancelled proceeds can be sent anywhere
+    /// CHECK:
     #[account(mut)]
     pub receiver: AccountInfo<'info>,
 
@@ -56,7 +58,7 @@ impl<'info> CancelReward<'info> {
     }
 }
 
-pub fn handler(ctx: Context<CancelReward>) -> ProgramResult {
+pub fn handler(ctx: Context<CancelReward>) -> Result<()> {
     // update existing rewards
     let farm = &mut ctx.accounts.farm;
     let now_ts = now_ts()?;

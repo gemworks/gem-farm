@@ -4,7 +4,6 @@ use gem_common::*;
 use crate::state::*;
 
 #[derive(Accounts)]
-#[instruction(bump: u8)]
 pub struct AddToWhitelist<'info> {
     // bank
     #[account(mut, has_one = bank_manager)]
@@ -12,6 +11,7 @@ pub struct AddToWhitelist<'info> {
     pub bank_manager: Signer<'info>,
 
     // whitelist
+    /// CHECK:
     pub address_to_whitelist: AccountInfo<'info>,
     // must stay init_as_needed, otherwise no way to change afterwards
     #[account(init_if_needed,
@@ -20,7 +20,7 @@ pub struct AddToWhitelist<'info> {
             bank.key().as_ref(),
             address_to_whitelist.key().as_ref(),
         ],
-        bump = bump,
+        bump,
         payer = payer,
         space = 8 + std::mem::size_of::<WhitelistProof>())]
     pub whitelist_proof: Box<Account<'info, WhitelistProof>>,
@@ -31,7 +31,7 @@ pub struct AddToWhitelist<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(ctx: Context<AddToWhitelist>, whitelist_type: u8) -> ProgramResult {
+pub fn handler(ctx: Context<AddToWhitelist>, whitelist_type: u8) -> Result<()> {
     // create/update whitelist proof
     let proof = &mut ctx.accounts.whitelist_proof;
 

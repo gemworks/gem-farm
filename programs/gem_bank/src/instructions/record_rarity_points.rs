@@ -41,7 +41,7 @@ pub struct RecordRarityPoints<'info> {
 pub fn handler<'a, 'b, 'c, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, RecordRarityPoints<'info>>,
     rarity_configs: Vec<RarityConfig>,
-) -> ProgramResult {
+) -> Result<()> {
     let remaining_accs = &mut ctx.remaining_accounts.iter();
 
     // the limiting factor here is actually not compute budget, but tx size client-side
@@ -100,7 +100,7 @@ fn create_pda_with_space<'info>(
     owner: &Pubkey,
     funder_info: &AccountInfo<'info>,
     system_program_info: &AccountInfo<'info>,
-) -> ProgramResult {
+) -> Result<()> {
     //create a PDA and allocate space inside of it at the same time
     //can only be done from INSIDE the program
     //based on https://github.com/solana-labs/solana-program-library/blob/7c8e65292a6ebc90de54468c665e30bc590c513a/feature-proposal/program/src/processor.rs#L148-L163
@@ -119,4 +119,5 @@ fn create_pda_with_space<'info>(
         ],
         &[pda_seeds], //this is the part you can't do outside the program
     )
+    .map_err(Into::into)
 }

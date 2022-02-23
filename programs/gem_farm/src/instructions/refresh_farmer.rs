@@ -19,10 +19,11 @@ pub struct RefreshFarmer<'info> {
         bump = bump)]
     pub farmer: Box<Account<'info, Farmer>>,
     //not a signer intentionally
+    /// CHECK:
     pub identity: AccountInfo<'info>,
 }
 
-pub fn handler(ctx: Context<RefreshFarmer>) -> ProgramResult {
+pub fn handler(ctx: Context<RefreshFarmer>) -> Result<()> {
     let farm = &mut ctx.accounts.farm;
     let farmer = &mut ctx.accounts.farmer;
     let now_ts = now_ts()?;

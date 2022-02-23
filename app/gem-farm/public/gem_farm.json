@@ -91,14 +91,6 @@
           "type": "u8"
         },
         {
-          "name": "bumpPotA",
-          "type": "u8"
-        },
-        {
-          "name": "bumpPotB",
-          "type": "u8"
-        },
-        {
           "name": "rewardTypeA",
           "type": {
             "defined": "RewardType"
@@ -248,10 +240,6 @@
           "type": "u8"
         },
         {
-          "name": "bumpWl",
-          "type": "u8"
-        },
-        {
           "name": "whitelistType",
           "type": "u8"
         }
@@ -356,16 +344,7 @@
           "isSigner": false
         }
       ],
-      "args": [
-        {
-          "name": "bumpFarmer",
-          "type": "u8"
-        },
-        {
-          "name": "bumpVault",
-          "type": "u8"
-        }
-      ]
+      "args": []
     },
     {
       "name": "stake",
@@ -672,14 +651,6 @@
           "type": "u8"
         },
         {
-          "name": "bumpGemBox",
-          "type": "u8"
-        },
-        {
-          "name": "bumpGdr",
-          "type": "u8"
-        },
-        {
           "name": "bumpRarity",
           "type": "u8"
         },
@@ -774,12 +745,7 @@
           "isSigner": false
         }
       ],
-      "args": [
-        {
-          "name": "bump",
-          "type": "u8"
-        }
-      ]
+      "args": []
     },
     {
       "name": "deauthorizeFunder",

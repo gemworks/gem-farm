@@ -21,7 +21,7 @@ pub struct RefreshFarmerSigned<'info> {
     pub identity: Signer<'info>, // <--- the diff
 }
 
-pub fn handler(ctx: Context<RefreshFarmerSigned>, reenroll: bool) -> ProgramResult {
+pub fn handler(ctx: Context<RefreshFarmerSigned>, reenroll: bool) -> Result<()> {
     let farm = &mut ctx.accounts.farm;
     let farmer = &mut ctx.accounts.farmer;
     let now_ts = now_ts()?;

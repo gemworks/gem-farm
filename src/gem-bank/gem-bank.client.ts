@@ -238,7 +238,7 @@ export class GemBankClient extends AccountUtils {
     if (isKp(payer)) signers.push(<Keypair>payer);
 
     console.log('creating vault at', vault.toBase58());
-    const txSig = await this.bankProgram.rpc.initVault(vaultBump, owner, name, {
+    const txSig = await this.bankProgram.rpc.initVault(owner, name, {
       accounts: {
         bank,
         vault,
@@ -366,8 +366,6 @@ export class GemBankClient extends AccountUtils {
     );
     const txSig = await this.bankProgram.rpc.depositGem(
       vaultAuthBump,
-      gemBoxBump,
-      GDRBump,
       gemRarityBump,
       gemAmount,
       {
@@ -488,21 +486,17 @@ export class GemBankClient extends AccountUtils {
     const signers = [];
     if (isKp(bankManager)) signers.push(<Keypair>bankManager);
 
-    const txSig = await this.bankProgram.rpc.addToWhitelist(
-      whitelistBump,
-      whitelistType,
-      {
-        accounts: {
-          bank,
-          bankManager: managerPk,
-          addressToWhitelist,
-          whitelistProof,
-          systemProgram: SystemProgram.programId,
-          payer: payer ?? managerPk,
-        },
-        signers,
-      }
-    );
+    const txSig = await this.bankProgram.rpc.addToWhitelist(whitelistType, {
+      accounts: {
+        bank,
+        bankManager: managerPk,
+        addressToWhitelist,
+        whitelistProof,
+        systemProgram: SystemProgram.programId,
+        payer: payer ?? managerPk,
+      },
+      signers,
+    });
 
     return { whitelistProof, whitelistBump, txSig };
   }

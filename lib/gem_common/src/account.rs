@@ -7,7 +7,7 @@ use crate::{errors::ErrorCode, try_math::*};
 pub fn close_account(
     pda_to_close: &mut AccountInfo,
     sol_destination: &mut AccountInfo,
-) -> ProgramResult {
+) -> Result<()> {
     // Transfer tokens from the account to the sol_destination.
     let dest_starting_lamports = sol_destination.lamports();
     **sol_destination.lamports.borrow_mut() =
@@ -20,6 +20,6 @@ pub fn close_account(
     let mut cursor = std::io::Cursor::new(dst);
     cursor
         .write_all(&CLOSED_ACCOUNT_DISCRIMINATOR)
-        .map_err(|_| ErrorCode::AnchorSerializationIssue)?;
+        .map_err(|_| error!(ErrorCode::AnchorSerializationIssue))?;
     Ok(())
 }

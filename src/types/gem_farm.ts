@@ -91,14 +91,6 @@ export type GemFarm = {
           "type": "u8"
         },
         {
-          "name": "bumpPotA",
-          "type": "u8"
-        },
-        {
-          "name": "bumpPotB",
-          "type": "u8"
-        },
-        {
           "name": "rewardTypeA",
           "type": {
             "defined": "RewardType"
@@ -248,10 +240,6 @@ export type GemFarm = {
           "type": "u8"
         },
         {
-          "name": "bumpWl",
-          "type": "u8"
-        },
-        {
           "name": "whitelistType",
           "type": "u8"
         }
@@ -356,16 +344,7 @@ export type GemFarm = {
           "isSigner": false
         }
       ],
-      "args": [
-        {
-          "name": "bumpFarmer",
-          "type": "u8"
-        },
-        {
-          "name": "bumpVault",
-          "type": "u8"
-        }
-      ]
+      "args": []
     },
     {
       "name": "stake",
@@ -672,14 +651,6 @@ export type GemFarm = {
           "type": "u8"
         },
         {
-          "name": "bumpGemBox",
-          "type": "u8"
-        },
-        {
-          "name": "bumpGdr",
-          "type": "u8"
-        },
-        {
           "name": "bumpRarity",
           "type": "u8"
         },
@@ -774,12 +745,7 @@ export type GemFarm = {
           "isSigner": false
         }
       ],
-      "args": [
-        {
-          "name": "bump",
-          "type": "u8"
-        }
-      ]
+      "args": []
     },
     {
       "name": "deauthorizeFunder",
@@ -1751,14 +1717,6 @@ export const IDL: GemFarm = {
           "type": "u8"
         },
         {
-          "name": "bumpPotA",
-          "type": "u8"
-        },
-        {
-          "name": "bumpPotB",
-          "type": "u8"
-        },
-        {
           "name": "rewardTypeA",
           "type": {
             "defined": "RewardType"
@@ -1908,10 +1866,6 @@ export const IDL: GemFarm = {
           "type": "u8"
         },
         {
-          "name": "bumpWl",
-          "type": "u8"
-        },
-        {
           "name": "whitelistType",
           "type": "u8"
         }
@@ -2016,16 +1970,7 @@ export const IDL: GemFarm = {
           "isSigner": false
         }
       ],
-      "args": [
-        {
-          "name": "bumpFarmer",
-          "type": "u8"
-        },
-        {
-          "name": "bumpVault",
-          "type": "u8"
-        }
-      ]
+      "args": []
     },
     {
       "name": "stake",
@@ -2332,14 +2277,6 @@ export const IDL: GemFarm = {
           "type": "u8"
         },
         {
-          "name": "bumpGemBox",
-          "type": "u8"
-        },
-        {
-          "name": "bumpGdr",
-          "type": "u8"
-        },
-        {
           "name": "bumpRarity",
           "type": "u8"
         },
@@ -2434,12 +2371,7 @@ export const IDL: GemFarm = {
           "isSigner": false
         }
       ],
-      "args": [
-        {
-          "name": "bump",
-          "type": "u8"
-        }
-      ]
+      "args": []
     },
     {
       "name": "deauthorizeFunder",

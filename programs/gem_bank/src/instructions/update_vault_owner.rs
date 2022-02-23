@@ -15,12 +15,12 @@ pub struct UpdateVaultOwner<'info> {
     pub owner: Signer<'info>,
 }
 
-pub fn handler(ctx: Context<UpdateVaultOwner>, new_owner: Pubkey) -> ProgramResult {
+pub fn handler(ctx: Context<UpdateVaultOwner>, new_owner: Pubkey) -> Result<()> {
     let bank = &ctx.accounts.bank;
     let vault = &mut ctx.accounts.vault;
 
     if Bank::read_flags(bank.flags)?.contains(BankFlags::FREEZE_VAULTS) {
-        return Err(ErrorCode::VaultAccessSuspended.into());
+        return Err(error!(ErrorCode::VaultAccessSuspended));
     }
 
     vault.owner = new_owner;

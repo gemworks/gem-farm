@@ -15,6 +15,7 @@ pub struct Stake<'info> {
     // farm
     #[account(mut, has_one = farm_authority, has_one = bank)]
     pub farm: Box<Account<'info, Farm>>,
+    /// CHECK:
     #[account(seeds = [farm.key().as_ref()], bump = bump_auth)]
     pub farm_authority: AccountInfo<'info>,
 
@@ -51,9 +52,9 @@ impl<'info> Stake<'info> {
     }
 }
 
-pub fn handler(ctx: Context<Stake>) -> ProgramResult {
+pub fn handler(ctx: Context<Stake>) -> Result<()> {
     if ctx.accounts.vault.gem_count == 0 {
-        return Err(ErrorCode::VaultIsEmpty.into());
+        return Err(error!(ErrorCode::VaultIsEmpty));
     }
 
     // lock the vault so the user can't withdraw their gems
