@@ -100,6 +100,7 @@ pub fn handler(
     reward_type_a: RewardType,
     reward_type_b: RewardType,
     farm_config: FarmConfig,
+    max_counts: Option<MaxCounts>,
 ) -> Result<()> {
     //record new farm details
     let farm = &mut ctx.accounts.farm;
@@ -122,6 +123,10 @@ pub fn handler(
     farm.reward_b.reward_pot = ctx.accounts.reward_b_pot.key();
     farm.reward_b.reward_type = reward_type_b;
     farm.reward_b.fixed_rate.schedule = FixedRateSchedule::default(); //denom to 1
+
+    if let Some(max_counts) = max_counts {
+        farm.max_counts = max_counts;
+    }
 
     //do a cpi call to start a new bank
     gem_bank::cpi::init_bank(

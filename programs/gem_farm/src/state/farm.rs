@@ -18,6 +18,18 @@ pub struct FarmConfig {
     pub unstaking_fee_lamp: u64,
 }
 
+/// refers to staked counts
+#[proc_macros::assert_size(12)]
+#[repr(C)]
+#[derive(Debug, Copy, Clone, AnchorSerialize, AnchorDeserialize)]
+pub struct MaxCounts {
+    pub max_farmers: u32,
+
+    pub max_gems: u32,
+
+    pub max_rarity_points: u32,
+}
+
 #[proc_macros::assert_size(1000)] // + 5 to make it /8
 #[repr(C)]
 #[account]
@@ -66,11 +78,53 @@ pub struct Farm {
 
     pub reward_b: FarmReward,
 
+    // ----------------- extra
+    pub max_counts: MaxCounts,
+
     /// reserved for future updates, has to be /8
-    _reserved: [u8; 64],
+    _reserved: [u8; 32],
+    _reserved2: [u8; 16],
+    _reserved3: [u8; 4],
 }
 
 impl Farm {
+    fn assert_valid_max_counts(&self) -> Result<()> {
+        self.assert_not_too_many_farmers()?;
+        self.assert_not_too_many_gems()?;
+        self.assert_not_too_many_rarity_points()?;
+        Ok(())
+    }
+
+    fn assert_not_too_many_farmers(&self) -> Result<()> {
+        if self.max_counts.max_farmers > 0 {
+            require!(
+                self.staked_farmer_count.try_cast()? <= self.max_counts.max_farmers,
+                ErrorCode::TooManyFarmersStaked
+            )
+        }
+        Ok(())
+    }
+
+    fn assert_not_too_many_gems(&self) -> Result<()> {
+        if self.max_counts.max_gems > 0 {
+            require!(
+                self.gems_staked.try_cast()? <= self.max_counts.max_gems,
+                ErrorCode::TooManyGemsStaked
+            )
+        }
+        Ok(())
+    }
+
+    fn assert_not_too_many_rarity_points(&self) -> Result<()> {
+        if self.max_counts.max_rarity_points > 0 {
+            require!(
+                self.rarity_points_staked.try_cast()? <= self.max_counts.max_rarity_points,
+                ErrorCode::TooManyRarityPointsStaked
+            )
+        }
+        Ok(())
+    }
+
     pub fn farm_seeds(&self) -> [&[u8]; 2] {
         [
             self.farm_authority_seed.as_ref(),
@@ -168,6 +222,8 @@ impl Farm {
         self.gems_staked.try_add_assign(gems_in_vault)?;
         self.rarity_points_staked
             .try_add_assign(rarity_points_in_vault)?;
+
+        self.assert_valid_max_counts()?;
 
         // fixed-rate only - we need to do some extra book-keeping
         if self.reward_a.reward_type == RewardType::Fixed {

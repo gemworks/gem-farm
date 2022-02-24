@@ -22,9 +22,17 @@ pub mod gem_farm {
         reward_type_a: RewardType,
         reward_type_b: RewardType,
         farm_config: FarmConfig,
+        max_counts: Option<MaxCounts>,
     ) -> Result<()> {
         msg!("init farm");
-        instructions::init_farm::handler(ctx, bump_auth, reward_type_a, reward_type_b, farm_config)
+        instructions::init_farm::handler(
+            ctx,
+            bump_auth,
+            reward_type_a,
+            reward_type_b,
+            farm_config,
+            max_counts,
+        )
     }
 
     pub fn update_farm(

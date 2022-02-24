@@ -48,6 +48,12 @@ export interface FarmConfig {
   unstakingFeeLamp: BN;
 }
 
+export interface MaxCounts {
+  maxFarmers: number;
+  maxGems: number;
+  maxRarityPoints: number;
+}
+
 export interface TierConfig {
   rewardRate: BN;
   requiredTenure: BN;
@@ -210,7 +216,8 @@ export class GemFarmClient extends GemBankClient {
     rewardAType: any, //RewardType instance
     rewardBMint: PublicKey,
     rewardBType: any, //RewardType instance
-    farmConfig: FarmConfig
+    farmConfig: FarmConfig,
+    maxCounts?: MaxCounts
   ) {
     const [farmAuth, farmAuthBump] = await findFarmAuthorityPDA(farm.publicKey);
     const [farmTreasury, farmTreasuryBump] = await findFarmTreasuryPDA(
@@ -235,6 +242,7 @@ export class GemFarmClient extends GemBankClient {
       rewardAType,
       rewardBType,
       farmConfig,
+      maxCounts ?? null,
       {
         accounts: {
           farm: farm.publicKey,

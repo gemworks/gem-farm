@@ -144,6 +144,6 @@ pub fn handler(ctx: Context<WithdrawGem>, amount: u64) -> Result<()> {
         .rarity_points
         .try_sub_assign(calc_rarity_points(&ctx.accounts.gem_rarity, amount)?)?;
 
-    msg!("{} gems withdrawn from ${} gem box", amount, gem_box.key());
+    //msg!("{} gems withdrawn from ${} gem box", amount, gem_box.key());
     Ok(())
 }

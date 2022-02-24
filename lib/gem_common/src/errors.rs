@@ -97,9 +97,15 @@ pub enum ErrorCode {
     #[msg("wrong metadata account, gem mint doesn't match")]
     WrongMetadata,
 
-    Reserved48,
-    Reserved49,
-    Reserved50,
+    #[msg("max farmer count exceeded")]
+    TooManyFarmersStaked, //0x17a0
+
+    #[msg("max gems exceeded")]
+    TooManyGemsStaked, //0x17a1
+
+    #[msg("max rarity points exceeded")]
+    TooManyRarityPointsStaked, //0x17a2
+
     Reserved51,
     Reserved52,
     Reserved53,
