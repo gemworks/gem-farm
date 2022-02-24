@@ -671,7 +671,7 @@ export class GemFarmClient extends GemBankClient {
         isSigner: false,
       });
 
-    const signers = [];
+    const signers: Keypair[] = [];
     if (isKp(farmerIdentity)) signers.push(<Keypair>farmerIdentity);
 
     console.log('flash depositing on behalf of', identityPk.toBase58());
@@ -706,11 +706,18 @@ export class GemFarmClient extends GemBankClient {
     //will have no effect on solana networks < 1.9.2
     const extraComputeIx = this.createExtraComputeIx(256000);
 
-    const tx = new Transaction();
+    //craft transaction
+    let tx = new Transaction({
+      feePayer: this.wallet.publicKey,
+      recentBlockhash: (await this.conn.getRecentBlockhash()).blockhash,
+    });
     tx.add(extraComputeIx);
     tx.add(flashDepositIx);
-
-    const txSig = await this.conn.sendTransaction(tx, signers);
+    tx = await this.wallet.signTransaction(tx);
+    if (signers.length > 0) {
+      tx.partialSign(...signers);
+    }
+    const txSig = await this.conn.sendRawTransaction(tx.serialize());
 
     return {
       farmer,

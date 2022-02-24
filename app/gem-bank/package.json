@@ -12,7 +12,7 @@
     "update:anchor": "yarn upgrade @project-serum/anchor --latest --check-files"
   },
   "dependencies": {
-    "@gemworks/gem-farm-ts": "^0.22.2",
+    "@gemworks/gem-farm-ts": "^0.22.6",
     "@metaplex/js": "^4.9.0",
     "@project-serum/anchor": "0.22.0",
     "@solana/spl-token": "^0.1.8",
