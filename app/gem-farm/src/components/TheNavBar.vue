@@ -22,8 +22,8 @@ export default defineComponent({
     const path = computed(() => route.path);
 
     const menu = [
-      { name: '/', url: '/' },
-      { name: 'FARM MANAGER', url: '/manager' },
+     // { name: '/', url: '/' },
+     // { name: 'FARM MANAGER', url: '/manager' },
       { name: 'FARMER', url: '/farmer' },
     ];
 

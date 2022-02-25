@@ -1,22 +1,22 @@
 <template>
-  <div class="nes-container with-title">
+  <div class="text-blue-400 with-title">
     <p class="title">Your Staking Account</p>
     <div class="mb-2">
       state:
-      <p class="inline-block bg-yellow-200">
+      <p class="inline-block bg-green-200">
         {{ parseFarmerState(farmerAcc) }}
       </p>
     </div>
-    <div class="mb-2">Your identity: {{ farmerAcc.identity.toBase58() }}</div>
-    <div class="mb-2">Associated vault: {{ farmerAcc.vault.toBase58() }}</div>
-    <div class="mb-2">Gems staked: {{ farmerAcc.gemsStaked }}</div>
-    <div class="mb-2">
+    <div class="mb-2">Your wallet is: {{ farmerAcc.identity.toBase58() }}</div>
+    <!-- <div class="mb-2">Associated vault: {{ farmerAcc.vault.toBase58() }}</div> -->
+    <div class="mb-2">RAF NFTs staked: {{ farmerAcc.gemsStaked }}</div>
+   <!-- <div class="mb-2">
       Min staking ends: {{ parseDate(farmerAcc.minStakingEndsTs) }}
     </div>
     <div class="mb-5">
       Cooldown ends: {{ parseDate(farmerAcc.cooldownEndsTs) }}
     </div>
-
+    -->
     <div class="flex mb-5">
       <div class="flex-1 mr-5">
         <FarmerRewardDisplay
@@ -26,7 +26,7 @@
           title="Reward A"
         />
       </div>
-      <div class="flex-1">
+      <!-- <div class="flex-1">
         <FarmerRewardDisplay
           :key="farmerAcc.rewardB"
           :farmReward="farmAcc.rewardB"
@@ -34,6 +34,7 @@
           title="Reward B"
         />
       </div>
+      -->
     </div>
     <button class="nes-btn is-primary mb-5" @click="refreshFarmer">
       Refresh account

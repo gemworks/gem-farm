@@ -1,8 +1,16 @@
 <template>
-  <ConfigPane />
-  <div v-if="!wallet" class="text-center">Pls connect (burner) wallet</div>
+  <div v-if="!wallet" class="text-blue-400 text-center">Pls connect (burner) wallet</div> 
   <div v-else>
-    <!--farm address-->
+   <!--farm address-->
+    <div class="with-title mb-10">
+      <div class="text-blue-400">Choose a staking farm</div>
+      <select v-model="farm">
+        <option v-for="option in options" :value="option.value">
+          {{ option.text }} 
+        </option>
+      </select>     
+    </div>
+    <!--
     <div class="nes-container with-title mb-10">
       <p class="title">Connect to a Farm</p>
       <div class="nes-field mb-5">
@@ -10,7 +18,7 @@
         <input id="farm" class="nes-input" v-model="farm" />
       </div>
     </div>
-
+-->
     <div v-if="farmerAcc">
       <FarmerDisplay
         :key="farmerAcc"
@@ -32,7 +40,7 @@
           class="nes-btn is-primary mr-5"
           @click="addGems"
         >
-          Add Gems (resets staking)
+          Add NFT (resets staking)
         </button>
         <button
           v-if="farmerState === 'unstaked'"
@@ -56,7 +64,7 @@
           End cooldown
         </button>
         <button class="nes-btn is-warning" @click="claim">
-          Claim {{ availableA }} A / {{ availableB }} B
+          Claim {{ availableA }}
         </button>
       </Vault>
     </div>
@@ -71,6 +79,7 @@
       </div>
     </div>
   </div>
+  <ConfigPane />
 </template>
 
 <script lang="ts">
@@ -242,6 +251,9 @@ export default defineComponent({
     };
 
     return {
+      options: [
+        {text: 'Overlord Clone', value: '9PJD3XVpq7fySsQKAMZEb97272U16GCngGqXRuYiktN4'},
+      ],
       wallet,
       farm,
       farmAcc,
