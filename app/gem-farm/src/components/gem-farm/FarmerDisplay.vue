@@ -23,7 +23,7 @@
           :key="farmerAcc.rewardA"
           :farmReward="farmAcc.rewardA"
           :reward="farmerAcc.rewardA"
-          title="Reward A"
+          title="Staking Reward Information"
         />
       </div>
       <!-- <div class="flex-1">

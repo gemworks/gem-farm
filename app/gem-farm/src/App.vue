@@ -1,6 +1,6 @@
 <template>
   <div class="relative h-full min-h-screen">
-    <TheNavBar />
+    <!-- <TheNavBar /> -->
     <div class="justify-center align-center">
       <div class="pt-10 px-10 flex justify-center align-center">
         <div class="pt-10 px-10 flex justify-left align-left">
@@ -40,7 +40,7 @@ export default {
 
 <style>
 * {
-  font-family: 'Press Start 2P', monospace;
+  font-family: 'Exo 2', sans-serif; 
 }
 body {
   background-image: url("./assets/staking_ui_bg.jpg");
