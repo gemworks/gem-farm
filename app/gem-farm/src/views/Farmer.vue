@@ -1,24 +1,29 @@
 <template>
-  <div v-if="!wallet" class="text-blue-400 text-center">Pls connect (burner) wallet</div> 
-  <div v-else>
-   <!--farm address-->
-    <div class="with-title mb-10">
-      <div class="text-blue-400">Choose a staking farm</div>
-      <select v-model="farm">
-        <option v-for="option in options" :value="option.value">
-          {{ option.text }} 
-        </option>
-      </select>     
-    </div>
-    <!--
-    <div class="nes-container with-title mb-10">
-      <p class="title">Connect to a Farm</p>
-      <div class="nes-field mb-5">
-        <label for="farm">Farm address:</label>
-        <input id="farm" class="nes-input" v-model="farm" />
+  <!-- <div v-if="!wallet" class="text-blue-400 text-center">Pls connect (burner) wallet</div> -->
+  <div>
+    <div class="grid grid-cols-5">
+      <div/><div/>
+      <div class="with-title mb-10">
+        <div class="text-blue-400">Choose a staking farm</div>
+        <select v-model="farm">
+          <option v-for="option in options" :value="option.value">
+            {{ option.text }} 
+          </option>
+        </select>     
+      </div>
+
+      <div class="with-title mb-10">
+        <div class="text-blue-400">Choose your wallet</div>
+        <select required id="wallet" v-model="chosenWallet">
+          <option class="text-gray-500" :value="null">Choose wallet..</option>
+          <option :value="WalletName.Phantom">Phantom</option>
+          <option :value="WalletName.Sollet">Sollet</option>
+          <option :value="WalletName.SolletExtension">Sollet Extension</option>
+          <option :value="WalletName.Solflare">Solflare</option>
+          <option :value="WalletName.SolflareWeb">Solflare Web</option>
+        </select>
       </div>
     </div>
--->
     <div v-if="farmerAcc">
       <FarmerDisplay
         :key="farmerAcc"
@@ -35,6 +40,7 @@
         :vault="farmerAcc.vault.toBase58()"
         @selected-wallet-nft="handleNewSelectedNFT"
       >
+
         <button
           v-if="farmerState === 'staked' && selectedNFTs.length > 0"
           class="nes-btn is-primary mr-5"
@@ -66,6 +72,12 @@
         <button class="nes-btn is-warning" @click="claim">
           Claim {{ availableA }}
         </button>
+        <button
+          class="nes-btn mr-5"
+          @click="refreshNetwork"
+        >
+          Lock It In
+        </button>
       </Vault>
     </div>
     <div v-else>
@@ -79,13 +91,14 @@
       </div>
     </div>
   </div>
-  <ConfigPane />
+ <!-- <ConfigPane /> -->
 </template>
 
 <script lang="ts">
-import { defineComponent, nextTick, onMounted, ref, watch } from 'vue';
+import {computed, defineComponent, nextTick, onMounted, ref, watch } from 'vue';
+import { WalletName } from '@solana/wallet-adapter-wallets';
 import useWallet from '@/composables/wallet';
-import useCluster from '@/composables/cluster';
+import useCluster, { Cluster }  from '@/composables/cluster';
 import { initGemFarm } from '@/common/gem-farm';
 import { PublicKey } from '@solana/web3.js';
 import ConfigPane from '@/components/ConfigPane.vue';
@@ -98,7 +111,19 @@ export default defineComponent({
   components: { Vault, FarmerDisplay, ConfigPane },
   setup() {
     const { wallet, getWallet } = useWallet();
-    const { cluster, getConnection } = useCluster();
+    const { cluster, getConnection, setCluster, getClusterURL } = useCluster();
+
+    // wallet
+    const { getWalletName, setWallet } = useWallet();
+    const chosenWallet = computed({
+      get() {
+        return getWalletName();
+      },
+      set(newVal: WalletName | null) {
+        setWallet(newVal, getClusterURL());
+      },
+    });
+
 
     let gf: any;
     watch([wallet, cluster], async () => {
@@ -183,6 +208,12 @@ export default defineComponent({
       await gf.initFarmerWallet(new PublicKey(farm.value!));
       await fetchFarmer();
     };
+    // --------------------------------------- refreshNetwork
+    const refreshNetwork = async () => {
+      setTimeout(setCluster, 500, Cluster.Devnet);
+      setTimeout(setCluster, 500, Cluster.Mainnet);
+    };
+
 
     // --------------------------------------- staking
     const beginStaking = async () => {
@@ -265,11 +296,14 @@ export default defineComponent({
       initFarmer,
       beginStaking,
       endStaking,
+      refreshNetwork,
       claim,
       handleRefreshFarmer,
       selectedNFTs,
       handleNewSelectedNFT,
       addGems,
+      WalletName,
+      chosenWallet,
     };
   },
 });

@@ -62,7 +62,7 @@ import { defineComponent, onMounted, ref, watch } from 'vue';
 import NFTGrid from '@/components/gem-bank/NFTGrid.vue';
 import ArrowButton from '@/components/ArrowButton.vue';
 import useWallet from '@/composables/wallet';
-import useCluster from '@/composables/cluster';
+import useCluster, { Cluster } from '@/composables/cluster';
 import {
   getNFTMetadataForMany,
   getNFTsByOwner,
@@ -81,11 +81,11 @@ export default defineComponent({
   emits: ['selected-wallet-nft'],
   setup(props, ctx) {
     const { wallet, getWallet } = useWallet();
-    const { cluster, getConnection } = useCluster();
+    const { cluster, getConnection, setCluster } = useCluster();
 
     // --------------------------------------- state
 
-    //current walet/vault state
+    //current wallet/vault state
     const currentWalletNFTs = ref<INFT[]>([]);
     const currentVaultNFTs = ref<INFT[]>([]);
     //selected but not yet moved over in FE
@@ -186,6 +186,7 @@ export default defineComponent({
     };
 
     const moveNFTsFE = (moveLeft: boolean) => {
+
       if (moveLeft) {
         //push selected vault nfts into desired wallet
         desiredWalletNFTs.value.push(...selectedVaultNFTs.value);
@@ -205,6 +206,7 @@ export default defineComponent({
 
     //todo jam into single tx
     const moveNFTsOnChain = async () => {
+
       for (const nft of toVaultNFTs.value) {
         console.log(nft);
         const creator = new PublicKey(
@@ -212,7 +214,11 @@ export default defineComponent({
           (nft.onchainMetadata as any).data.creators[0].address
         );
         console.log('creator is', creator.toBase58());
-        await depositGem(nft.mint, creator, nft.pubkey!);
+        const result = await depositGem(nft.mint, creator, nft.pubkey!);
+        console.log(JSON.stringify(result));
+        debugger;
+        setTimeout(setCluster, 2000, Cluster.Devnet);
+        setTimeout(setCluster, 2000, Cluster.Mainnet);
       }
       for (const nft of toWalletNFTs.value) {
         await withdrawGem(nft.mint);

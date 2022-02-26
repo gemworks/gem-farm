@@ -19,6 +19,7 @@ const clusterURLMapping = {
 const cluster = ref<Cluster>(Cluster.Mainnet);
 
 export default function useCluster() {
+
   const getClusterURL = (): string => clusterURLMapping[cluster.value];
 
   const getConnection = (committment?: Commitment): Connection =>

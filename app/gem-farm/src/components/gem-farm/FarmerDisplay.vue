@@ -18,14 +18,15 @@
     </div>
     -->
     <div class="flex mb-5">
-      <div class="flex-1 mr-5">
-        <FarmerRewardDisplay
+     <!--    <div class="flex-1 mr-5">
+       <FarmerRewardDisplay
           :key="farmerAcc.rewardA"
           :farmReward="farmAcc.rewardA"
           :reward="farmerAcc.rewardA"
           title="Staking Reward Information"
         />
       </div>
+      -->
       <!-- <div class="flex-1">
         <FarmerRewardDisplay
           :key="farmerAcc.rewardB"

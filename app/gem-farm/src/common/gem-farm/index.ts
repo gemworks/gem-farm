@@ -245,7 +245,7 @@ export class GemFarm extends GemFarmClient {
 
   async stakeWallet(farm: PublicKey) {
     const result = await this.stake(farm, this.wallet.publicKey);
-
+    console.log(JSON.stringify(result));
     console.log('begun staking for farmer', this.wallet.publicKey.toBase58());
 
     return result;
