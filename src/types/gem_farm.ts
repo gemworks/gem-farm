@@ -1,5 +1,5 @@
 export type GemFarm = {
-  "version": "0.1.0",
+  "version": "0.0.0",
   "name": "gem_farm",
   "instructions": [
     {
@@ -1625,7 +1625,7 @@ export type GemFarm = {
 };
 
 export const IDL: GemFarm = {
-  "version": "0.1.0",
+  "version": "0.0.0",
   "name": "gem_farm",
   "instructions": [
     {

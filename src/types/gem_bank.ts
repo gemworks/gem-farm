@@ -1,5 +1,5 @@
 export type GemBank = {
-  "version": "0.1.0",
+  "version": "0.0.0",
   "name": "gem_bank",
   "instructions": [
     {
@@ -651,7 +651,7 @@ export type GemBank = {
 };
 
 export const IDL: GemBank = {
-  "version": "0.1.0",
+  "version": "0.0.0",
   "name": "gem_bank",
   "instructions": [
     {
