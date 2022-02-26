@@ -76,7 +76,7 @@
           class="nes-btn mr-5"
           @click="refreshNetwork"
         >
-          Lock It In
+          Refresh Metadata
         </button>
       </Vault>
     </div>
