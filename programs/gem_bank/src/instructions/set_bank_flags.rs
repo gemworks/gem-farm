@@ -16,6 +16,6 @@ pub fn handler(ctx: Context<SetBankFlags>, flags: u32) -> Result<()> {
     let flags = Bank::read_flags(flags)?;
     bank.reset_flags(flags);
 
-    msg!("flags set: {:?}", flags);
+    //msg!("flags set: {:?}", flags);
     Ok(())
 }

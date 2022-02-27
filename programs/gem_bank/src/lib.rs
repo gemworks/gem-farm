@@ -66,7 +66,7 @@ pub mod gem_bank {
         ctx: Context<'a, 'b, 'c, 'info, RecordRarityPoints<'info>>,
         rarity_configs: Vec<RarityConfig>,
     ) -> Result<()> {
-        msg!("record rarity points");
+        //msg!("record rarity points");
         instructions::record_rarity_points::handler(ctx, rarity_configs)
     }
 }

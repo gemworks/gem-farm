@@ -25,6 +25,6 @@ pub fn handler(ctx: Context<UpdateVaultOwner>, new_owner: Pubkey) -> Result<()> 
 
     vault.owner = new_owner;
 
-    msg!("owner updated to: {}", new_owner);
+    //msg!("owner updated to: {}", new_owner);
     Ok(())
 }

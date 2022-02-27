@@ -6,6 +6,7 @@ import {
   FixedRateConfig,
   GemFarmClient,
   ITokenData,
+  MaxCounts,
   NodeWallet,
   Numerical,
   RarityConfig,
@@ -190,7 +191,11 @@ export class GemFarmTester extends GemFarmClient {
   // --------------------------------------- callers
   // ----------------- core
 
-  async callInitFarm(farmConfig: FarmConfig, rewardType?: any) {
+  async callInitFarm(
+    farmConfig: FarmConfig,
+    rewardType?: any,
+    maxCounts?: MaxCounts
+  ) {
     const isRewardA = this.reward === 'rewardA';
 
     return this.initFarm(
@@ -202,16 +207,22 @@ export class GemFarmTester extends GemFarmClient {
       rewardType ?? RewardType.Variable,
       isRewardA ? this.rewardSecondMint.publicKey : this.rewardMint.publicKey,
       rewardType ?? RewardType.Variable,
-      farmConfig
+      farmConfig,
+      maxCounts
     );
   }
 
-  async callUpdateFarm(farmConfig?: FarmConfig, newManager?: PublicKey) {
+  async callUpdateFarm(
+    farmConfig?: FarmConfig,
+    newManager?: PublicKey,
+    maxCounts?: MaxCounts
+  ) {
     return this.updateFarm(
       this.farm.publicKey,
       this.farmManager,
       farmConfig,
-      newManager
+      newManager,
+      maxCounts
     );
   }
 
