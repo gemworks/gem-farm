@@ -39,8 +39,9 @@ pub mod gem_farm {
         ctx: Context<UpdateFarm>,
         config: Option<FarmConfig>,
         manager: Option<Pubkey>,
+        max_counts: Option<MaxCounts>,
     ) -> Result<()> {
-        instructions::update_farm::handler(ctx, config, manager)
+        instructions::update_farm::handler(ctx, config, manager, max_counts)
     }
 
     pub fn payout_from_treasury(

@@ -1,4 +1,4 @@
-import chai, { expect } from 'chai';
+import chai, { assert, expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { defaultFarmConfig, GemFarmTester } from '../gem-farm.tester';
 import { RewardType } from '../../../src';
@@ -115,5 +115,27 @@ describe('misc', () => {
     //try staking
     await gf.stakeAndVerify(gf.farmer1Identity);
     await gf.stakeAndVerify(gf.farmer1Identity);
+  });
+
+  it('updates max counts', async () => {
+    await gf.callInitFarm(defaultFarmConfig, RewardType.Fixed);
+
+    let farm = await gf.fetchFarm();
+    assert.equal(farm.maxCounts.maxFarmers, 0);
+    assert.equal(farm.maxCounts.maxGems, 0);
+    assert.equal(farm.maxCounts.maxRarityPoints, 0);
+
+    const maxCounts = {
+      maxFarmers: 123,
+      maxGems: 123,
+      maxRarityPoints: 123,
+    };
+
+    await gf.callUpdateFarm(undefined, undefined, maxCounts);
+
+    farm = await gf.fetchFarm();
+    assert.equal(farm.maxCounts.maxFarmers, 123);
+    assert.equal(farm.maxCounts.maxGems, 123);
+    assert.equal(farm.maxCounts.maxRarityPoints, 123);
   });
 });

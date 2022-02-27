@@ -212,12 +212,17 @@ export class GemFarmTester extends GemFarmClient {
     );
   }
 
-  async callUpdateFarm(farmConfig?: FarmConfig, newManager?: PublicKey) {
+  async callUpdateFarm(
+    farmConfig?: FarmConfig,
+    newManager?: PublicKey,
+    maxCounts?: MaxCounts
+  ) {
     return this.updateFarm(
       this.farm.publicKey,
       this.farmManager,
       farmConfig,
-      newManager
+      newManager,
+      maxCounts
     );
   }
 

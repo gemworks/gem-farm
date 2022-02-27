@@ -146,6 +146,14 @@ export type GemFarm = {
           "type": {
             "option": "publicKey"
           }
+        },
+        {
+          "name": "maxCounts",
+          "type": {
+            "option": {
+              "defined": "MaxCounts"
+            }
+          }
         }
       ]
     },
@@ -1823,6 +1831,14 @@ export const IDL: GemFarm = {
           "name": "manager",
           "type": {
             "option": "publicKey"
+          }
+        },
+        {
+          "name": "maxCounts",
+          "type": {
+            "option": {
+              "defined": "MaxCounts"
+            }
           }
         }
       ]

@@ -146,6 +146,14 @@
           "type": {
             "option": "publicKey"
           }
+        },
+        {
+          "name": "maxCounts",
+          "type": {
+            "option": {
+              "defined": "MaxCounts"
+            }
+          }
         }
       ]
     },
