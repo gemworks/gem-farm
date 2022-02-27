@@ -484,14 +484,34 @@ impl FarmReward {
                     return Ok(());
                 }
 
-                self.fixed_rate.update_accrued_reward(
-                    now_ts,
-                    &mut self.times,
-                    &mut self.funds,
-                    farmer_rarity_points_staked.unwrap(),
-                    farmer_reward.unwrap(),
-                    reenroll,
-                )
+                let freward = farmer_reward.unwrap();
+
+                if freward.fixed_rate.promised_schedule.denominator > 1 {
+                    let end_schedule_ts = freward.fixed_rate.begin_schedule_ts.try_add(freward.fixed_rate.promised_duration);
+                    let upper_bound = std::cmp::min(now_ts, end_schedule_ts?);
+                    let updated_ts = upper_bound.try_sub(
+                        upper_bound.try_sub(freward.fixed_rate.begin_staking_ts)?
+                        .try_rem(freward.fixed_rate.promised_schedule.denominator)?
+                    );
+
+                    self.fixed_rate.update_accrued_reward(
+                        updated_ts?,
+                        &mut self.times,
+                        &mut self.funds,
+                        farmer_rarity_points_staked.unwrap(),
+                        freward,
+                        reenroll,
+                    )
+                } else {
+                    self.fixed_rate.update_accrued_reward(
+                        now_ts,
+                        &mut self.times,
+                        &mut self.funds,
+                        farmer_rarity_points_staked.unwrap(),
+                        freward,
+                        reenroll,
+                    )
+                }
             }
         }
     }
