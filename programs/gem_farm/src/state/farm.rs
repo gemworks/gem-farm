@@ -307,6 +307,8 @@ impl Farm {
         self.rarity_points_staked
             .try_add_assign(extra_rarity_points)?;
 
+        self.assert_valid_max_counts()?;
+
         // fixed-rate only - we need to do some extra book-keeping
         if self.reward_a.reward_type == RewardType::Fixed {
             // graduate with PREVIOUS rarity points count
