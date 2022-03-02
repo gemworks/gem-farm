@@ -242,6 +242,10 @@ impl FarmerFixedRateReward {
         Ok(now_ts >= self.end_schedule_ts()?)
     }
 
+    pub fn reward_lower_bound(&self) -> Result<u64> {
+        Ok(std::cmp::max(self.begin_schedule_ts, self.begin_staking_ts))
+    }
+
     pub fn reward_upper_bound(&self, now_ts: u64) -> Result<u64> {
         Ok(std::cmp::min(now_ts, self.end_schedule_ts()?))
     }
@@ -263,11 +267,10 @@ impl FarmerFixedRateReward {
     pub fn capped_now_ts(
         &self,
         now_ts: u64,
-    ) -> Result<u64, ProgramError> {
+    ) -> Result<u64> {
         if self.promised_schedule.denominator > 1 {
-            let end_schedule_ts = self.begin_schedule_ts.try_add(self.promised_duration);
-            let lower_bound = std::cmp::max(self.begin_schedule_ts, self.begin_staking_ts);
-            let upper_bound = std::cmp::min(now_ts, end_schedule_ts?);
+            let lower_bound = self.reward_lower_bound()?;
+            let upper_bound = self.reward_upper_bound(now_ts)?;
             upper_bound.try_sub(upper_bound.try_sub(lower_bound)?.try_rem(self.promised_schedule.denominator)?)
         } else {
             Ok(now_ts)
@@ -279,7 +282,7 @@ impl FarmerFixedRateReward {
     pub fn newly_accrued_reward(&self, now_ts: u64, rarity_points: u64) -> Result<u64> {
         let start_from = self.time_from_staking_to_update()?;
         let end_at = self
-            .reward_upper_bound(self.capped_now_ts(now_ts)?)?
+            .reward_upper_bound(now_ts)?
             .try_sub(self.begin_staking_ts)?;
 
         self.promised_schedule
