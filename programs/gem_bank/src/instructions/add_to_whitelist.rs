@@ -64,9 +64,9 @@ pub fn handler(ctx: Context<AddToWhitelist>, whitelist_type: u8) -> Result<()> {
         bank.whitelisted_mints.try_add_assign(1)?;
     }
 
-    msg!(
-        "{} added to whitelist",
-        &ctx.accounts.address_to_whitelist.key()
-    );
+    // msg!(
+    //     "{} added to whitelist",
+    //     &ctx.accounts.address_to_whitelist.key()
+    // );
     Ok(())
 }

@@ -107,6 +107,14 @@ export type GemFarm = {
           "type": {
             "defined": "FarmConfig"
           }
+        },
+        {
+          "name": "maxCounts",
+          "type": {
+            "option": {
+              "defined": "MaxCounts"
+            }
+          }
         }
       ]
     },
@@ -137,6 +145,14 @@ export type GemFarm = {
           "name": "manager",
           "type": {
             "option": "publicKey"
+          }
+        },
+        {
+          "name": "maxCounts",
+          "type": {
+            "option": {
+              "defined": "MaxCounts"
+            }
           }
         }
       ]
@@ -1098,11 +1114,35 @@ export type GemFarm = {
             }
           },
           {
+            "name": "maxCounts",
+            "type": {
+              "defined": "MaxCounts"
+            }
+          },
+          {
             "name": "reserved",
             "type": {
               "array": [
                 "u8",
-                64
+                32
+              ]
+            }
+          },
+          {
+            "name": "reserved2",
+            "type": {
+              "array": [
+                "u8",
+                16
+              ]
+            }
+          },
+          {
+            "name": "reserved3",
+            "type": {
+              "array": [
+                "u8",
+                4
               ]
             }
           }
@@ -1190,6 +1230,26 @@ export type GemFarm = {
           {
             "name": "unstakingFeeLamp",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MaxCounts",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "maxFarmers",
+            "type": "u32"
+          },
+          {
+            "name": "maxGems",
+            "type": "u32"
+          },
+          {
+            "name": "maxRarityPoints",
+            "type": "u32"
           }
         ]
       }
@@ -1733,6 +1793,14 @@ export const IDL: GemFarm = {
           "type": {
             "defined": "FarmConfig"
           }
+        },
+        {
+          "name": "maxCounts",
+          "type": {
+            "option": {
+              "defined": "MaxCounts"
+            }
+          }
         }
       ]
     },
@@ -1763,6 +1831,14 @@ export const IDL: GemFarm = {
           "name": "manager",
           "type": {
             "option": "publicKey"
+          }
+        },
+        {
+          "name": "maxCounts",
+          "type": {
+            "option": {
+              "defined": "MaxCounts"
+            }
           }
         }
       ]
@@ -2724,11 +2800,35 @@ export const IDL: GemFarm = {
             }
           },
           {
+            "name": "maxCounts",
+            "type": {
+              "defined": "MaxCounts"
+            }
+          },
+          {
             "name": "reserved",
             "type": {
               "array": [
                 "u8",
-                64
+                32
+              ]
+            }
+          },
+          {
+            "name": "reserved2",
+            "type": {
+              "array": [
+                "u8",
+                16
+              ]
+            }
+          },
+          {
+            "name": "reserved3",
+            "type": {
+              "array": [
+                "u8",
+                4
               ]
             }
           }
@@ -2816,6 +2916,26 @@ export const IDL: GemFarm = {
           {
             "name": "unstakingFeeLamp",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MaxCounts",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "maxFarmers",
+            "type": "u32"
+          },
+          {
+            "name": "maxGems",
+            "type": "u32"
+          },
+          {
+            "name": "maxRarityPoints",
+            "type": "u32"
           }
         ]
       }

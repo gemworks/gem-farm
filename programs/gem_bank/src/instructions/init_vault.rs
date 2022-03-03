@@ -51,6 +51,6 @@ pub fn handler(ctx: Context<InitVault>, owner: Pubkey, name: String) -> Result<(
     vault.locked = false;
     (&mut vault.name[..]).write_all(name.as_bytes())?;
 
-    msg!("new vault founded by {}", &ctx.accounts.creator.key());
+    //msg!("new vault founded by {}", &ctx.accounts.creator.key());
     Ok(())
 }
