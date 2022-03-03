@@ -17,6 +17,7 @@
         <option :value="WalletName.SolletExtension">Sollet Extension</option>
         <option :value="WalletName.Solflare">Solflare</option>
         <option :value="WalletName.SolflareWeb">Solflare Web</option>
+        <option :value="WalletName.Slope">Slope</option>
       </select>
     </div>
   </div>
