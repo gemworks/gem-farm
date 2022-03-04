@@ -271,7 +271,7 @@ impl FarmerFixedRateReward {
         if self.promised_schedule.denominator > 1 {
             let lower_bound = self.reward_lower_bound()?;
             let upper_bound = self.reward_upper_bound(now_ts)?;
-            upper_bound.try_sub(upper_bound.try_sub(lower_bound)?.try_rem(self.promised_schedule.denominator)?)
+            now_ts.try_sub(upper_bound.try_sub(lower_bound)?.try_rem(self.promised_schedule.denominator)?)
         } else {
             Ok(now_ts)
         }
@@ -282,7 +282,7 @@ impl FarmerFixedRateReward {
     pub fn newly_accrued_reward(&self, now_ts: u64, rarity_points: u64) -> Result<u64> {
         let start_from = self.time_from_staking_to_update()?;
         let end_at = self
-            .reward_upper_bound(now_ts)?
+            .reward_upper_bound(self.capped_now_ts(now_ts)?)?
             .try_sub(self.begin_staking_ts)?;
 
         self.promised_schedule
