@@ -59,6 +59,20 @@ export const defaultFixedConfig = <FixedRateConfig>{
   durationSec: new BN(100),
 };
 
+
+export const fixedConfigWithDenominator = <FixedRateConfig>{
+  schedule: {
+    // total 30 per gem
+    baseRate: toBN(1),
+    tier1: null,
+    tier2: null,
+    tier3: null,
+    denominator: toBN(10) 
+  },
+  amount: new BN(30000),
+  durationSec: new BN(30)
+};
+
 // --------------------------------------- tester class
 
 export class GemFarmTester extends GemFarmClient {
