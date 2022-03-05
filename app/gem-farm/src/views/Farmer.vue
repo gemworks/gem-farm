@@ -56,7 +56,7 @@
           End cooldown
         </button>
         <button class="nes-btn is-warning" @click="claim">
-          Claim {{ availableA }} A / {{ availableB }} B
+          Claim {{ availableA }} BZC
         </button>
       </Vault>
     </div>
@@ -110,7 +110,6 @@ export default defineComponent({
     const farmerState = ref<string>();
 
     const availableA = ref<string>();
-    const availableB = ref<string>();
 
     //auto loading for when farm changes
     watch(farm, async () => {
@@ -120,9 +119,6 @@ export default defineComponent({
     const updateAvailableRewards = async () => {
       availableA.value = farmerAcc.value.rewardA.accruedReward
         .sub(farmerAcc.value.rewardA.paidOutReward)
-        .toString();
-      availableB.value = farmerAcc.value.rewardB.accruedReward
-        .sub(farmerAcc.value.rewardB.paidOutReward)
         .toString();
     };
 
@@ -159,7 +155,6 @@ export default defineComponent({
         farmerAcc.value = undefined;
         farmerState.value = undefined;
         availableA.value = undefined;
-        availableB.value = undefined;
 
         try {
           await fetchFarn();
@@ -191,8 +186,7 @@ export default defineComponent({
     const claim = async () => {
       await gf.claimWallet(
         new PublicKey(farm.value!),
-        new PublicKey(farmAcc.value.rewardA.rewardMint!),
-        new PublicKey(farmAcc.value.rewardB.rewardMint!)
+        new PublicKey(farmAcc.value.rewardA.rewardMint!)
       );
       await fetchFarmer();
     };
@@ -249,7 +243,6 @@ export default defineComponent({
       farmerAcc,
       farmerState,
       availableA,
-      availableB,
       initFarmer,
       beginStaking,
       endStaking,
