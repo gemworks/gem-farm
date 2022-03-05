@@ -1,6 +1,6 @@
 # Gem Farm 💎
 _by Gemworks_
-
+_mod by L8nit3_
 Gem Farm is a collection of on-chain Solana programs for NFT ("gem" 💎) staking.
 
 It consists of:
