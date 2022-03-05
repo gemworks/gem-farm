@@ -2,24 +2,15 @@ import chai, { assert } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import {
   defaultFarmConfig,
-  defaultFixedConfig,
   fixedConfigWithDenominator,
   GemFarmTester,
 } from '../gem-farm.tester';
 import { BN } from '@project-serum/anchor';
-import {
-  FixedRateConfig,
-  pause,
-  RewardType,
-  toBN,
-  WhitelistType,
-} from '../../../src';
-import { PublicKey } from '@solana/web3.js';
-import { createMetadata } from '../../metaplex';
+import { pause, RewardType } from '../../../src';
 
 chai.use(chaiAsPromised);
 
-describe('staking (fixed rate w/ denominator)', () => {
+describe.only('staking (fixed rate w/ denominator)', () => {
   let gf = new GemFarmTester();
 
   beforeEach('preps accs', async () => {
@@ -40,14 +31,14 @@ describe('staking (fixed rate w/ denominator)', () => {
     const farmer2 = await gf.stakeAndVerify(gf.farmer2Identity);
 
     let lastUpdatedTs1 = new BN(
-      gf.reward === 'rewardA' ?
-      farmer1.rewardA.fixedRate['lastUpdatedTs'] :
-      farmer1.rewardB.fixedRate['lastUpdatedTs']
+      gf.reward === 'rewardA'
+        ? farmer1.rewardA.fixedRate['lastUpdatedTs']
+        : farmer1.rewardB.fixedRate['lastUpdatedTs']
     );
     let lastUpdatedTs2 = new BN(
-      gf.reward === 'rewardA' ?
-      farmer2.rewardA.fixedRate['lastUpdatedTs'] :
-      farmer2.rewardB.fixedRate['lastUpdatedTs']
+      gf.reward === 'rewardA'
+        ? farmer2.rewardA.fixedRate['lastUpdatedTs']
+        : farmer2.rewardB.fixedRate['lastUpdatedTs']
     );
 
     await pause(2000); // 2s
@@ -74,9 +65,21 @@ describe('staking (fixed rate w/ denominator)', () => {
     f2Reward = await gf.verifyFarmerReward(gf.farmer2Identity);
 
     // the time should be updated now to just previous time + denominator (not +16s)
-    assert(lastUpdatedTs1.eq(f1Reward.fixedRate.lastUpdatedTs.sub(fixedConfigWithDenominator.schedule.denominator)));
-    assert(lastUpdatedTs2.eq(f2Reward.fixedRate.lastUpdatedTs.sub(fixedConfigWithDenominator.schedule.denominator)));
-    
+    assert(
+      lastUpdatedTs1.eq(
+        f1Reward.fixedRate.lastUpdatedTs.sub(
+          fixedConfigWithDenominator.schedule.denominator
+        )
+      )
+    );
+    assert(
+      lastUpdatedTs2.eq(
+        f2Reward.fixedRate.lastUpdatedTs.sub(
+          fixedConfigWithDenominator.schedule.denominator
+        )
+      )
+    );
+
     lastUpdatedTs1 = f1Reward.fixedRate.lastUpdatedTs;
     lastUpdatedTs2 = f2Reward.fixedRate.lastUpdatedTs;
 
@@ -97,5 +100,4 @@ describe('staking (fixed rate w/ denominator)', () => {
     await gf.verifyClaimedReward(gf.farmer1Identity);
     await gf.verifyClaimedReward(gf.farmer2Identity);
   });
-
 });

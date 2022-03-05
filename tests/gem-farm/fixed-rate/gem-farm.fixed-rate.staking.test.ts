@@ -30,7 +30,7 @@ const shortFixedConfig = <FixedRateConfig>{
   durationSec: new BN(5), //5s only
 };
 
-describe('staking (fixed rate)', () => {
+describe.only('staking (fixed rate)', () => {
   let gf = new GemFarmTester();
 
   beforeEach('preps accs', async () => {

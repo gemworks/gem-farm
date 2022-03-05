@@ -173,7 +173,9 @@ impl FarmerReward {
     pub fn update_fixed_reward(&mut self, now_ts: u64, newly_accrued_reward: u64) -> Result<()> {
         self.accrued_reward.try_add_assign(newly_accrued_reward)?;
 
-        self.fixed_rate.last_updated_ts = self.fixed_rate.reward_upper_bound(self.fixed_rate.capped_now_ts(now_ts)?)?;
+        self.fixed_rate.last_updated_ts = self
+            .fixed_rate
+            .reward_upper_bound(self.fixed_rate.capped_now_ts(now_ts)?)?;
 
         Ok(())
     }
@@ -242,10 +244,6 @@ impl FarmerFixedRateReward {
         Ok(now_ts >= self.end_schedule_ts()?)
     }
 
-    pub fn reward_lower_bound(&self) -> Result<u64> {
-        Ok(std::cmp::max(self.begin_schedule_ts, self.begin_staking_ts))
-    }
-
     pub fn reward_upper_bound(&self, now_ts: u64) -> Result<u64> {
         Ok(std::cmp::min(now_ts, self.end_schedule_ts()?))
     }
@@ -264,17 +262,20 @@ impl FarmerFixedRateReward {
             .reward_amount(start_from, end_at, rarity_points)
     }
 
-    pub fn capped_now_ts(
-        &self,
-        now_ts: u64,
-    ) -> Result<u64> {
+    /// In case where denominator > 1, this caps now_ts so that remainder == 0
+    /// This allows farmers to refresh *in between* reward periods and not lose rewards
+    pub fn capped_now_ts(&self, now_ts: u64) -> Result<u64> {
         if self.promised_schedule.denominator > 1 {
-            let lower_bound = self.reward_lower_bound()?;
-            let upper_bound = self.reward_upper_bound(now_ts)?;
-            now_ts.try_sub(upper_bound.try_sub(lower_bound)?.try_rem(self.promised_schedule.denominator)?)
-        } else {
-            Ok(now_ts)
+            if self.begin_staking_ts < now_ts {
+                let adjustment = now_ts
+                    .try_sub(self.begin_staking_ts)?
+                    .try_rem(self.promised_schedule.denominator)?;
+                if adjustment < now_ts {
+                    return now_ts.try_sub(adjustment);
+                }
+            }
         }
+        return Ok(now_ts);
     }
 
     /// (!) intentionally uses begin_staking_ts for both start_from and end_at
