@@ -173,9 +173,7 @@ impl FarmerReward {
     pub fn update_fixed_reward(&mut self, now_ts: u64, newly_accrued_reward: u64) -> Result<()> {
         self.accrued_reward.try_add_assign(newly_accrued_reward)?;
 
-        self.fixed_rate.last_updated_ts = self
-            .fixed_rate
-            .reward_upper_bound(self.fixed_rate.capped_now_ts(now_ts)?)?;
+        self.fixed_rate.last_updated_ts = self.fixed_rate.reward_upper_bound(now_ts)?;
 
         Ok(())
     }
@@ -283,7 +281,7 @@ impl FarmerFixedRateReward {
     pub fn newly_accrued_reward(&self, now_ts: u64, rarity_points: u64) -> Result<u64> {
         let start_from = self.time_from_staking_to_update()?;
         let end_at = self
-            .reward_upper_bound(self.capped_now_ts(now_ts)?)?
+            .reward_upper_bound(now_ts)?
             .try_sub(self.begin_staking_ts)?;
 
         self.promised_schedule
