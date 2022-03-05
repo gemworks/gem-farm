@@ -14,6 +14,7 @@ pub fn handler(
     ctx: Context<UpdateFarm>,
     config: Option<FarmConfig>,
     manager: Option<Pubkey>,
+    max_counts: Option<MaxCounts>,
 ) -> Result<()> {
     let farm = &mut ctx.accounts.farm;
 
@@ -23,6 +24,10 @@ pub fn handler(
 
     if let Some(manager) = manager {
         farm.farm_manager = manager;
+    }
+
+    if let Some(max_counts) = max_counts {
+        farm.max_counts = max_counts;
     }
 
     msg!("updated farm");

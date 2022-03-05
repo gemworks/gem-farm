@@ -44,9 +44,9 @@ pub fn handler(ctx: Context<RemoveFromWhitelist>) -> Result<()> {
         &mut ctx.accounts.funds_receiver,
     )?;
 
-    msg!(
-        "{} removed from whitelist",
-        &ctx.accounts.address_to_remove.key()
-    );
+    // msg!(
+    //     "{} removed from whitelist",
+    //     &ctx.accounts.address_to_remove.key()
+    // );
     Ok(())
 }
