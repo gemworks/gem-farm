@@ -1,9 +1,9 @@
 <template>
   <div class="nes-container with-title">
-    <p class="title">Your Staking Account</p>
+    <p class="title bg-dark">Your Staking Account</p>
     <div class="mb-2">
       state:
-      <p class="inline-block bg-yellow-200">
+      <p class="inline-block">
         {{ parseFarmerState(farmerAcc) }}
       </p>
     </div>
@@ -17,8 +17,8 @@
       Cooldown ends: {{ parseDate(farmerAcc.cooldownEndsTs) }}
     </div>
 
-    <div class="flex mb-5">
-      <div class="flex-1 mr-5">
+    <div class="flex mb-5 row">
+      <div class="flex-1 m-2 col-sm-12">
         <FarmerRewardDisplay
           :key="farmerAcc.rewardA"
           :farmReward="farmAcc.rewardA"
@@ -26,7 +26,7 @@
           title="Reward A"
         />
       </div>
-      <div class="flex-1">
+      <div class="flex-1 m-2 col-sm-12">
         <FarmerRewardDisplay
           :key="farmerAcc.rewardB"
           :farmReward="farmAcc.rewardB"
@@ -98,4 +98,8 @@ export default defineComponent({
 });
 </script>
 
-<style scoped></style>
+<style scoped>
+.nes-container .with-title .title{
+  background-color: black;
+}
+</style>

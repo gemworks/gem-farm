@@ -1,11 +1,11 @@
 <template>
   <div class="relative h-full min-h-screen content">
     <div class="pt-10 px-10 flex justify-center align-middle">
-      <p class="text-4xl pt-3 px-1 mt-1 text-black title text-white">Paladin</p>
+      <p class="text-4xl pt-3 px-1 mt-1 title text-white">Paladin</p>
       <img :width="80" :height="80" src="./assets/logo.png" />
-      <p class="text-4xl pt-3 px-2 mt-1 text-black title text-white">Board</p>
+      <p class="text-4xl pt-3 px-2 mt-1 title text-white">Board</p>
     </div>
-    <div class="italic mt-5 text-center"></div>
+    <!-- <div class="italic mt-5 text-center"></div> -->
 
     <div class="p-10">
       <router-view />

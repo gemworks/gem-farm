@@ -1,6 +1,6 @@
 <template>
   <div class="nes-container with-title">
-    <p class="title">{{ title }}</p>
+    <p class="title bg-dark">{{ title }}</p>
     <slot />
     <div class="flex flex-wrap">
       <NFTCard

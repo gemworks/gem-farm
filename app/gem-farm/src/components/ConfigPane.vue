@@ -1,14 +1,9 @@
 <template>
-  <div class="flex justify-center mb-10">
-    <div class="nes-select is-dark flex-1">
-      <select required id="cluster" v-model="chosenCluster">
-        <option :value="Cluster.Devnet">Devnet</option>
-        <option :value="Cluster.Mainnet">Mainnet</option>
-      </select>
-    </div>
-    <div class="nes-select is-dark flex-1">
+  <div class="flex justify-center mb-10 row">
+    <!-- <div class="flex-1"></div> -->
+    <div class="nes-select is-dark justify-center flex col-md-4 col-sm-12">
       <select required id="wallet" v-model="chosenWallet">
-        <option class="text-gray-500" :value="null">Choose wallet..</option>
+        <option class="text-gray-500" :value="null">Connect wallet..</option>
         <option :value="WalletName.Phantom">Phantom</option>
         <option :value="WalletName.Sollet">Sollet</option>
         <option :value="WalletName.SolletExtension">Sollet Extension</option>
@@ -16,6 +11,7 @@
         <option :value="WalletName.SolflareWeb">Solflare Web</option>
       </select>
     </div>
+    <!-- <div class="flex-1"></div> -->
   </div>
 </template>
 
@@ -59,4 +55,18 @@ export default defineComponent({
 });
 </script>
 
-<style scoped></style>
+<style scoped>
+  #wallet {
+    font-size: 1.5em;
+    text-align: center;
+    border-image-source: none;
+    border-top-style: dotted;
+    border-right-style: solid;
+    border-bottom-style: dotted;
+    border-left-style: solid;
+    border-radius: 5px;
+  }
+  div.nes-select.is-dark.flex::after {
+    display: none;
+  }
+</style>

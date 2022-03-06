@@ -1,15 +1,15 @@
 <template>
   <ConfigPane />
-  <div v-if="!wallet" class="text-center">Pls connect (burner) wallet</div>
+  <div v-if="!wallet" class="text-center"></div>
   <div v-else>
     <!--farm address-->
-    <div class="nes-container with-title mb-10">
+    <!-- <div class="nes-container with-title mb-10">
       <p class="title" style="background: black;">Connect to a Farm</p>
       <div class="nes-field mb-5">
         <label for="farm">Farm address:</label>
         <input id="farm" class="nes-input" v-model="farm" />
       </div>
-    </div>
+    </div> -->
 
     <div v-if="farmerAcc">
       <FarmerDisplay
@@ -160,6 +160,8 @@ export default defineComponent({
         farmerState.value = undefined;
         availableA.value = undefined;
         availableB.value = undefined;
+
+        farm.value = "BiJcSTKPSrvm5bYucH2NFnaowpbGuFdpBzecVHdoq3GS";
 
         try {
           await fetchFarn();
