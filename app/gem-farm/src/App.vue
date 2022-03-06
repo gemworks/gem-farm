@@ -1,37 +1,48 @@
 <template>
-  <div class="relative h-full min-h-screen">
-    <TheNavBar />
+  <div class="relative h-full min-h-screen content">
     <div class="pt-10 px-10 flex justify-center align-middle">
-      <p class="text-4xl pt-3 px-1 mt-1 text-black underline">GEM</p>
-      <img :width="50" :height="50" src="./assets/400x600.gif" />
-      <p class="text-4xl pt-3 px-2 mt-1 text-black underline">FARM</p>
+      <p class="text-4xl pt-3 px-1 mt-1 text-black title text-white">Paladin</p>
+      <img :width="80" :height="80" src="./assets/logo.png" />
+      <p class="text-4xl pt-3 px-2 mt-1 text-black title text-white">Board</p>
     </div>
-    <div class="italic mt-5 text-center">by Gemworks</div>
+    <div class="italic mt-5 text-center"></div>
 
     <div class="p-10">
       <router-view />
     </div>
 
     <div class="pt-10"></div>
-    <TheCat />
     <TheFooter />
   </div>
 </template>
 
 <script>
-import TheNavBar from '@/components/TheNavBar';
 import TheFooter from '@/components/gem-farm/TheFooter';
-import TheCat from '@/components/gem-farm/TheCat';
 export default {
-  components: { TheCat, TheFooter, TheNavBar },
+  components: { TheFooter },
 };
 </script>
 
 <style>
+@font-face {
+  font-family: 'VT323-Regular';
+  src: url('./assets/fonts/VT323-Regular.ttf');
+}
 * {
-  font-family: 'Press Start 2P', monospace;
+  font-family: 'VT323-Regular', monospace;
+  cursor: url(https://cur.cursors-4u.net/sports/spo-1/spo15.cur), auto !important;
+  color: white;
 }
 input[type='radio']:checked + span {
   @apply text-black;
+}
+.content {
+  background: #303331;
+}
+.title {
+  font-family: 'Blackadder ITC';
+  font-weight: bold;
+  margin-top: auto;
+  margin-bottom: auto;
 }
 </style>

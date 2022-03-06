@@ -4,7 +4,7 @@
   <div v-else>
     <!--farm address-->
     <div class="nes-container with-title mb-10">
-      <p class="title">Connect to a Farm</p>
+      <p class="title" style="background: black;">Connect to a Farm</p>
       <div class="nes-field mb-5">
         <label for="farm">Farm address:</label>
         <input id="farm" class="nes-input" v-model="farm" />
