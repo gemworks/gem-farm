@@ -22,7 +22,7 @@ export default defineComponent({
     const path = computed(() => route.path);
 
     const menu = [
-      { name: 'Baby Zilla Club Staking', url: '/farmer' },
+      { name: 'Click To Enter Baby Zilla Club Staking', url: '/Farmer' },
     ];
 
     return {
@@ -44,3 +44,4 @@ export default defineComponent({
   outline: none;
 }
 </style>
+

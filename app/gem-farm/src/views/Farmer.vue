@@ -2,14 +2,14 @@
   <ConfigPane />
   <div v-if="!wallet" class="text-center">Pls connect (burner) wallet</div>
   <div v-else>
-    <!--farm address-->
+    <!--farm address
     <div class="nes-container with-title mb-10">
       <p class="title">Connect to a Farm</p>
       <div class="nes-field mb-5">
         <label for="farm">Farm address:</label>
         <input id="farm" class="nes-input" v-model="farm" />
       </div>
-    </div>
+    </div>-->
 
     <div v-if="farmerAcc">
       <FarmerDisplay
@@ -32,7 +32,7 @@
           class="nes-btn is-primary mr-5"
           @click="addGems"
         >
-          Add Gems (resets staking)
+          Add Zilla's (resets staking)
         </button>
         <button
           v-if="farmerState === 'unstaked'"
@@ -103,6 +103,7 @@ export default defineComponent({
 
     // --------------------------------------- farmer details
     const farm = ref<string>();
+    farm.value = '5ijkJ6ba3qakk9TqfkJRer6cAWEtWcpuDUdRxomB5KXG'
     const farmAcc = ref<any>();
 
     const farmerIdentity = ref<string>();

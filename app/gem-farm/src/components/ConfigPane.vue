@@ -1,13 +1,13 @@
 <template>
   <div class="flex justify-center mb-10">
-    <div class="nes-select is-dark flex-1">
+    <!--<div class="nes-select is-dark flex-1">
       <select required id="cluster" v-model="chosenCluster">
         <option :value="Cluster.Mainnet">Mainnet</option>
         <option :value="Cluster.Devnet">Devnet</option>
         <option :value="Cluster.Testnet">Testnet</option>
         <option :value="Cluster.Localnet">Localnet</option>
       </select>
-    </div>
+    </div>-->
     <div class="nes-select is-dark flex-1">
       <select required id="wallet" v-model="chosenWallet">
         <option class="text-gray-500" :value="null">Choose wallet..</option>
@@ -39,6 +39,7 @@ export default defineComponent({
         setCluster(newVal);
       },
     });
+	chosenCluster.value = Cluster.Devnet;
 
     // wallet
     const { getWalletName, setWallet } = useWallet();
