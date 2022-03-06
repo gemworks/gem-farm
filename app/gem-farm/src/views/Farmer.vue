@@ -2,14 +2,14 @@
   <ConfigPane />
   <div v-if="!wallet" class="text-center">Pls connect (burner) wallet</div>
   <div v-else>
-    <!--farm address-->
+    <!--farm address
     <div class="nes-container with-title mb-10">
       <p class="title">Connect to a Farm</p>
       <div class="nes-field mb-5">
         <label for="farm">Farm address:</label>
         <input id="farm" class="nes-input" v-model="farm" />
       </div>
-    </div>
+    </div>-->
 
     <div v-if="farmerAcc">
       <FarmerDisplay
@@ -32,7 +32,7 @@
           class="nes-btn is-primary mr-5"
           @click="addGems"
         >
-          Add Gems (resets staking)
+          Add Zilla's (resets staking)
         </button>
         <button
           v-if="farmerState === 'unstaked'"
@@ -56,7 +56,7 @@
           End cooldown
         </button>
         <button class="nes-btn is-warning" @click="claim">
-          Claim {{ availableA }} A / {{ availableB }} B
+          Claim {{ availableA }} BZC
         </button>
       </Vault>
     </div>
@@ -103,6 +103,7 @@ export default defineComponent({
 
     // --------------------------------------- farmer details
     const farm = ref<string>();
+    farm.value = '5ijkJ6ba3qakk9TqfkJRer6cAWEtWcpuDUdRxomB5KXG'
     const farmAcc = ref<any>();
 
     const farmerIdentity = ref<string>();
@@ -110,7 +111,6 @@ export default defineComponent({
     const farmerState = ref<string>();
 
     const availableA = ref<string>();
-    const availableB = ref<string>();
 
     //auto loading for when farm changes
     watch(farm, async () => {
@@ -120,9 +120,6 @@ export default defineComponent({
     const updateAvailableRewards = async () => {
       availableA.value = farmerAcc.value.rewardA.accruedReward
         .sub(farmerAcc.value.rewardA.paidOutReward)
-        .toString();
-      availableB.value = farmerAcc.value.rewardB.accruedReward
-        .sub(farmerAcc.value.rewardB.paidOutReward)
         .toString();
     };
 
@@ -159,7 +156,6 @@ export default defineComponent({
         farmerAcc.value = undefined;
         farmerState.value = undefined;
         availableA.value = undefined;
-        availableB.value = undefined;
 
         try {
           await fetchFarn();
@@ -191,8 +187,7 @@ export default defineComponent({
     const claim = async () => {
       await gf.claimWallet(
         new PublicKey(farm.value!),
-        new PublicKey(farmAcc.value.rewardA.rewardMint!),
-        new PublicKey(farmAcc.value.rewardB.rewardMint!)
+        new PublicKey(farmAcc.value.rewardA.rewardMint!)
       );
       await fetchFarmer();
     };
@@ -249,7 +244,6 @@ export default defineComponent({
       farmerAcc,
       farmerState,
       availableA,
-      availableB,
       initFarmer,
       beginStaking,
       endStaking,
