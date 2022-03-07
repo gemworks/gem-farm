@@ -104,6 +104,8 @@ export default defineComponent({
     // --------------------------------------- farmer details
     const farm = ref<string>();
 	farm.value = '5ijkJ6ba3qakk9TqfkJRer6cAWEtWcpuDUdRxomB5KXG';
+	console.log('Current Farm PK:');
+	console.log(farm.value);
     const farmAcc = ref<any>();
 
     const farmerIdentity = ref<string>();
