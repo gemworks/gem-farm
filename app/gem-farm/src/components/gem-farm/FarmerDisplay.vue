@@ -35,7 +35,7 @@
         />
       </div>
     </div>
-    <button class="nes-btn is-primary mb-5" @click="refreshFarmer">
+    <button class="nes-btn is-dark mb-5" @click="refreshFarmer">
       Refresh account
     </button>
   </div>

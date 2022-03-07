@@ -29,14 +29,14 @@
       >
         <button
           v-if="farmerState === 'staked' && selectedNFTs.length > 0"
-          class="nes-btn is-primary mr-5"
+          class="nes-btn is-dark mr-5"
           @click="addGems"
         >
           Add Gems (resets staking)
         </button>
         <button
           v-if="farmerState === 'unstaked'"
-          class="nes-btn is-success mr-5"
+          class="nes-btn is-dark mr-5"
           @click="beginStaking"
         >
           Begin staking
@@ -55,20 +55,20 @@
         >
           End cooldown
         </button>
-        <button class="nes-btn is-warning" @click="claim">
+        <button class="nes-btn is-dark" @click="claim">
           Claim {{ availableA }} A / {{ availableB }} B
         </button>
       </Vault>
     </div>
     <div v-else>
       <div class="w-full text-center mb-5">
-        Farmer account not found :( Create a new one?
+        Farmer account not found :( 
       </div>
-      <div class="w-full text-center">
+      <!-- <div class="w-full text-center">
         <button class="nes-btn is-primary" @click="initFarmer">
           New Farmer
         </button>
-      </div>
+      </div> -->
     </div>
   </div>
 </template>
@@ -166,6 +166,7 @@ export default defineComponent({
         try {
           await fetchFarn();
           await fetchFarmer();
+          await initFarmer();
         } catch (e) {
           console.log(`farm with PK ${farm.value} not found :(`);
         }
