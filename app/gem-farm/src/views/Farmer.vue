@@ -1,15 +1,7 @@
 <template>
   <ConfigPane />
-  <div v-if="!wallet" class="text-center">Pls connect (burner) wallet</div>
+  <div v-if="!wallet" class="text-center">Please connect wallet (Burner if possible)</div>
   <div v-else>
-    <!--
-    <div class="nes-container with-title mb-10">
-      <p class="title">Connect to a Farm</p>
-      <div class="nes-field mb-5">
-        <label for="farm">Farm address:</label>
-        <input id="farm" class="nes-input" v-model="farm" />
-      </div>
-    </div>-->
 
     <div v-if="farmerAcc">
       <FarmerDisplay
@@ -32,7 +24,7 @@
           class="nes-btn is-primary mr-5"
           @click="addGems"
         >
-          Add Gems (resets staking)
+          Add Zillas (resets staking)
         </button>
         <button
           v-if="farmerState === 'unstaked'"
@@ -56,7 +48,7 @@
           End cooldown
         </button>
         <button class="nes-btn is-warning" @click="claim">
-          Claim {{ availableA }} A / {{ availableB }} B
+          Claim {{ availableA }} BZC
         </button>
       </Vault>
     </div>
