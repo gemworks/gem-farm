@@ -22,7 +22,7 @@ export default defineComponent({
     const path = computed(() => route.path);
 
     const menu = [
-      { name: '/', url: '/' },
+      { name: 'Baby Zilla Club Staking', url: '/' },
     ];
 
     return {
