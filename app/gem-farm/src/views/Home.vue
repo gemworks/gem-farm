@@ -33,7 +33,7 @@
         staking for.
       </p>
       <router-link to="manager">
-        <button class="nes-btn is-primary">Start a farm</button>
+        <button class="btn is-primary">Start a farm</button>
       </router-link>
     </div>
     <div class="nes-container with-title flex-1 ml-5">
@@ -43,7 +43,7 @@
         farms.
       </p>
       <router-link to="farmer">
-        <button class="nes-btn is-primary">Stake NFTs</button>
+        <button class="btn is-primary">Stake NFTs</button>
       </router-link>
     </div>
   </div>

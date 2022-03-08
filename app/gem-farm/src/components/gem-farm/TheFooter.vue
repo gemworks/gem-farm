@@ -1,24 +1,20 @@
 <template>
   <div class="footer pt-1 pb-1">
-    <p class="px-3">Built with</p>
-    <i class="nes-icon heart"></i>
-    <p class="px-3">
-      by
       <a
-        class="nes-text is-primary"
-        href="https://twitter.com/_ilmoi"
-        target="_blank"
-        >@_ilmoi</a
+        href='https://discord.gg/knighttemple'
+        target='_blank'
+        rel='noreferrer'
       >
-      | powered by
+        <img src="../../assets/discord.svg" height="31" width="28" />
+      </a>
+      <p class="px-3"></p>
       <a
-        class="nes-text is-primary"
-        href="https://twitter.com/GenesysGo"
-        target="_blank"
-        >GenesysGo</a
+        href='https://twitter.com/knighttemple'
+        target='_blank'
+        rel='noreferrer'
       >
-    </p>
-    <img src="../../assets/gg_logo.png" height="31" width="28" />
+        <img src="../../assets/twitter.svg" height="31" width="28" />
+      </a>
   </div>
 </template>
 
@@ -32,5 +28,6 @@ export default {};
   position: absolute;
   bottom: 0px;
   height: 40px;
+  background-color: black;
 }
 </style>

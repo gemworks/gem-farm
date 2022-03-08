@@ -1,7 +1,7 @@
 <template>
   <div class="nes-container with-title">
     <p class="title">Create Test Reward Mint</p>
-    <button class="nes-btn is-primary" @click="createTestReward">
+    <button class="btn is-primary" @click="createTestReward">
       Create Test Mint
     </button>
     <div v-if="mint">

@@ -112,15 +112,15 @@
       </div>
       <!--buttons-->
       <div class="flex mb-5">
-        <button type="submit" class="nes-btn is-primary mr-5">Fund</button>
+        <button type="submit" class="btn is-primary mr-5">Fund</button>
         <button
           type="button"
-          class="nes-btn is-error mr-5"
+          class="btn is-error mr-5"
           @click="cancelReward"
         >
           Cancel
         </button>
-        <button type="button" class="nes-btn is-warning" @click="lockReward">
+        <button type="button" class="btn is-warning" @click="lockReward">
           Lock
         </button>
       </div>

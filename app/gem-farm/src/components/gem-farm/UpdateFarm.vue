@@ -34,7 +34,7 @@
           v-model="unstakingFeeLamp"
         />
       </div>
-      <button class="nes-btn is-primary mb-5" type="submit">Update farm</button>
+      <button class="btn is-primary mb-5" type="submit">Update farm</button>
     </form>
   </div>
 </template>
