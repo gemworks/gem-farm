@@ -61,10 +61,10 @@
       </Vault>
     </div>
     <div v-else>
-      <div class="w-full text-center mb-5">
+      <!-- <div class="w-full text-center mb-5">
         Farmer account not found :( 
       </div>
-      <!-- <div class="w-full text-center">
+      <div class="w-full text-center">
         <button class="nes-btn is-primary" @click="initFarmer">
           New Farmer
         </button>
