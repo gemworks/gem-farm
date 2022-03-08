@@ -4,12 +4,12 @@
   <div v-else>
     <div class="flex mb-10 w-full justify-center">
       <button
-        class="nes-btn is-primary mr-5"
+        class="btn is-primary mr-5"
         @click="showNewFarm = !showNewFarm"
       >
         New farm
       </button>
-      <button class="nes-btn" @click="refreshFarms">Refetch farms</button>
+      <button class="btn" @click="refreshFarms">Refetch farms</button>
     </div>
 
     <!--new farm-->

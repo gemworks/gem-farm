@@ -38,7 +38,7 @@
       </div>
 
       <div class="mt-2">
-        <button class="nes-btn is-primary">Update</button>
+        <button class="btn is-primary">Update</button>
       </div>
     </form>
 

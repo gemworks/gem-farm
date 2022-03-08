@@ -56,7 +56,7 @@
           v-model="unstakingFeeLamp"
         />
       </div>
-      <button class="nes-btn is-primary mb-5" type="submit">Start farm*</button>
+      <button class="btn is-primary mb-5" type="submit">Start farm*</button>
       <p class="mb-5">* this creates an associated Gem Bank automatically</p>
     </form>
   </div>

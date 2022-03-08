@@ -65,6 +65,7 @@ export default defineComponent({
     border-bottom-style: dotted;
     border-left-style: solid;
     border-radius: 5px;
+    animation: effect 2s linear infinite;
   }
   div.nes-select.is-dark.flex::after {
     display: none;

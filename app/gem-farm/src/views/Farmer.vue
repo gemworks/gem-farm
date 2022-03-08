@@ -29,33 +29,33 @@
       >
         <button
           v-if="farmerState === 'staked' && selectedNFTs.length > 0"
-          class="nes-btn is-dark mr-5"
+          class="btn is-dark mr-5"
           @click="addGems"
         >
           Add Gems (resets staking)
         </button>
         <button
           v-if="farmerState === 'unstaked'"
-          class="nes-btn is-dark mr-5"
+          class="btn is-dark mr-5"
           @click="beginStaking"
         >
           Begin staking
         </button>
         <button
           v-if="farmerState === 'staked'"
-          class="nes-btn is-error mr-5"
+          class="btn is-error mr-5"
           @click="endStaking"
         >
           End staking
         </button>
         <button
           v-if="farmerState === 'pendingCooldown'"
-          class="nes-btn is-error mr-5"
+          class="is-error mr-5"
           @click="endStaking"
         >
           End cooldown
         </button>
-        <button class="nes-btn is-dark" @click="claim">
+        <button class="btn is-dark" @click="claim">
           Claim {{ availableA }} A / {{ availableB }} B
         </button>
       </Vault>
@@ -65,7 +65,7 @@
         Farmer account not found :( 
       </div>
       <div class="w-full text-center">
-        <button class="nes-btn is-primary" @click="initFarmer">
+        <button class="btn is-primary" @click="initFarmer">
           New Farmer
         </button>
       </div> -->

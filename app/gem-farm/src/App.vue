@@ -45,4 +45,30 @@ input[type='radio']:checked + span {
   margin-top: auto;
   margin-bottom: auto;
 }
+.nes-container {
+  animation: effect 2s linear infinite;
+  border-style: dotted;
+}
+.btn {
+  color: white;
+  border-color: #7b4ff5;
+  border-width: 1.5px;
+  padding-right: 0.8em;
+  padding-left: 0.8em;
+}
+
+@keyframes effect {
+  0% {
+      border-color: #4fc0f5;
+      -webkit-background-clip: text;
+  }
+  50% {
+      border-color: #c53ce7;
+      -webkit-background-clip: text;
+  }
+  100% {
+      border-color: #4fc0f5;
+      -webkit-background-clip: text;
+  }
+}
 </style>

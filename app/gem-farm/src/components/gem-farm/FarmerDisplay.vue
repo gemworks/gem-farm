@@ -1,20 +1,17 @@
 <template>
   <div class="nes-container with-title">
     <p class="title bg-dark">Your Staking Account</p>
-    <div class="mb-2">
+    <!-- <div class="mb-2">
       state:
       <p class="inline-block">
         {{ parseFarmerState(farmerAcc) }}
       </p>
-    </div>
-    <div class="mb-2">Your identity: {{ farmerAcc.identity.toBase58() }}</div>
-    <div class="mb-2">Associated vault: {{ farmerAcc.vault.toBase58() }}</div>
-    <div class="mb-2">Gems staked: {{ farmerAcc.gemsStaked }}</div>
-    <div class="mb-2">
-      Min staking ends: {{ parseDate(farmerAcc.minStakingEndsTs) }}
-    </div>
+    </div> -->
+    <div class="mb-2">Total NFTs: 1000</div>
+    <div class="mb-2">NFTs Staked: {{ farmAcc.gemsStaked }}</div>
+    <div class="mb-2">Percentage Staked: {{ farmAcc.gemsStaked * 100 / 1000 }}</div>
     <div class="mb-5">
-      Cooldown ends: {{ parseDate(farmerAcc.cooldownEndsTs) }}
+      PALD Earned: {{ farmAcc.rewardA.funds.totalAccruedToStakers }}
     </div>
 
     <div class="flex mb-5 row">
@@ -23,19 +20,19 @@
           :key="farmerAcc.rewardA"
           :farmReward="farmAcc.rewardA"
           :reward="farmerAcc.rewardA"
-          title="Reward A"
+          title="PALD"
         />
       </div>
-      <div class="flex-1 m-2 col-sm-12">
+      <!-- <div class="flex-1 m-2 col-sm-12">
         <FarmerRewardDisplay
           :key="farmerAcc.rewardB"
           :farmReward="farmAcc.rewardB"
           :reward="farmerAcc.rewardB"
           title="Reward B"
         />
-      </div>
+      </div> -->
     </div>
-    <button class="nes-btn is-dark mb-5" @click="refreshFarmer">
+    <button class="btn is-dark mb-5" @click="refreshFarmer">
       Refresh account
     </button>
   </div>

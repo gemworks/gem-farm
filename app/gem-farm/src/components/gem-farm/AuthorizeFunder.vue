@@ -8,7 +8,7 @@
           <label for="authorizeFunder"></label>
           <input id="authorizeFunder" class="nes-input" v-model="toAuthorize" />
         </div>
-        <button class="nes-btn is-primary mb-5">Authorize</button>
+        <button class="btn is-primary mb-5">Authorize</button>
       </form>
       <!--DEauthorize-->
       <form class="flex-1" @submit.prevent="deauthorizeFunder">
@@ -20,7 +20,7 @@
             v-model="toDeauthorize"
           />
         </div>
-        <button class="nes-btn is-primary mb-5">Deauthorize</button>
+        <button class="btn is-primary mb-5">Deauthorize</button>
       </form>
     </div>
     <!--list of current funders-->
