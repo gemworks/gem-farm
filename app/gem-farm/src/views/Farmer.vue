@@ -37,7 +37,8 @@
         <button
           v-if="farmerState === 'unstaked'"
           class="btn is-dark mr-5"
-          @click="beginStaking"
+          @click="beginStaking" 
+          
         >
           Begin staking
         </button>
@@ -56,19 +57,18 @@
           End cooldown
         </button>
         <button class="btn is-dark" @click="claim">
-          Claim {{ availableA }} A / {{ availableB }} B
+          Claim {{ availableA }} PALD
         </button>
       </Vault>
     </div>
     <div v-else>
-      <!-- <div class="w-full text-center mb-5">
-        Farmer account not found :( 
+       <div class="w-full text-center mb-5"> 
       </div>
       <div class="w-full text-center">
         <button class="btn is-primary" @click="initFarmer">
-          New Farmer
+          Stake Swords
         </button>
-      </div> -->
+      </div> 
     </div>
   </div>
 </template>

@@ -9,7 +9,7 @@
       class="btn is-primary mr-5"
       @click="moveNFTsOnChain"
     >
-      Move Gems!
+      Transfer NFTs
     </button>
     <slot />
   </div>
@@ -19,14 +19,14 @@
     <!--left-->
     <div class="col-sm-12 m-2">
       <NFTGrid
-        title="Your wallet"
+        title="Your Paladin"
         class="flex-1"
         :nfts="desiredWalletNFTs"
         @selected="handleWalletSelected"
       />
     </div>
     <!--mid-->
-    <!-- <div class="m-2 flex flex-col">
+     <div class="m-2 flex flex-col">
       <ArrowButton
         :disabled="vaultLocked"
         class="my-2"
@@ -38,13 +38,13 @@
         :left="true"
         @click="moveNFTsFE(true)"
       />
-    </div> -->
+    </div> 
 
     <!--right-->
     <div class="col-sm-12 m-2">
       <NFTGrid
         v-if="bank && vault"
-        title="Your vault"
+        title="The Temple"
         class="flex-1"
         :nfts="desiredVaultNFTs"
         @selected="handleVaultSelected"

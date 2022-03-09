@@ -1,6 +1,6 @@
 <template>
   <div class="nes-container with-title">
-    <p class="title bg-dark">Your Staking Account</p>
+    <p class="title bg-dark">All Paladins </p>
     <!-- <div class="mb-2">
       state:
       <p class="inline-block">
@@ -8,11 +8,11 @@
       </p>
     </div> -->
     <div class="mb-2">Total NFTs: 1000</div>
+    
     <div class="mb-2">NFTs Staked: {{ farmAcc.gemsStaked }}</div>
-    <div class="mb-2">Percentage Staked: {{ farmAcc.gemsStaked * 100 / 1000 }}</div>
-    <div class="mb-5">
-      PALD Earned: {{ farmAcc.rewardA.funds.totalAccruedToStakers }}
-    </div>
+    <div class="mb-2">Percentage Staked: {{ farmAcc.gemsStaked * 100 / 1000 }}%</div>
+    <div class="mb-5">Total PALD Earned: {{ farmAcc.rewardA.funds.totalAccruedToStakers }}</div>
+    
 
     <div class="flex mb-5 row">
       <div class="flex-1 m-2 col-sm-12">
@@ -20,7 +20,7 @@
           :key="farmerAcc.rewardA"
           :farmReward="farmAcc.rewardA"
           :reward="farmerAcc.rewardA"
-          title="PALD"
+          title="Your Rewards"
         />
       </div>
       <!-- <div class="flex-1 m-2 col-sm-12">

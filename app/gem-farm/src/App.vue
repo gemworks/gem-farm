@@ -25,11 +25,11 @@ export default {
 
 <style>
 @font-face {
-  font-family: 'VT323-Regular';
+  font-family: 'Blackadder ITC';
   src: url('./assets/fonts/VT323-Regular.ttf');
 }
 * {
-  font-family: 'VT323-Regular', monospace;
+  font-family: 'Blackadder ITC', monospace;
   cursor: url(https://cur.cursors-4u.net/sports/spo-1/spo15.cur), auto !important;
   color: white;
 }
