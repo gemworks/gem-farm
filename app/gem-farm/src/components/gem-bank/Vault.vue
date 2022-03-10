@@ -18,6 +18,19 @@
 <div class="container">
   <ul class="nav nav-tabs border-0">
     <li class="active"><a data-toggle="tab" href="#paladin" class="t-btn">Your Pladin</a></li>
+    <li>
+      <ArrowButton
+        :disabled="vaultLocked"
+        :left="true"
+        @click="moveNFTsFE(true)"
+      />
+    </li>
+    <li>
+      <ArrowButton
+        :disabled="vaultLocked"
+        @click="moveNFTsFE(false)"
+      />
+    </li>
     <li><a data-toggle="tab" href="#temple" class="t-btn">The Temple</a></li>
   </ul>
 
@@ -358,13 +371,12 @@ export default defineComponent({
   color: #fff;
   cursor: default;
   background-color: transparent;
-  margin-right: 2px;
   line-height: 1.42857143;
   border: 1px solid transparent;
   border-radius: 4px 4px 0 0;
   position: relative;
   display: block;
-  padding: 10px 15px;
+  padding: 10px 10px;
 }
 .t-btn:hover {
   background-color: gray;
