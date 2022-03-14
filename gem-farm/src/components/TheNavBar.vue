@@ -24,7 +24,7 @@ export default defineComponent({
     const menu = [
       { name: '/', url: '/' },
       { name: 'FARM MANAGER', url: '/manager' },
-      { name: 'FARMER', url: '/farmer' },
+      { name: 'Main', url: '/home' },
     ];
 
     return {

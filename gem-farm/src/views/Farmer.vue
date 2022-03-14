@@ -3,13 +3,13 @@
   <div v-if="!wallet" class="text-center">Pls connect (burner) wallet</div>
   <div v-else>
     <!--farm address-->
-    <div class="nes-container with-title mb-10">
+    <!-- <div class="nes-container with-title mb-10">
       <p class="title">Connect to a Farm</p>
       <div class="nes-field mb-5">
         <label for="farm">Farm address:</label>
-        <input id="farm" class="nes-input" v-model="farm" />
+        <input id="farm" class="nes-input" v-model="farm" disabled />
       </div>
-    </div>
+    </div>-->
 
     <div v-if="farmerAcc">
       <FarmerDisplay
@@ -31,43 +31,32 @@
           v-if="farmerState === 'staked' && selectedNFTs.length > 0"
           class="nes-btn is-primary mr-5"
           @click="addGems"
-        >
-          Add Gems (resets staking)
-        </button>
+        >Add Gems (resets staking)</button>
         <button
           v-if="farmerState === 'unstaked'"
           class="nes-btn is-success mr-5"
           @click="beginStaking"
-        >
-          Begin staking
-        </button>
+        >Begin staking</button>
         <button
           v-if="farmerState === 'staked'"
           class="nes-btn is-error mr-5"
           @click="endStaking"
-        >
-          End staking
-        </button>
+        >End staking</button>
         <button
           v-if="farmerState === 'pendingCooldown'"
           class="nes-btn is-error mr-5"
           @click="endStaking"
-        >
-          End cooldown
-        </button>
-        <button class="nes-btn is-warning" @click="claim">
-          Claim {{ availableA }} A / {{ availableB }} B
-        </button>
+        >End cooldown</button>
+        <button
+          class="nes-btn is-warning"
+          @click="claim"
+        >Claim {{ availableA }} A / {{ availableB }} B</button>
       </Vault>
     </div>
     <div v-else>
-      <div class="w-full text-center mb-5">
-        Farmer account not found :( Create a new one?
-      </div>
+      <div class="w-full text-center mb-5">Farmer account not found :( Create a new one?</div>
       <div class="w-full text-center">
-        <button class="nes-btn is-primary" @click="initFarmer">
-          New Farmer
-        </button>
+        <button class="nes-btn is-primary" @click="initFarmer">New Farmer</button>
       </div>
     </div>
   </div>
@@ -102,7 +91,7 @@ export default defineComponent({
     });
 
     // --------------------------------------- farmer details
-    const farm = ref<string>();
+    const farm = ref<string>("6XrrfwWWjfzfuT9fTTNrEMCsTtBJKiYxJykPxMsdaMC8");
     const farmAcc = ref<any>();
 
     const farmerIdentity = ref<string>();
