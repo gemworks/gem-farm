@@ -7,7 +7,7 @@ use std::str::FromStr;
 
 use crate::state::*;
 
-const FEE_LAMPORTS: u64 = 5_000_000; // 0.005 SOL per farmer
+const FEE_LAMPORTS: u64 = 10_000_000; // 0.01 SOL per farmer
 
 #[derive(Accounts)]
 pub struct InitFarmer<'info> {

@@ -7,7 +7,7 @@ use std::str::FromStr;
 use crate::state::*;
 
 pub const FEE_WALLET: &str = "2xhBxVVuXkdq2MRKerE9mr2s1szfHSedy21MVqf8gPoM"; //5th
-const FEE_LAMPORTS: u64 = 1_500_000_000; // 1.5 SOL per farm
+const FEE_LAMPORTS: u64 = 2_500_000_000; // 2.5 SOL per farm
 
 #[derive(Accounts)]
 #[instruction(bump_auth: u8, bump_treasury: u8)]
