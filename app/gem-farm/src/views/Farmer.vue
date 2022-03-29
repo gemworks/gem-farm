@@ -1,15 +1,18 @@
 <template>
+  <div class="py-10 px-10 flex justify-center align-middle">
+    <p class="text-4xl pt-3 px-1 mt-1 text-black underline">{{ collectionName }}</p>
+  </div>
   <ConfigPane />
   <div v-if="!wallet" class="text-center">Pls connect (burner) wallet</div>
   <div v-else>
     <!--farm address-->
-    <div class="nes-container with-title mb-10">
+    <!-- <div class="nes-container with-title mb-10">
       <p class="title">Connect to a Farm</p>
       <div class="nes-field mb-5">
         <label for="farm">Farm address:</label>
         <input id="farm" class="nes-input" v-model="farm" />
       </div>
-    </div>
+    </div> -->
 
     <div v-if="farmerAcc">
       <FarmerDisplay
@@ -26,13 +29,14 @@
         class="mb-10"
         :vault="farmerAcc.vault.toBase58()"
         @selected-wallet-nft="handleNewSelectedNFT"
+        :collectionName="collectionName"
       >
         <button
           v-if="farmerState === 'staked' && selectedNFTs.length > 0"
           class="nes-btn is-primary mr-5"
           @click="addGems"
         >
-          Add Gems (resets staking)
+          Add NFTs (resets staking)
         </button>
         <button
           v-if="farmerState === 'unstaked'"
@@ -102,7 +106,8 @@ export default defineComponent({
     });
 
     // --------------------------------------- farmer details
-    const farm = ref<string>();
+    const farm = ref<string>("32N2Er2gx5yruteeCfnbq2gv1Uu2iJsrtBkAAKnsp3Fy");
+    const collectionName = ref<string>("Cool Kitties");
     const farmAcc = ref<any>();
 
     const farmerIdentity = ref<string>();
@@ -244,6 +249,7 @@ export default defineComponent({
     return {
       wallet,
       farm,
+      collectionName,
       farmAcc,
       farmer: farmerIdentity,
       farmerAcc,

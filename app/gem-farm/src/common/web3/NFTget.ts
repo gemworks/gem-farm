@@ -53,11 +53,26 @@ async function getNFTMetadata(
 
 export async function getNFTMetadataForMany(
   tokens: any[],
-  conn: Connection
+  conn: Connection,
+  connectionName?: string
 ): Promise<INFT[]> {
   const promises: Promise<INFT | undefined>[] = [];
   tokens.forEach((t) => promises.push(getNFTMetadata(t.mint, conn, t.pubkey)));
-  const nfts = (await Promise.all(promises)).filter((n) => !!n);
+  let nfts = (await Promise.all(promises)).filter((n) => !!n);
+  if (connectionName) {
+    nfts.forEach((n) => {
+      console.log('name', (n?.externalMetadata as any).collection?.name);
+      console.log('connectionName', connectionName);
+      console.log(
+        'true',
+        (n?.externalMetadata as any).collection?.name === connectionName
+      );
+    });
+    nfts = nfts.filter(
+      (n) => (n?.externalMetadata as any).collection?.name === connectionName
+    );
+  }
+  console.log('nfts', nfts);
   console.log(`found ${nfts.length} metadatas`);
 
   return nfts as INFT[];
@@ -65,10 +80,11 @@ export async function getNFTMetadataForMany(
 
 export async function getNFTsByOwner(
   owner: PublicKey,
-  conn: Connection
+  conn: Connection,
+  connectionName?: string
 ): Promise<INFT[]> {
   const tokens = await getTokensByOwner(owner, conn);
   console.log(`found ${tokens.length} tokens`);
 
-  return await getNFTMetadataForMany(tokens, conn);
+  return await getNFTMetadataForMany(tokens, conn, connectionName);
 }

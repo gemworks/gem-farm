@@ -9,7 +9,7 @@
       class="nes-btn is-primary mr-5"
       @click="moveNFTsOnChain"
     >
-      Move Gems!
+      Move NFTs!
     </button>
     <slot />
   </div>
@@ -77,6 +77,7 @@ export default defineComponent({
   components: { ArrowButton, NFTGrid },
   props: {
     vault: String,
+    collectionName: String,
   },
   emits: ['selected-wallet-nft'],
   setup(props, ctx) {
@@ -109,7 +110,8 @@ export default defineComponent({
       if (getWallet()) {
         currentWalletNFTs.value = await getNFTsByOwner(
           getWallet()!.publicKey!,
-          getConnection()
+          getConnection(),
+          props.collectionName
         );
         desiredWalletNFTs.value = [...currentWalletNFTs.value];
       }
