@@ -6,26 +6,76 @@
         (toWalletNFTs && toWalletNFTs.length) ||
         (toVaultNFTs && toVaultNFTs.length)
       "
-      class="nes-btn is-primary mr-5"
+      class="btn is-primary mr-5"
       @click="moveNFTsOnChain"
     >
-      Move Gems!
+      Transfer NFTs
     </button>
     <slot />
   </div>
 
-  <!--wallet + vault view-->
-  <div class="flex items-stretch">
-    <!--left-->
-    <NFTGrid
-      title="Your wallet"
-      class="flex-1"
-      :nfts="desiredWalletNFTs"
-      @selected="handleWalletSelected"
-    />
 
+<div class="container">
+  <ul class="nav nav-tabs border-0">
+    <li class="active"><a data-toggle="tab" href="#paladin" class="t-btn">Your Pladin</a></li>
+    <li>
+      <ArrowButton
+        :disabled="vaultLocked"
+        :left="true"
+        @click="moveNFTsFE(true)"
+      />
+    </li>
+    <li>
+      <ArrowButton
+        :disabled="vaultLocked"
+        @click="moveNFTsFE(false)"
+      />
+    </li>
+    <li><a data-toggle="tab" href="#temple" class="t-btn">The Temple</a></li>
+  </ul>
+
+  <div class="tab-content">
+    <div id="paladin" class="tab-pane fade in active">
+      <NFTGrid
+        title=""
+        class="flex-1"
+        :nfts="desiredWalletNFTs"
+        @selected="handleWalletSelected"
+      />
+    </div>
+    <div id="temple" class="tab-pane fade">
+      <NFTGrid
+        v-if="bank && vault"
+        title=""
+        class="flex-1"
+        :nfts="desiredVaultNFTs"
+        @selected="handleVaultSelected"
+      >
+      <div
+          v-if="vaultLocked"
+          class="locked flex-col justify-center items-center align-center"
+        >
+          <p class="mt-10">This vault is locked!</p>
+        </div>
+      </NFTGrid>
+    </div>
+  </div>
+</div>
+
+
+  <!--wallet + vault view-->
+  <div class="flex">
+    <!--left-->
+    <!-- <div class="col-sm-12 col-md-4 m-2"> -->
+      <!-- <NFTGrid
+        title="Your Paladin"
+        class="flex-1"
+        :nfts="desiredWalletNFTs"
+        @selected="handleWalletSelected"
+      /> -->
+    <!-- </div> -->
     <!--mid-->
-    <div class="m-2 flex flex-col">
+    <!-- <div class="m-2 flex flex-col">
       <ArrowButton
         :disabled="vaultLocked"
         class="my-2"
@@ -37,23 +87,25 @@
         :left="true"
         @click="moveNFTsFE(true)"
       />
-    </div>
+    </div>  -->
 
     <!--right-->
-    <NFTGrid
-      v-if="bank && vault"
-      title="Your vault"
-      class="flex-1"
-      :nfts="desiredVaultNFTs"
-      @selected="handleVaultSelected"
-    >
-      <div
-        v-if="vaultLocked"
-        class="locked flex-col justify-center items-center align-center"
-      >
-        <p class="mt-10">This vault is locked!</p>
-      </div>
-    </NFTGrid>
+    <!-- <div class="col-sm-12 m-2 col-md-4"> -->
+      <!-- <NFTGrid
+        v-if="bank && vault"
+        title="The Temple"
+        class="flex-1"
+        :nfts="desiredVaultNFTs"
+        @selected="handleVaultSelected"
+      > -->
+        <!-- <div
+          v-if="vaultLocked"
+          class="locked flex-col justify-center items-center align-center"
+        >
+          <p class="mt-10">This vault is locked!</p>
+        </div>
+      </NFTGrid> -->
+    <!-- </div> -->
   </div>
 </template>
 
@@ -313,4 +365,27 @@ export default defineComponent({
   opacity: 0.7;
   z-index: 10;
 }
+
+.t-btn {
+  text-decoration: none;
+  color: #fff;
+  cursor: default;
+  background-color: transparent;
+  line-height: 1.42857143;
+  border: 1px solid transparent;
+  border-radius: 4px 4px 0 0;
+  position: relative;
+  display: block;
+  padding: 10px 10px;
+}
+.t-btn:hover {
+  background-color: gray;
+}
+.t-btn.active {
+  animation: effect 2s linear infinite;
+  border-width: 3px;
+  border-style: dotted;
+  border-bottom: none;
+}
+
 </style>
