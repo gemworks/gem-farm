@@ -28,7 +28,7 @@ export async function initGemBank(
   wallet?: SignerWalletAdapter
 ) {
   const walletToUse = wallet ?? createFakeWallet();
-  const idl = await (await fetch('gem_bank.json')).json();
+  const idl = await (await fetch('/gem_bank.json')).json();
   return new GemBank(conn, walletToUse as any, idl);
 }
 

@@ -19,8 +19,8 @@ export async function initGemFarm(
   wallet?: SignerWalletAdapter
 ) {
   const walletToUse = wallet ?? createFakeWallet();
-  const farmIdl = await (await fetch('gem_farm.json')).json();
-  const bankIdl = await (await fetch('gem_bank.json')).json();
+  const farmIdl = await (await fetch('/gem_farm.json')).json();
+  const bankIdl = await (await fetch('/gem_bank.json')).json();
   return new GemFarm(conn, walletToUse as any, farmIdl, bankIdl);
 }
 

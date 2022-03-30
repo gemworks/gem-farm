@@ -91,7 +91,8 @@ import { findFarmerPDA, stringifyPKsAndBNs } from '@gemworks/gem-farm-ts';
 
 export default defineComponent({
   components: { Vault, FarmerDisplay, ConfigPane },
-  setup() {
+  props: {collectionName: String, farmAddress: String},
+  setup(props) {
     const { wallet, getWallet } = useWallet();
     const { cluster, getConnection } = useCluster();
 
@@ -106,8 +107,9 @@ export default defineComponent({
     });
 
     // --------------------------------------- farmer details
-    const farm = ref<string>("32N2Er2gx5yruteeCfnbq2gv1Uu2iJsrtBkAAKnsp3Fy");
-    const collectionName = ref<string>("Cool Kitties");
+    console.log("props", props)
+    const collectionName = ref<string>(props.collectionName!);
+    const farm = ref<string>(props.farmAddress!);
     const farmAcc = ref<any>();
 
     const farmerIdentity = ref<string>();
