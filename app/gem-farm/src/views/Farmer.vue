@@ -33,33 +33,33 @@
       >
         <button
           v-if="farmerState === 'staked' && selectedNFTs.length > 0"
-          class="nes-btn is-primary mr-5"
+          class="inline-flex justify-center rounded-md border px-4 py-2 text-base font-medium sm:text-sm border-transparent text-white hover:bg-blue-600 bg-blue-500 focus:outline-none mr-5"
           @click="addGems"
         >
           Add NFTs (resets staking)
         </button>
         <button
           v-if="farmerState === 'unstaked'"
-          class="nes-btn is-success mr-5"
+          class="inline-flex justify-center items-center rounded-md border px-4 py-2 text-base font-medium sm:text-sm border-transparent text-white hover:bg-green-600 bg-green-500 focus:outline-none mr-5"
           @click="beginStaking"
         >
           Begin staking
         </button>
         <button
           v-if="farmerState === 'staked'"
-          class="nes-btn is-error mr-5"
+          class="inline-flex justify-center items-center rounded-md border px-4 py-2 text-base font-medium sm:text-sm border-transparent text-white hover:bg-red-600 bg-red-500 focus:outline-none  mr-5"
           @click="endStaking"
         >
           End staking
         </button>
         <button
           v-if="farmerState === 'pendingCooldown'"
-          class="nes-btn is-error mr-5"
+          class="inline-flex justify-center items-center rounded-md border px-4 py-2 text-base font-medium sm:text-sm border-transparent text-white hover:bg-red-600 bg-red-500 focus:outline-none  is-error mr-5"
           @click="endStaking"
         >
           End cooldown
         </button>
-        <button class="nes-btn is-warning" @click="claim">
+        <button class="inline-flex justify-center items-center rounded-md border px-4 py-2 text-base font-medium sm:text-sm border-transparent text-white hover:bg-yellow-600 bg-yellow-500 focus:outline-none  is-warning" @click="claim">
           Claim {{ availableA }} A / {{ availableB }} B
         </button>
       </Vault>
@@ -69,7 +69,7 @@
         Farmer account not found :( Create a new one?
       </div>
       <div class="w-full text-center">
-        <button class="nes-btn is-primary" @click="initFarmer">
+        <button class="inline-flex justify-center rounded-md border px-4 py-2 text-base font-medium sm:text-sm border-transparent text-white hover:bg-blue-600 bg-blue-500 focus:outline-none" @click="initFarmer">
           New Farmer
         </button>
       </div>

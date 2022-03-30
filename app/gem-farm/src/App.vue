@@ -19,7 +19,8 @@ export default {
 
 <style>
 * {
-  font-family: 'Press Start 2P', monospace;
+  /* font-family: 'Press Start 2P', monospace; */
+  cursor: auto;
 }
 input[type='radio']:checked + span {
   @apply text-black;
