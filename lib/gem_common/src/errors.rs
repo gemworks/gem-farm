@@ -47,7 +47,7 @@ pub enum ErrorCode {
     #[msg("vault is currently locked or frozen and cannot be accessed")]
     VaultAccessSuspended, //0x1784
 
-    #[msg("vault doesnt't containt any gems")]
+    #[msg("vault doesn't contain any gems")]
     VaultIsEmpty,
 
     #[msg("this gem is not present on any of the whitelists")]
