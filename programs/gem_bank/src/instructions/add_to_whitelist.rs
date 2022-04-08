@@ -1,4 +1,6 @@
 use anchor_lang::prelude::*;
+use anchor_lang::Discriminator;
+use arrayref::array_ref;
 use gem_common::*;
 
 use crate::state::*;
@@ -32,6 +34,16 @@ pub struct AddToWhitelist<'info> {
 }
 
 pub fn handler(ctx: Context<AddToWhitelist>, whitelist_type: u8) -> Result<()> {
+    // fix missing discriminator check
+    {
+        let acct = ctx.accounts.whitelist_proof.to_account_info();
+        let data: &[u8] = &acct.try_borrow_data()?;
+        let disc_bytes = array_ref![data, 0, 8];
+        if disc_bytes != &WhitelistProof::discriminator() && disc_bytes.iter().any(|a| a != &0) {
+            return Err(error!(ErrorCode::AccountDiscriminatorMismatch));
+        }
+    }
+
     // create/update whitelist proof
     let proof = &mut ctx.accounts.whitelist_proof;
 

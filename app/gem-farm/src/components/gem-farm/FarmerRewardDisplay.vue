@@ -9,7 +9,8 @@
         Last recorded accrued reward per gem:
         {{
           numeral(
-            reward.variableRate.lastRecordedAccruedRewardPerRarityPoint.n / 10 ** 15
+            reward.variableRate.lastRecordedAccruedRewardPerRarityPoint.n /
+              10 ** 3
           ).format('0,0.0')
         }}
       </div>

@@ -25,3 +25,4 @@ thiserror = "1.0.30"
 metaplex-token-metadata = { version = "0.0.1", features = ["no-entrypoint"] }
 gem_common = {path='../../lib/gem_common'}
 proc_macros = {path='../../lib/proc_macros'}
+arrayref = "0.3.6"

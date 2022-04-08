@@ -13,16 +13,16 @@
       <div class="mb-2">
         Reward rate:
         {{
-          numeral(reward.variableRate.rewardRate.n / 10 ** 15).format('0,0.0')
+          numeral(reward.variableRate.rewardRate.n / 10 ** 3).format('0,0.0')
         }}
         tokens/s
       </div>
       <div class="mb-2">
         Accrued reward/gem:
         {{
-          numeral(reward.variableRate.accruedRewardPerRarityPoint.n / 10 ** 15).format(
-            '0,0.0'
-          )
+          numeral(
+            reward.variableRate.accruedRewardPerRarityPoint.n / 10 ** 3
+          ).format('0,0.0')
         }}
       </div>
       <div class="mb-2">
