@@ -1065,7 +1065,11 @@ export class GemFarmClient extends GemBankClient {
 
   createExtraComputeIx(newComputeBudget: number): TransactionInstruction {
     const data = Buffer.from(
-      Uint8Array.of(0, ...new BN(newComputeBudget).toArray('le', 4))
+      Uint8Array.of(
+        0,
+        ...new BN(newComputeBudget).toArray('le', 4),
+        ...new BN(0).toArray('le', 4)
+      )
     );
 
     return new TransactionInstruction({
