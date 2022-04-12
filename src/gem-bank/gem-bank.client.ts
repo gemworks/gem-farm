@@ -333,6 +333,54 @@ export class GemBankClient extends AccountUtils {
     metadata?: PublicKey,
     creatorProof?: PublicKey
   ) {
+    const {
+      vaultAuth,
+      vaultAuthBump,
+      gemBox,
+      gemBoxBump,
+      GDR,
+      GDRBump,
+      gemRarity,
+      gemRarityBump,
+      builder,
+    } = await this.buildDepositGem(
+      bank,
+      vault,
+      vaultOwner,
+      gemAmount,
+      gemMint,
+      gemSource,
+      mintProof,
+      metadata,
+      creatorProof
+    );
+
+    const txSig = await builder.rpc();
+
+    return {
+      vaultAuth,
+      vaultAuthBump,
+      gemBox,
+      gemBoxBump,
+      GDR,
+      GDRBump,
+      gemRarity,
+      gemRarityBump,
+      txSig,
+    };
+  }
+
+  async buildDepositGem(
+    bank: PublicKey,
+    vault: PublicKey,
+    vaultOwner: PublicKey | Keypair,
+    gemAmount: BN,
+    gemMint: PublicKey,
+    gemSource: PublicKey,
+    mintProof?: PublicKey,
+    metadata?: PublicKey,
+    creatorProof?: PublicKey
+  ) {
     const [gemBox, gemBoxBump] = await findGemBoxPDA(vault, gemMint);
     const [GDR, GDRBump] = await findGdrPDA(vault, gemMint);
     const [vaultAuth, vaultAuthBump] = await findVaultAuthorityPDA(vault);
@@ -364,31 +412,24 @@ export class GemBankClient extends AccountUtils {
     console.log(
       `depositing ${gemAmount} gems into ${gemBox.toBase58()}, GDR ${GDR.toBase58()}`
     );
-    const txSig = await this.bankProgram.rpc.depositGem(
-      vaultAuthBump,
-      gemRarityBump,
-      gemAmount,
-      {
-        accounts: {
-          bank,
-          vault,
-          owner: isKp(vaultOwner)
-            ? (<Keypair>vaultOwner).publicKey
-            : vaultOwner,
-          authority: vaultAuth,
-          gemBox,
-          gemDepositReceipt: GDR,
-          gemSource,
-          gemMint,
-          gemRarity,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          systemProgram: SystemProgram.programId,
-          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-        },
-        remainingAccounts,
-        signers,
-      }
-    );
+    const builder = this.bankProgram.methods
+      .depositGem(vaultAuthBump, gemRarityBump, gemAmount)
+      .accounts({
+        bank,
+        vault,
+        owner: isKp(vaultOwner) ? (<Keypair>vaultOwner).publicKey : vaultOwner,
+        authority: vaultAuth,
+        gemBox,
+        gemDepositReceipt: GDR,
+        gemSource,
+        gemMint,
+        gemRarity,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      })
+      .remainingAccounts(remainingAccounts)
+      .signers(signers);
 
     return {
       vaultAuth,
@@ -399,11 +440,55 @@ export class GemBankClient extends AccountUtils {
       GDRBump,
       gemRarity,
       gemRarityBump,
-      txSig,
+      builder,
     };
   }
 
   async withdrawGem(
+    bank: PublicKey,
+    vault: PublicKey,
+    vaultOwner: PublicKey | Keypair,
+    gemAmount: BN,
+    gemMint: PublicKey,
+    receiver: PublicKey
+  ) {
+    const {
+      gemBox,
+      gemBoxBump,
+      GDR,
+      GDRBump,
+      gemRarity,
+      gemRarityBump,
+      vaultAuth,
+      vaultAuthBump,
+      gemDestination,
+      builder,
+    } = await this.buildWithdrawGem(
+      bank,
+      vault,
+      vaultOwner,
+      gemAmount,
+      gemMint,
+      receiver
+    );
+
+    const txSig = await builder.rpc();
+
+    return {
+      gemBox,
+      gemBoxBump,
+      GDR,
+      GDRBump,
+      gemRarity,
+      gemRarityBump,
+      vaultAuth,
+      vaultAuthBump,
+      gemDestination,
+      txSig,
+    };
+  }
+
+  async buildWithdrawGem(
     bank: PublicKey,
     vault: PublicKey,
     vaultOwner: PublicKey | Keypair,
@@ -424,34 +509,25 @@ export class GemBankClient extends AccountUtils {
     console.log(
       `withdrawing ${gemAmount} gems from ${gemBox.toBase58()}, GDR ${GDR.toBase58()}`
     );
-    const txSig = await this.bankProgram.rpc.withdrawGem(
-      vaultAuthBump,
-      gemBoxBump,
-      GDRBump,
-      gemRarityBump,
-      gemAmount,
-      {
-        accounts: {
-          bank,
-          vault,
-          owner: isKp(vaultOwner)
-            ? (<Keypair>vaultOwner).publicKey
-            : vaultOwner,
-          authority: vaultAuth,
-          gemBox,
-          gemDepositReceipt: GDR,
-          gemDestination,
-          gemMint,
-          gemRarity,
-          receiver,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-          systemProgram: SystemProgram.programId,
-          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-        },
-        signers,
-      }
-    );
+    const builder = this.bankProgram.methods
+      .withdrawGem(vaultAuthBump, gemBoxBump, GDRBump, gemRarityBump, gemAmount)
+      .accounts({
+        bank,
+        vault,
+        owner: isKp(vaultOwner) ? (<Keypair>vaultOwner).publicKey : vaultOwner,
+        authority: vaultAuth,
+        gemBox,
+        gemDepositReceipt: GDR,
+        gemDestination,
+        gemMint,
+        gemRarity,
+        receiver,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      })
+      .signers(signers);
 
     return {
       gemBox,
@@ -463,7 +539,7 @@ export class GemBankClient extends AccountUtils {
       vaultAuth,
       vaultAuthBump,
       gemDestination,
-      txSig,
+      builder,
     };
   }
 

@@ -449,6 +449,34 @@ export class GemFarmClient extends GemBankClient {
     farmerIdentity: PublicKey | Keypair,
     payer: PublicKey | Keypair
   ) {
+    const {
+      farmer,
+      farmerBump,
+      vault,
+      vaultBump,
+      vaultAuth,
+      vaultAuthBump,
+      builder,
+    } = await this.buildInitFarmer(farm, farmerIdentity, payer);
+
+    const txSig = await builder.rpc();
+
+    return {
+      farmer,
+      farmerBump,
+      vault,
+      vaultBump,
+      vaultAuth,
+      vaultAuthBump,
+      txSig,
+    };
+  }
+
+  async buildInitFarmer(
+    farm: PublicKey,
+    farmerIdentity: PublicKey | Keypair,
+    payer: PublicKey | Keypair
+  ) {
     const identityPk = isKp(farmerIdentity)
       ? (<Keypair>farmerIdentity).publicKey
       : <PublicKey>farmerIdentity;
@@ -464,8 +492,9 @@ export class GemFarmClient extends GemBankClient {
     if (isKp(payer)) signers.push(<Keypair>payer);
 
     console.log('adding farmer', identityPk.toBase58());
-    const txSig = await this.farmProgram.rpc.initFarmer({
-      accounts: {
+    const builder = this.farmProgram.methods
+      .initFarmer()
+      .accounts({
         farm,
         farmer,
         identity: identityPk,
@@ -475,9 +504,8 @@ export class GemFarmClient extends GemBankClient {
         vault,
         gemBank: this.bankProgram.programId,
         systemProgram: SystemProgram.programId,
-      },
-      signers,
-    });
+      })
+      .signers(signers);
 
     return {
       farmer,
@@ -486,11 +514,44 @@ export class GemFarmClient extends GemBankClient {
       vaultBump,
       vaultAuth,
       vaultAuthBump,
-      txSig,
+      builder,
     };
   }
 
   async stakeCommon(
+    farm: PublicKey,
+    farmerIdentity: PublicKey | Keypair,
+    unstake = false,
+    skipRewards = false
+  ) {
+    const {
+      farmer,
+      farmerBump,
+      vault,
+      vaultBump,
+      farmAuth,
+      farmAuthBump,
+      farmTreasury,
+      farmTreasuryBump,
+      builder,
+    } = await this.buildStakeCommon(farm, farmerIdentity, unstake, skipRewards);
+
+    const txSig = await builder.rpc();
+
+    return {
+      farmer,
+      farmerBump,
+      vault,
+      vaultBump,
+      farmAuth,
+      farmAuthBump,
+      farmTreasury,
+      farmTreasuryBump,
+      txSig,
+    };
+  }
+
+  async buildStakeCommon(
     farm: PublicKey,
     farmerIdentity: PublicKey | Keypair,
     unstake = false,
@@ -510,16 +571,10 @@ export class GemFarmClient extends GemBankClient {
     const signers = [];
     if (isKp(farmerIdentity)) signers.push(<Keypair>farmerIdentity);
 
-    let txSig;
-    if (unstake) {
-      console.log('UNstaking gems for', identityPk.toBase58());
-      txSig = await this.farmProgram.rpc.unstake(
-        farmAuthBump,
-        farmTreasuryBump,
-        farmerBump,
-        skipRewards,
-        {
-          accounts: {
+    const builder = unstake
+      ? await this.farmProgram.methods
+          .unstake(farmAuthBump, farmTreasuryBump, farmerBump, skipRewards)
+          .accounts({
             farm,
             farmer,
             farmTreasury,
@@ -529,25 +584,20 @@ export class GemFarmClient extends GemBankClient {
             farmAuthority: farmAuth,
             gemBank: this.bankProgram.programId,
             systemProgram: SystemProgram.programId,
-          },
-          signers,
-        }
-      );
-    } else {
-      console.log('staking gems for', identityPk.toBase58());
-      txSig = await this.farmProgram.rpc.stake(farmAuthBump, farmerBump, {
-        accounts: {
-          farm,
-          farmer,
-          identity: identityPk,
-          bank: farmAcc.bank,
-          vault,
-          farmAuthority: farmAuth,
-          gemBank: this.bankProgram.programId,
-        },
-        signers,
-      });
-    }
+          })
+          .signers(signers)
+      : await this.farmProgram.methods
+          .stake(farmAuthBump, farmerBump)
+          .accounts({
+            farm,
+            farmer,
+            identity: identityPk,
+            bank: farmAcc.bank,
+            vault,
+            farmAuthority: farmAuth,
+            gemBank: this.bankProgram.programId,
+          })
+          .signers(signers);
 
     return {
       farmer,
@@ -558,7 +608,7 @@ export class GemFarmClient extends GemBankClient {
       farmAuthBump,
       farmTreasury,
       farmTreasuryBump,
-      txSig,
+      builder,
     };
   }
 
