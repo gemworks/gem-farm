@@ -133,17 +133,27 @@ pub fn handler<'a, 'b, 'c, 'info>(
 
     farm.update_rewards(now_ts, Some(farmer), true)?;
 
-    // stake extra gems
     ctx.accounts.vault.reload()?;
-    let extra_rarity = calc_rarity_points(&ctx.accounts.gem_rarity, amount)?;
-    farm.stake_extra_gems(
-        now_ts,
-        ctx.accounts.vault.gem_count,
-        ctx.accounts.vault.rarity_points,
-        amount,
-        extra_rarity,
-        farmer,
-    )?;
+
+    // in case the command is used BEFORE farmer staked
+    if farmer.gems_staked == 0 {
+        farm.begin_staking(
+            now_ts,
+            ctx.accounts.vault.gem_count,
+            ctx.accounts.vault.rarity_points,
+            farmer,
+        )?;
+    } else {
+        let extra_rarity = calc_rarity_points(&ctx.accounts.gem_rarity, amount)?;
+        farm.stake_extra_gems(
+            now_ts,
+            ctx.accounts.vault.gem_count,
+            ctx.accounts.vault.rarity_points,
+            amount,
+            extra_rarity,
+            farmer,
+        )?;
+    }
 
     // msg!("{} extra gems staked for {}", amount, farmer.key());
     Ok(())

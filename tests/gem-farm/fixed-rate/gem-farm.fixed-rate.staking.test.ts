@@ -270,6 +270,32 @@ describe('staking (fixed rate)', () => {
     assert(originalDuration.gt(newDuration)); //since less time left on schedule
   });
 
+  it('flash deposit works when farmer NOT staked beforehand', async () => {
+    //get the gems back, we'll need them for 2 separate deposits
+    await gf.callWithdraw(gf.gem1Amount, gf.farmer1Identity);
+
+    const initialDeposit = new BN(1); //drop 1 existing gem, need to lock the vault
+    await gf.callDeposit(initialDeposit, gf.farmer1Identity);
+
+    const oldFarmerCount = (await gf.fetchFarm()).stakedFarmerCount;
+
+    //flash deposit after vault locked
+    const flashDeposit = new BN(1);
+    await gf.callFlashDeposit(flashDeposit, gf.farmer1Identity);
+
+    let newFarmerCount = oldFarmerCount.add(new BN(1));
+    let newGems = initialDeposit.add(flashDeposit);
+    let newRarity = initialDeposit
+      .add(flashDeposit)
+      .mul(toBN(gf.gem1PerGemRarity));
+
+    await pause(1000);
+    const farmAcc = await gf.fetchFarm();
+    assert(farmAcc.stakedFarmerCount.eq(newFarmerCount));
+    assert(farmAcc.gemsStaked.eq(newGems));
+    assert(farmAcc.rarityPointsStaked.eq(newRarity));
+  });
+
   it('flash deposits a gem (whitelisted mint)', async () => {
     //get the gems back, we'll need them for 2 separate deposits
     await gf.callWithdraw(gf.gem1Amount, gf.farmer1Identity);
