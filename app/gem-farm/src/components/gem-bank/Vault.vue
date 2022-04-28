@@ -6,7 +6,7 @@
         (toWalletNFTs && toWalletNFTs.length) ||
         (toVaultNFTs && toVaultNFTs.length)
       "
-      class="nes-btn is-primary mr-5"
+      class="btn is-primary mr-5"
       @click="moveNFTsOnChain"
     >
       Move Gems!
@@ -15,17 +15,18 @@
   </div>
 
   <!--wallet + vault view-->
-  <div class="flex items-stretch">
+  <div class="flex row">
     <!--left-->
-    <NFTGrid
-      title="Your wallet"
-      class="flex-1"
-      :nfts="desiredWalletNFTs"
-      @selected="handleWalletSelected"
-    />
-
+    <div class="col-sm-12 m-2">
+      <NFTGrid
+        title="Your wallet"
+        class="flex-1"
+        :nfts="desiredWalletNFTs"
+        @selected="handleWalletSelected"
+      />
+    </div>
     <!--mid-->
-    <div class="m-2 flex flex-col">
+    <!-- <div class="m-2 flex flex-col">
       <ArrowButton
         :disabled="vaultLocked"
         class="my-2"
@@ -37,23 +38,25 @@
         :left="true"
         @click="moveNFTsFE(true)"
       />
-    </div>
+    </div> -->
 
     <!--right-->
-    <NFTGrid
-      v-if="bank && vault"
-      title="Your vault"
-      class="flex-1"
-      :nfts="desiredVaultNFTs"
-      @selected="handleVaultSelected"
-    >
-      <div
-        v-if="vaultLocked"
-        class="locked flex-col justify-center items-center align-center"
+    <div class="col-sm-12 m-2">
+      <NFTGrid
+        v-if="bank && vault"
+        title="Your vault"
+        class="flex-1"
+        :nfts="desiredVaultNFTs"
+        @selected="handleVaultSelected"
       >
-        <p class="mt-10">This vault is locked!</p>
-      </div>
-    </NFTGrid>
+        <div
+          v-if="vaultLocked"
+          class="locked flex-col justify-center items-center align-center"
+        >
+          <p class="mt-10">This vault is locked!</p>
+        </div>
+      </NFTGrid>
+    </div>
   </div>
 </template>
 

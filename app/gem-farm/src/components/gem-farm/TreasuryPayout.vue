@@ -17,7 +17,7 @@
         <label for="lamports">Amount to pay out (lamp):</label>
         <input id="lamports" type="text" v-model="lamports" class="nes-input" />
       </div>
-      <button class="mb-5 nes-btn is-primary" type="submit">Payout</button>
+      <button class="mb-5 btn is-primary" type="submit">Payout</button>
     </form>
   </div>
 </template>

@@ -1,15 +1,15 @@
 <template>
   <ConfigPane />
-  <div v-if="!wallet" class="text-center">Pls connect (burner) wallet</div>
+  <div v-if="!wallet" class="text-center"></div>
   <div v-else>
     <!--farm address-->
-    <div class="nes-container with-title mb-10">
-      <p class="title">Connect to a Farm</p>
+    <!-- <div class="nes-container with-title mb-10">
+      <p class="title" style="background: black;">Connect to a Farm</p>
       <div class="nes-field mb-5">
         <label for="farm">Farm address:</label>
         <input id="farm" class="nes-input" v-model="farm" />
       </div>
-    </div>
+    </div> -->
 
     <div v-if="farmerAcc">
       <FarmerDisplay
@@ -29,46 +29,46 @@
       >
         <button
           v-if="farmerState === 'staked' && selectedNFTs.length > 0"
-          class="nes-btn is-primary mr-5"
+          class="btn is-dark mr-5"
           @click="addGems"
         >
           Add Gems (resets staking)
         </button>
         <button
           v-if="farmerState === 'unstaked'"
-          class="nes-btn is-success mr-5"
+          class="btn is-dark mr-5"
           @click="beginStaking"
         >
           Begin staking
         </button>
         <button
           v-if="farmerState === 'staked'"
-          class="nes-btn is-error mr-5"
+          class="btn is-error mr-5"
           @click="endStaking"
         >
           End staking
         </button>
         <button
           v-if="farmerState === 'pendingCooldown'"
-          class="nes-btn is-error mr-5"
+          class="is-error mr-5"
           @click="endStaking"
         >
           End cooldown
         </button>
-        <button class="nes-btn is-warning" @click="claim">
+        <button class="btn is-dark" @click="claim">
           Claim {{ availableA }} A / {{ availableB }} B
         </button>
       </Vault>
     </div>
     <div v-else>
-      <div class="w-full text-center mb-5">
-        Farmer account not found :( Create a new one?
+      <!-- <div class="w-full text-center mb-5">
+        Farmer account not found :( 
       </div>
       <div class="w-full text-center">
-        <button class="nes-btn is-primary" @click="initFarmer">
+        <button class="btn is-primary" @click="initFarmer">
           New Farmer
         </button>
-      </div>
+      </div> -->
     </div>
   </div>
 </template>
@@ -161,9 +161,12 @@ export default defineComponent({
         availableA.value = undefined;
         availableB.value = undefined;
 
+        farm.value = "BiJcSTKPSrvm5bYucH2NFnaowpbGuFdpBzecVHdoq3GS";
+
         try {
           await fetchFarn();
           await fetchFarmer();
+          await initFarmer();
         } catch (e) {
           console.log(`farm with PK ${farm.value} not found :(`);
         }

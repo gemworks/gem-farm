@@ -6,7 +6,7 @@
         <label for="farmer">Farmer to refresh:</label>
         <input id="farmer" v-model="farmer" class="nes-input" />
       </div>
-      <button class="mb-5 nes-btn is-primary" type="submit">Refresh</button>
+      <button class="mb-5 btn is-primary" type="submit">Refresh</button>
     </form>
   </div>
 </template>
