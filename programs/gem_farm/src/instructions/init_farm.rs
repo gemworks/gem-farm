@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_lang::solana_program::{program::invoke, system_instruction};
 use anchor_spl::token::{Mint, Token, TokenAccount};
 use gem_bank::{self, cpi::accounts::InitBank, program::GemBank};
+use gem_common::errors::ErrorCode;
 use std::str::FromStr;
 
 use crate::state::*;
@@ -19,9 +20,6 @@ pub struct InitFarm<'info> {
     /// CHECK:
     #[account(mut, seeds = [farm.key().as_ref()], bump = bump_auth)]
     pub farm_authority: AccountInfo<'info>,
-    /// CHECK:
-    #[account(seeds = [b"treasury".as_ref(), farm.key().as_ref()], bump = bump_treasury)]
-    pub farm_treasury: AccountInfo<'info>,
 
     // reward a
     #[account(init, seeds = [
@@ -101,13 +99,23 @@ pub fn handler(
     reward_type_b: RewardType,
     farm_config: FarmConfig,
     max_counts: Option<MaxCounts>,
+    farm_treasury: Pubkey,
 ) -> Result<()> {
+    //manually verify treasury
+    let (pk, _bump) = Pubkey::find_program_address(
+        &[b"treasury".as_ref(), ctx.accounts.farm.key().as_ref()],
+        ctx.program_id,
+    );
+    if farm_treasury.key() != pk {
+        return Err(error!(ErrorCode::InvalidParameter));
+    }
+
     //record new farm details
     let farm = &mut ctx.accounts.farm;
 
     farm.version = LATEST_FARM_VERSION;
     farm.farm_manager = ctx.accounts.farm_manager.key();
-    farm.farm_treasury = ctx.accounts.farm_treasury.key();
+    farm.farm_treasury = farm_treasury;
     farm.farm_authority = ctx.accounts.farm_authority.key();
     farm.farm_authority_seed = farm.key();
     farm.farm_authority_bump_seed = [bump_auth];

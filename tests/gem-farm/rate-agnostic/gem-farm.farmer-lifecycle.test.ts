@@ -31,7 +31,7 @@ describe('farmer lifecycle (unstaked -> staked -> cooldown)', () => {
 
     //unstaking fails, since min period not passed
     await expect(gf.callUnstake(gf.farmer1Identity)).to.be.rejectedWith(
-      '0x179a'
+      'MinStakingNotPassed'
     );
 
     await pause(3000);
@@ -42,7 +42,7 @@ describe('farmer lifecycle (unstaked -> staked -> cooldown)', () => {
     //withdrawal fails, since cooldown period not passed
     await expect(
       gf.callWithdraw(gf.gem1Amount, gf.farmer1Identity)
-    ).to.be.rejectedWith('0x1784');
+    ).to.be.rejectedWith('VaultAccessSuspended');
 
     await pause(3000);
 

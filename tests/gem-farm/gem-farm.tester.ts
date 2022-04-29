@@ -93,14 +93,12 @@ export class GemFarmTester extends GemFarmClient {
 
   constructor() {
     super(
-      anchor.Provider.env().connection,
-      // @ts-ignore
-      anchor.Provider.env().wallet as anchor.Wallet
+      anchor.AnchorProvider.env().connection,
+      anchor.AnchorProvider.env().wallet as anchor.Wallet
     );
     this.nw = new NodeWallet(
-      anchor.Provider.env().connection,
-      // @ts-ignore
-      anchor.Provider.env().wallet as anchor.Wallet
+      anchor.AnchorProvider.env().connection,
+      anchor.AnchorProvider.env().wallet as anchor.Wallet
     );
     this.funder = this.nw.wallet.payer;
   }

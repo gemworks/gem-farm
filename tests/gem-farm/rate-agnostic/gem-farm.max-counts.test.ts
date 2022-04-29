@@ -30,7 +30,7 @@ describe('misc', () => {
     //try staking
     await gf.stakeAndVerify(gf.farmer1Identity);
     await expect(gf.stakeAndVerify(gf.farmer2Identity)).to.be.rejectedWith(
-      '0x17a0'
+      'TooManyFarmersStaked'
     );
   });
 
@@ -52,7 +52,7 @@ describe('misc', () => {
     //try staking
     await gf.stakeAndVerify(gf.farmer1Identity);
     await expect(gf.stakeAndVerify(gf.farmer2Identity)).to.be.rejectedWith(
-      '0x17a1'
+      'TooManyGemsStaked'
     );
   });
 
@@ -73,7 +73,7 @@ describe('misc', () => {
     //try staking
     await gf.stakeAndVerify(gf.farmer1Identity);
     await expect(gf.stakeAndVerify(gf.farmer2Identity)).to.be.rejectedWith(
-      '0x17a2'
+      'TooManyRarityPointsStaked'
     );
   });
 

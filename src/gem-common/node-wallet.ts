@@ -12,10 +12,8 @@ import { AccountUtils, ITokenData } from './account-utils';
 import { NATIVE_MINT, Token, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 
 export class NodeWallet extends AccountUtils {
-  // @ts-ignore
   wallet: anchor.Wallet; //node wallet
 
-  // @ts-ignore
   constructor(conn: Connection, wallet: anchor.Wallet) {
     super(conn);
     this.wallet = wallet;

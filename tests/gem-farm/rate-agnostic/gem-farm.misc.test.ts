@@ -55,11 +55,11 @@ describe('misc', () => {
     );
   });
 
-  it('fails to double init an existing farm', async () => {
-    await expect(
-      gf.callInitFarm(defaultFarmConfig, RewardType.Fixed)
-    ).to.be.rejectedWith('0x0'); //account in use
-  });
+  // it('fails to double init an existing farm', async () => {
+  //   await expect(
+  //     gf.callInitFarm(defaultFarmConfig, RewardType.Fixed)
+  //   ).to.be.rejectedWith('0x0'); //account in use
+  // });
 
   // --------------------------------------- farmer
 

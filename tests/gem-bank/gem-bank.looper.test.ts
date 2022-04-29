@@ -1,5 +1,5 @@
 import * as anchor from '@project-serum/anchor';
-import { BN } from '@project-serum/anchor';
+import { AnchorProvider, BN } from '@project-serum/anchor';
 import { GemBankClient, ITokenData, NodeWallet } from '../../src';
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import { assert } from 'chai';
@@ -23,15 +23,13 @@ interface IVault {
  * 2) test finding & deserializing appropriate PDA state accounts
  */
 describe('looper', () => {
-  const _provider = anchor.Provider.env();
+  const _provider = AnchorProvider.local();
   const gb = new GemBankClient(
     _provider.connection,
-    // @ts-ignore
     _provider.wallet as anchor.Wallet
   );
   const nw = new NodeWallet(
     _provider.connection,
-    // @ts-ignore
     _provider.wallet as anchor.Wallet
   );
 

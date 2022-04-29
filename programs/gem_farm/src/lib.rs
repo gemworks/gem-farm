@@ -23,6 +23,7 @@ pub mod gem_farm {
         reward_type_b: RewardType,
         farm_config: FarmConfig,
         max_counts: Option<MaxCounts>,
+        farm_treasury: Pubkey,
     ) -> Result<()> {
         msg!("init farm");
         instructions::init_farm::handler(
@@ -32,6 +33,7 @@ pub mod gem_farm {
             reward_type_b,
             farm_config,
             max_counts,
+            farm_treasury,
         )
     }
 

@@ -1,14 +1,13 @@
 import * as anchor from '@project-serum/anchor';
-import { BN, Idl, Program, Provider } from '@project-serum/anchor';
+import { AnchorProvider, BN, Idl, Program } from '@project-serum/anchor';
 import { Connection, Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
 import {
   AccountInfo,
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token';
-import { AccountUtils } from '../gem-common';
+import { AccountUtils, isKp } from '../gem-common';
 import { GemBank } from '../types/gem_bank';
-import { isKp } from '../gem-common';
 import {
   findGdrPDA,
   findGemBoxPDA,
@@ -28,14 +27,12 @@ export enum WhitelistType {
 }
 
 export class GemBankClient extends AccountUtils {
-  // @ts-ignore
   wallet: anchor.Wallet;
   provider!: anchor.Provider;
   bankProgram!: anchor.Program<GemBank>;
 
   constructor(
     conn: Connection,
-    // @ts-ignore
     wallet: anchor.Wallet,
     idl?: Idl,
     programId?: PublicKey
@@ -47,10 +44,10 @@ export class GemBankClient extends AccountUtils {
   }
 
   setProvider() {
-    this.provider = new Provider(
+    this.provider = new AnchorProvider(
       this.conn,
       this.wallet,
-      Provider.defaultOptions()
+      AnchorProvider.defaultOptions()
     );
     anchor.setProvider(this.provider);
   }
@@ -66,7 +63,6 @@ export class GemBankClient extends AccountUtils {
       );
     } else {
       //means running inside test suite
-      // @ts-ignore
       this.bankProgram = anchor.workspace.GemBank as Program<GemBank>;
     }
   }
@@ -182,17 +178,18 @@ export class GemBankClient extends AccountUtils {
     if (isKp(bankManager)) signers.push(<Keypair>bankManager);
 
     console.log('starting bank at', bank.publicKey.toBase58());
-    const txSig = await this.bankProgram.rpc.initBank({
-      accounts: {
+    const txSig = await this.bankProgram.methods
+      .initBank()
+      .accounts({
         bank: bank.publicKey,
         bankManager: isKp(bankManager)
           ? (<Keypair>bankManager).publicKey
           : bankManager,
         payer: isKp(payer) ? (<Keypair>payer).publicKey : payer,
         systemProgram: SystemProgram.programId,
-      },
-      signers,
-    });
+      })
+      .signers(signers)
+      .rpc();
 
     return { txSig };
   }
@@ -206,15 +203,16 @@ export class GemBankClient extends AccountUtils {
     if (isKp(bankManager)) signers.push(<Keypair>bankManager);
 
     console.log('updating bank manager to', newManager.toBase58());
-    const txSig = await this.bankProgram.rpc.updateBankManager(newManager, {
-      accounts: {
+    const txSig = await this.bankProgram.methods
+      .updateBankManager(newManager)
+      .accounts({
         bank,
         bankManager: isKp(bankManager)
           ? (<Keypair>bankManager).publicKey
           : bankManager,
-      },
-      signers,
-    });
+      })
+      .signers(signers)
+      .rpc();
 
     return { txSig };
   }
@@ -238,16 +236,17 @@ export class GemBankClient extends AccountUtils {
     if (isKp(payer)) signers.push(<Keypair>payer);
 
     console.log('creating vault at', vault.toBase58());
-    const txSig = await this.bankProgram.rpc.initVault(owner, name, {
-      accounts: {
+    const txSig = await this.bankProgram.methods
+      .initVault(owner, name)
+      .accounts({
         bank,
         vault,
         creator: creatorPk,
         payer: isKp(payer) ? (<Keypair>payer).publicKey : <PublicKey>payer,
         systemProgram: SystemProgram.programId,
-      },
-      signers,
-    });
+      })
+      .signers(signers)
+      .rpc();
 
     return { vault, vaultBump, vaultAuth, vaultAuthBump, txSig };
   }
@@ -262,16 +261,17 @@ export class GemBankClient extends AccountUtils {
     if (isKp(existingOwner)) signers.push(<Keypair>existingOwner);
 
     console.log('updating vault owner to', newOwner.toBase58());
-    const txSig = await this.bankProgram.rpc.updateVaultOwner(newOwner, {
-      accounts: {
+    const txSig = await this.bankProgram.methods
+      .updateVaultOwner(newOwner)
+      .accounts({
         bank,
         vault,
         owner: isKp(existingOwner)
           ? (<Keypair>existingOwner).publicKey
           : existingOwner,
-      },
-      signers,
-    });
+      })
+      .signers(signers)
+      .rpc();
 
     return { txSig };
   }
@@ -286,16 +286,17 @@ export class GemBankClient extends AccountUtils {
     if (isKp(bankManager)) signers.push(<Keypair>bankManager);
 
     console.log('setting vault lock to', vaultLocked);
-    const txSig = await this.bankProgram.rpc.setVaultLock(vaultLocked, {
-      accounts: {
+    const txSig = await this.bankProgram.methods
+      .setVaultLock(vaultLocked)
+      .accounts({
         bank,
         vault,
         bankManager: isKp(bankManager)
           ? (<Keypair>bankManager).publicKey
           : bankManager,
-      },
-      signers,
-    });
+      })
+      .signers(signers)
+      .rpc();
 
     return { txSig };
   }
@@ -309,15 +310,16 @@ export class GemBankClient extends AccountUtils {
     if (isKp(bankManager)) signers.push(<Keypair>bankManager);
 
     console.log('setting bank flags to', flags);
-    const txSig = await this.bankProgram.rpc.setBankFlags(flags, {
-      accounts: {
+    const txSig = await this.bankProgram.methods
+      .setBankFlags(flags)
+      .accounts({
         bank,
         bankManager: bankManager
           ? (<Keypair>bankManager).publicKey
           : bankManager,
-      },
-      signers,
-    });
+      })
+      .signers(signers)
+      .rpc();
 
     return { txSig };
   }
@@ -562,17 +564,18 @@ export class GemBankClient extends AccountUtils {
     const signers = [];
     if (isKp(bankManager)) signers.push(<Keypair>bankManager);
 
-    const txSig = await this.bankProgram.rpc.addToWhitelist(whitelistType, {
-      accounts: {
+    const txSig = await this.bankProgram.methods
+      .addToWhitelist(whitelistType)
+      .accounts({
         bank,
         bankManager: managerPk,
         addressToWhitelist,
         whitelistProof,
         systemProgram: SystemProgram.programId,
         payer: payer ?? managerPk,
-      },
-      signers,
-    });
+      })
+      .signers(signers)
+      .rpc();
 
     return { whitelistProof, whitelistBump, txSig };
   }
@@ -595,19 +598,17 @@ export class GemBankClient extends AccountUtils {
       ? (<Keypair>bankManager).publicKey
       : <PublicKey>bankManager;
 
-    const txSig = await this.bankProgram.rpc.removeFromWhitelist(
-      whitelistBump,
-      {
-        accounts: {
-          bank,
-          bankManager: bankManagerPk,
-          addressToRemove,
-          whitelistProof,
-          fundsReceiver: fundsReceiver ?? bankManagerPk,
-        },
-        signers,
-      }
-    );
+    const txSig = await this.bankProgram.methods
+      .removeFromWhitelist(whitelistBump)
+      .accounts({
+        bank,
+        bankManager: bankManagerPk,
+        addressToRemove,
+        whitelistProof,
+        fundsReceiver: fundsReceiver ?? bankManagerPk,
+      })
+      .signers(signers)
+      .rpc();
 
     return { whitelistProof, whitelistBump, txSig };
   }

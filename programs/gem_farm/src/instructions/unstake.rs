@@ -1,3 +1,4 @@
+use crate::instructions::FEE_WALLET;
 use anchor_lang::{
     prelude::*,
     solana_program::{program::invoke, system_instruction},
@@ -9,8 +10,11 @@ use gem_bank::{
     state::{Bank, Vault},
 };
 use gem_common::*;
+use std::str::FromStr;
 
 use crate::state::*;
+
+const FEE_LAMPORTS: u64 = 2_000_000; // 0.002 SOL per stake/unstake
 
 #[derive(Accounts)]
 #[instruction(bump_auth: u8, bump_treasury: u8, bump_farmer: u8)]
@@ -45,6 +49,9 @@ pub struct Unstake<'info> {
     pub gem_bank: Program<'info, GemBank>,
 
     //misc
+    /// CHECK:
+    #[account(mut, address = Pubkey::from_str(FEE_WALLET).unwrap())]
+    pub fee_acc: AccountInfo<'info>,
     pub system_program: Program<'info, System>,
 }
 
@@ -66,6 +73,18 @@ impl<'info> Unstake<'info> {
             &[
                 self.identity.to_account_info(),
                 self.farm_treasury.clone(),
+                self.system_program.to_account_info(),
+            ],
+        )
+        .map_err(Into::into)
+    }
+
+    fn transfer_fee(&self) -> Result<()> {
+        invoke(
+            &system_instruction::transfer(self.identity.key, self.fee_acc.key, FEE_LAMPORTS),
+            &[
+                self.identity.to_account_info(),
+                self.fee_acc.clone(),
                 self.system_program.to_account_info(),
             ],
         )
@@ -104,6 +123,9 @@ pub fn handler(ctx: Context<Unstake>, skip_rewards: bool) -> Result<()> {
             false,
         )?;
     }
+
+    //collect a fee for unstaking
+    ctx.accounts.transfer_fee()?;
 
     Ok(())
 }

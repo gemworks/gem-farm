@@ -67,9 +67,9 @@ describe('funding (variable rate)', () => {
 
     //once locked, funding/cancellation ixs should fail
     await expect(gf.callFundReward(defaultVariableConfig)).to.be.rejectedWith(
-      '0x1799'
+      'RewardLocked'
     );
-    await expect(gf.callCancelReward()).to.be.rejectedWith('0x1799');
+    await expect(gf.callCancelReward()).to.be.rejectedWith('RewardLocked');
   });
 
   it('funds -> cancels (no stakers)', async () => {

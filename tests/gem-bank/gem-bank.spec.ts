@@ -1,5 +1,5 @@
 import * as anchor from '@project-serum/anchor';
-import { BN } from '@project-serum/anchor';
+import { AnchorProvider, BN } from '@project-serum/anchor';
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import {
   BankFlags,
@@ -18,7 +18,7 @@ import { createMetadata } from '../metaplex';
 chai.use(chaiAsPromised);
 
 describe('gem bank', () => {
-  const _provider = anchor.Provider.env();
+  const _provider = AnchorProvider.local();
   const gb = new GemBankClient(_provider.connection, _provider.wallet as any);
   const nw = new NodeWallet(_provider.connection, _provider.wallet as any);
 
@@ -107,7 +107,7 @@ describe('gem bank', () => {
     const newManager = Keypair.generate();
     await expect(
       gb.updateBankManager(bank.publicKey, randomWallet, newManager.publicKey)
-    ).to.be.rejectedWith('has_one');
+    ).to.be.rejectedWith('ConstraintHasOne');
   });
 
   it('updates vault owner', async () => {
@@ -130,7 +130,7 @@ describe('gem bank', () => {
         randomWallet,
         vaultOwner.publicKey
       )
-    ).to.be.rejectedWith('has_one');
+    ).to.be.rejectedWith('ConstraintHasOne');
   });
 
   // --------------------------------------- gem boxes
@@ -219,7 +219,9 @@ describe('gem bank', () => {
     });
 
     it('FAILS to deposit gem w/ wrong owner', async () => {
-      await expect(prepDeposit(randomWallet)).to.be.rejectedWith('has_one');
+      await expect(prepDeposit(randomWallet)).to.be.rejectedWith(
+        'ConstraintHasOne'
+      );
     });
 
     it('withdraws gem to existing ATA', async () => {
@@ -291,7 +293,7 @@ describe('gem bank', () => {
 
       await expect(
         prepWithdrawal(randomWallet, gem.owner, gemAmount)
-      ).to.be.rejectedWith('has_one');
+      ).to.be.rejectedWith('ConstraintHasOne');
     });
 
     // --------------------------------------- vault lock
@@ -306,7 +308,9 @@ describe('gem bank', () => {
       let vaultAcc = await gb.fetchVaultAcc(vault);
       assert.equal(vaultAcc.locked, true);
       //deposit should fail
-      await expect(prepDeposit(vaultOwner)).to.be.rejectedWith('0x1784');
+      await expect(prepDeposit(vaultOwner)).to.be.rejectedWith(
+        'VaultAccessSuspended.'
+      );
 
       //unlock the vault
       await prepLock(false);
@@ -320,7 +324,7 @@ describe('gem bank', () => {
       //withdraw should fail
       await expect(
         prepWithdrawal(vaultOwner, gem.owner, gemAmount)
-      ).to.be.rejectedWith('0x1784');
+      ).to.be.rejectedWith('VaultAccessSuspended.');
 
       //finally unlock the vault
       await prepLock(false);
@@ -346,9 +350,11 @@ describe('gem bank', () => {
           vaultOwner,
           vaultCreator.publicKey
         )
-      ).to.be.rejectedWith('0x1784');
-      await expect(prepLock(true)).to.be.rejectedWith('0x1784');
-      await expect(prepDeposit(vaultOwner)).to.be.rejectedWith('0x1784');
+      ).to.be.rejectedWith('VaultAccessSuspended.');
+      await expect(prepLock(true)).to.be.rejectedWith('VaultAccessSuspended.');
+      await expect(prepDeposit(vaultOwner)).to.be.rejectedWith(
+        'VaultAccessSuspended.'
+      );
 
       //remove flags to be able to do a real deposit - else can't withdraw
       await prepFlags(bankManager, 0);
@@ -358,7 +364,7 @@ describe('gem bank', () => {
       await prepFlags(bankManager, BankFlags.FreezeVaults);
       await expect(
         prepWithdrawal(vaultOwner, gem.owner, gemAmount)
-      ).to.be.rejectedWith('0x1784');
+      ).to.be.rejectedWith('VaultAccessSuspended.');
 
       //unfreeze vault in the end
       await prepFlags(bankManager, 0);
@@ -367,7 +373,7 @@ describe('gem bank', () => {
     it('FAILS to set bank flags w/ wrong manager', async () => {
       await expect(
         prepFlags(randomWallet, BankFlags.FreezeVaults)
-      ).to.be.rejectedWith('has_one');
+      ).to.be.rejectedWith('ConstraintHasOne');
     });
 
     // --------------------------------------- whitelists
@@ -640,7 +646,7 @@ describe('gem bank', () => {
             gemMetadata,
             whitelistProof
           )
-        ).to.be.rejectedWith('0x1786');
+        ).to.be.rejectedWith('NotWhitelisted');
 
         //clean up after
         await prepRemoveFromWhitelist(whitelistedCreator);
@@ -655,7 +661,7 @@ describe('gem bank', () => {
 
         await expect(
           prepDeposit(vaultOwner, whitelistProof)
-        ).to.be.rejectedWith('0x1786');
+        ).to.be.rejectedWith('NotWhitelisted');
 
         //clean up after
         await prepRemoveFromWhitelist(whitelistedMint);
@@ -679,7 +685,7 @@ describe('gem bank', () => {
             gemMetadata,
             whitelistProof
           )
-        ).to.be.rejectedWith('0x1786');
+        ).to.be.rejectedWith('NotWhitelisted');
 
         //clean up after
         await prepRemoveFromWhitelist(whitelistedCreator);
@@ -708,7 +714,7 @@ describe('gem bank', () => {
             gemMetadata,
             whitelistProof
           )
-        ).to.be.rejectedWith('0x1786');
+        ).to.be.rejectedWith('NotWhitelisted');
 
         //clean up after
         await prepRemoveFromWhitelist(whitelistedMint);
@@ -741,7 +747,7 @@ describe('gem bank', () => {
             gemMetadata,
             PublicKey.default
           )
-        ).to.be.rejectedWith('0x1786');
+        ).to.be.rejectedWith('NotWhitelisted');
 
         //clean up after
         await prepRemoveFromWhitelist(whitelistedMint);
