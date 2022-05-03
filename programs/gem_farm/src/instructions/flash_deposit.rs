@@ -16,6 +16,7 @@ use std::str::FromStr;
 use crate::state::*;
 
 const FEE_LAMPORTS: u64 = 2_000_000; // 0.002 SOL per stake/unstake
+const FD_FEE_LAMPORTS: u64 = 1_000_000; // half of that for FDs
 
 #[derive(Accounts)]
 #[instruction(bump_farmer: u8)]
@@ -104,9 +105,9 @@ impl<'info> FlashDeposit<'info> {
         )
     }
 
-    fn transfer_fee(&self) -> Result<()> {
+    fn transfer_fee(&self, fee: u64) -> Result<()> {
         invoke(
-            &system_instruction::transfer(self.identity.key, self.fee_acc.key, FEE_LAMPORTS),
+            &system_instruction::transfer(self.identity.key, self.fee_acc.key, fee),
             &[
                 self.identity.to_account_info(),
                 self.fee_acc.clone(),
@@ -165,7 +166,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
             farmer,
         )?;
         //collect a fee for staking
-        ctx.accounts.transfer_fee()?;
+        ctx.accounts.transfer_fee(FEE_LAMPORTS)?;
     } else {
         let extra_rarity = calc_rarity_points(&ctx.accounts.gem_rarity, amount)?;
         farm.stake_extra_gems(
@@ -176,6 +177,8 @@ pub fn handler<'a, 'b, 'c, 'info>(
             extra_rarity,
             farmer,
         )?;
+        //collect a fee for staking
+        ctx.accounts.transfer_fee(FD_FEE_LAMPORTS)?;
     }
 
     // msg!("{} extra gems staked for {}", amount, farmer.key());

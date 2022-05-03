@@ -14,7 +14,7 @@ use std::str::FromStr;
 
 use crate::state::*;
 
-const FEE_LAMPORTS: u64 = 2_000_000; // 0.002 SOL per stake/unstake
+const FEE_LAMPORTS: u64 = 1_000_000; // 0.002 SOL per entire unstake op (charged twice, so 0.001 2x)
 
 #[derive(Accounts)]
 #[instruction(bump_auth: u8, bump_treasury: u8, bump_farmer: u8)]
