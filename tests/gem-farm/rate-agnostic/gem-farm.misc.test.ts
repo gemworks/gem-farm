@@ -31,6 +31,19 @@ describe('misc', () => {
     await gf.prepAccounts(45000);
   });
 
+  it('FAILS to init farm with invalid unstaking fee', async () => {
+    await expect(
+      gf.callInitFarm(
+        {
+          minStakingPeriodSec: new BN(0),
+          cooldownPeriodSec: new BN(0),
+          unstakingFeeLamp: new BN(100),
+        },
+        RewardType.Fixed
+      )
+    ).to.be.rejectedWith('InvalidUnstakingFee');
+  });
+
   it('inits the farm', async () => {
     await gf.callInitFarm(defaultFarmConfig, RewardType.Fixed);
 

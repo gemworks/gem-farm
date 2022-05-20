@@ -107,7 +107,9 @@ pub enum ErrorCode {
     #[msg("max rarity points exceeded")]
     TooManyRarityPointsStaked, //0x17a2
 
-    Reserved51,
+    #[msg("unstaking fee lamports must be either 0 or greater than 890880")]
+    InvalidUnstakingFee, //0x17a3
+
     Reserved52,
     Reserved53,
     Reserved54,
