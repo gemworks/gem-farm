@@ -110,6 +110,11 @@ pub fn handler(
         return Err(error!(ErrorCode::InvalidParameter));
     }
 
+    //ensure unstaking fee does not violate solana v1.9.5 rent requirements
+    if farm_config.unstaking_fee_lamp > 0 && farm_config.unstaking_fee_lamp < 890880 {
+        return Err(error!(ErrorCode::InvalidUnstakingFee));
+    }
+
     //record new farm details
     let farm = &mut ctx.accounts.farm;
 
