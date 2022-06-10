@@ -61,7 +61,7 @@ import { PublicKey } from '@solana/web3.js';
 
 export default defineComponent({
   props: {
-    bank: { type: String, required: false },
+    bank: { type: String, required: true },
   },
   setup(props, ctx) {
     const action = ref<string>('add');

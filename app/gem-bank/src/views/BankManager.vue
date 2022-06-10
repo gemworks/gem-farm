@@ -3,19 +3,16 @@
   <div v-if="!wallet" class="text-center">Pls connect (burner) wallet</div>
   <div v-else>
     <!--if a bank exists-->
-    <div v-if="bank">
-      <BankDetails
-        v-if="bankAcc"
-        :key="bankAcc"
-        :bank="bank"
-        :bankAcc="bankAcc"
-        class="mb-10"
-      />
-      <TheWhitelist :bank="bank ? bank.toBase58() : undefined" class="mb-10" />
+
+    <div v-for="(bank, i) in bankList" :key="i">
+      <BankDetails :key="i" :bank="bank" :bankAcc="bankAcc[i]" class="mb-10" />
+      <TheWhitelist :bank="bank.toBase58()" class="mb-10" />
       <ManageVaults :bank="bank" />
+      <!--create a bank if one doesn't exist-->
+      <br />
+
     </div>
-    <!--create a bank if one doesn't exist-->
-    <div v-else class="text-center">
+    <div class="text-center">
       <button class="nes-btn is-primary" @click="startBank">
         Start a new bank
       </button>
@@ -55,31 +52,36 @@ export default defineComponent({
     });
 
     // --------------------------------------- manage bank
-    const bank = ref<PublicKey>();
-    const bankAcc = ref<any>();
+    let bankList = ref<PublicKey[]>([]);
+    let bankAcc = ref<any>([]);
 
     const fetchBank = async () => {
       //todo in theory you can have many banks per owner, but here making it easy
-      const banks = await gb.fetchAllBankPDAs(getWallet()!.publicKey!);
-      if (banks && banks.length) {
-        bank.value = banks[0].publicKey;
-        bankAcc.value = banks[0].account;
-        console.log(
-          `bank at ${bank.value!.toBase58()}:`,
-          stringifyPKsAndBNs(bankAcc.value)
-        );
+      const banks = (await gb.fetchAllBankPDAs(
+        getWallet()!.publicKey!
+      )) as any[];
+      if (banks.length > 0) {
+        for (const bank of banks) {
+          bankList.value.push(bank.publicKey);
+          bankAcc.value.push(bank.account);
+
+          console.log(
+            `bank at ${bank.publicKey.toBase58()}:`,
+            stringifyPKsAndBNs(bank.account.value)
+          );
+        }
       }
     };
 
     const startBank = async () => {
       const { bank: fetchedBank } = await gb.initBankWallet();
-      bank.value = fetchedBank.publicKey;
+      bankList.value.push(fetchedBank.publicKey);
       console.log('bank created', fetchedBank.publicKey.toBase58());
       await fetchBank();
     };
 
     return {
-      bank,
+      bankList,
       bankAcc,
       wallet,
       startBank,
