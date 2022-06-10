@@ -12,7 +12,7 @@
         class="mb-10"
       />
       <TheWhitelist :bank="bank ? bank.toBase58() : undefined" class="mb-10" />
-      <ManageVaults :bank="bank" :key="bank" />
+      <ManageVaults :bank="bank" />
     </div>
     <!--create a bank if one doesn't exist-->
     <div v-else class="text-center">
