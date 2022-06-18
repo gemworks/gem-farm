@@ -1,7 +1,7 @@
 import { readonly, ref } from 'vue';
 import { Commitment, Connection } from '@solana/web3.js';
 import { tokenAuthFetchMiddleware } from '@strata-foundation/web3-token-auth';
-import axios from "axios";
+import axios from 'axios';
 
 export enum Cluster {
   Mainnet = 'mainnet',
@@ -30,16 +30,18 @@ export default function useCluster() {
   const getConnection = (commitment?: Commitment): Connection =>
     new Connection(getClusterURL(), {
       commitment: commitment ?? 'processed',
-      fetchMiddleware: tokenAuthFetchMiddleware({
-        // tokenExpiry: 0,
-        getToken,
-      }),
+      // fetchMiddleware: tokenAuthFetchMiddleware({
+      //   // tokenExpiry: 0,
+      //   getToken,
+      // }),
     });
 
   const setCluster = (newCluster: Cluster) => {
     cluster.value = newCluster;
     // capping at 10 chars due to security (not to expose the token)
-    console.log(`Cluster updated, now ${newCluster} (${getClusterURL().substr(0, 10)})`);
+    console.log(
+      `Cluster updated, now ${newCluster} (${getClusterURL().substr(0, 10)})`
+    );
   };
 
   return {
