@@ -1,3 +1,5 @@
+Wallet/Keypair is created under solana-wallet/solana/id.json (devnet).
+
 # Gem Farm 💎
 _by Gemworks_
 
