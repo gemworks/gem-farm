@@ -74,8 +74,10 @@ export default defineComponent({
     const startBank = async () => {
       const { bank: fetchedBank } = await gb.initBankWallet();
       bank.value = fetchedBank.publicKey;
+      alert(bank.value);
+      // bank.value = "DAAEGzczZTN83mz2WEg8NQQSVAaCKTViXvshUGGyjJyi";
       console.log('bank created', fetchedBank.publicKey.toBase58());
-      await fetchBank();
+      // await fetchBank();
     };
 
     return {
