@@ -23,8 +23,9 @@ export default defineComponent({
 
     const menu = [
       { name: '/', url: '/' },
-      { name: 'FARM MANAGER', url: '/manager' },
-      { name: 'FARMER', url: '/farmer' },
+      { name: 'Jeongsoo', url: 'Jeongsoo'},
+      { name: 'FARM MANAGER', url: '/Manager' },
+      { name: 'FARMER', url: '/Farmer' },
     ];
 
     return {

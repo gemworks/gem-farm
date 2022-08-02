@@ -3,15 +3,11 @@
     <p class="title">Welcome</p>
     <p>Welcome to Gem Farm 💎 - the #1 NFT Staking solution on Solana!</p>
     <p class="mt-5">
-      This front-end is primarily designed for the Farm Manager (most likely the
-      dev behind the NFT project). You probably want to build a nicer front-end
-      for your stakers (farmers 👩‍🌾).
+      ABCDEFGHIJKLMNOP
     </p>
     <p class="mt-5">
-      That said, if you're a staker, in theory nothing is stopping you from
-      using this front-end to access ALL the farms you're staking with. Simply
-      go to the
-      <router-link to="/farmer" class="text-blue-700">farmer</router-link> tab
+      KIMJEONGSOO
+      <router-link to="/farmer" class="text-blue-700">FARMER</router-link> tab
       and enter the farm address (ask your NFT project for it).
     </p>
     <p class="mt-5">
@@ -33,7 +29,7 @@
         staking for.
       </p>
       <router-link to="manager">
-        <button class="nes-btn is-primary">Start a farm</button>
+        <button class="nes-btn is-primary">ww</button>
       </router-link>
     </div>
     <div class="nes-container with-title flex-1 ml-5">
@@ -43,7 +39,7 @@
         farms.
       </p>
       <router-link to="farmer">
-        <button class="nes-btn is-primary">Stake NFTs</button>
+        <button class="nes-btn is-primary">ss</button>
       </router-link>
     </div>
   </div>

@@ -38,7 +38,8 @@
     "@project-serum/anchor": "0.24.2",
     "@solana/spl-token": "^0.1.8",
     "@solana/wallet-adapter-base": "^0.8.1",
-    "@solana/web3.js": "^1.31.0"
+    "@solana/web3.js": "^1.31.0",
+    "ts-node": "^10.9.1"
   },
   "devDependencies": {
     "@types/chai": "^4.2.22",
