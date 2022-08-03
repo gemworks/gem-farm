@@ -1,5 +1,3 @@
-Wallet/Keypair is created under solana-wallet/solana/id.json (devnet).
-
 # Gem Farm 💎
 _by Gemworks_
 
@@ -33,10 +31,12 @@ You can interact with them using this [front-end](https://www.gemfarm.gg/) (or b
         - `./Anchor.toml`
         - `./programs/gem_bank/src/lib.rs`
         - `./src/index.ts` (replace GEM_BANK_PROG_ID)
+        - `app/gem-bank/node_modules/@gemworks/gem-farm-ts/dist/index.js` (replace GEM_BANK_PROG_ID)
     - And `solana-keygen pubkey ./target/deploy/gem_farm-keypair.json` - insert the new Farm prog ID in the following locations:
         - `./Anchor.toml`
         - `./programs/gem_farm/src/lib.rs`
         - `./src/index.ts` (replace GEM_FARM_PROG_ID)
+        - `app/gem-bank/node_modules/@gemworks/gem-farm-ts/dist/index.js` (replace GEM_FARM_PROG_ID)
 - Run `anchor build` to build one more time
 - Run `anchor deploy --provider.cluster devnet` to deploy to devnet
 - Now copy the IDLs into the apps:
