@@ -5,7 +5,7 @@ use anchor_spl::{
     token::{self, Mint, Token, TokenAccount, Transfer},
 };
 #[derive(Accounts)]
-pub struct WithdrawTokensFromVault<'info> {
+pub struct WithdrawTokenFromVault<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
     /// CHECK
@@ -29,7 +29,7 @@ pub struct WithdrawTokensFromVault<'info> {
     pub rent: Sysvar<'info, Rent>,
 }
 
-impl<'info> WithdrawTokensFromVault<'info> {
+impl<'info> WithdrawTokenFromVault<'info> {
     fn transfer_ctx(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
         CpiContext::new(
             self.token_program.to_account_info(),
@@ -42,7 +42,7 @@ impl<'info> WithdrawTokensFromVault<'info> {
     }
 }
 // Cleans the vault
-pub fn withdraw_tokens_vault(ctx: Context<WithdrawTokensFromVault>) -> Result<()> {
+pub fn withdraw_token_vault(ctx: Context<WithdrawTokenFromVault>) -> Result<()> {
     let vault: &Box<Account<Vault>> = &ctx.accounts.vault;
     let vault_ata: &Pubkey = &ctx.accounts.vault_ata.clone().key();
     let bank: &Pubkey = &ctx.accounts.bank.clone().key();
@@ -56,7 +56,7 @@ pub fn withdraw_tokens_vault(ctx: Context<WithdrawTokensFromVault>) -> Result<()
 
     let (gem_box_pda, _) = anchor_lang::prelude::Pubkey::find_program_address(
         &[
-            b"gem_deposit_receipt".as_ref(),
+            b"gem_box".as_ref(),
             vault.key().as_ref(),
             &ctx.accounts.mint.key().as_ref(),
         ],

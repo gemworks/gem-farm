@@ -451,7 +451,7 @@ export type GemBank = {
       ];
     },
     {
-      name: 'cleanVault';
+      name: 'withdrawTokenFromVault';
       accounts: [
         {
           name: 'owner';
@@ -1210,7 +1210,7 @@ export const IDL: GemBank = {
       ],
     },
     {
-      name: 'cleanVault',
+      name: 'withdrawTokenFromVault',
       accounts: [
         {
           name: 'owner',

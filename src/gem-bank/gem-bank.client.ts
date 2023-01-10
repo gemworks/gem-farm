@@ -613,7 +613,7 @@ export class GemBankClient extends AccountUtils {
     return { whitelistProof, whitelistBump, txSig };
   }
 
-  async cleanVault(
+  async withdrawTokenFromVault(
     owner: Keypair,
     vaultAta: PublicKey,
     vault: PublicKey,
@@ -624,7 +624,7 @@ export class GemBankClient extends AccountUtils {
     bump: number
   ) {
     await this.bankProgram.methods
-      .cleanVault()
+      .withdrawTokenFromVault()
       .accounts({
         owner: owner.publicKey,
         authority: vaultAuth,

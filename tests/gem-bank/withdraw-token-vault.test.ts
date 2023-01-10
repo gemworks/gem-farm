@@ -342,7 +342,7 @@ describe('Withdraw tokens from vault', () => {
 
       let randomDude: Keypair = Keypair.generate();
       try {
-        let tr = await gb.cleanVault(
+        await gb.withdrawTokenFromVault(
           randomDude,
           vaultAta_bonk,
           vault,
@@ -373,7 +373,7 @@ describe('Withdraw tokens from vault', () => {
       );
 
       try {
-        let tr = await gb.cleanVault(
+        await gb.withdrawTokenFromVault(
           vaultOwner,
           gemBoxAcc.address,
           gemBox,
@@ -425,7 +425,7 @@ describe('Withdraw tokens from vault', () => {
       console.log('[FBNK] Vault balance start:', vaultFakeBonkStart);
       console.log('[FBNK] Recipient balance start:', recipientFakeBonkStart);
 
-      await gb.cleanVault(
+      await gb.withdrawTokenFromVault(
         vaultOwner,
         vaultAta_bonk,
         vault,
