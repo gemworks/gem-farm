@@ -493,6 +493,21 @@ export type GemBank = {
           name: 'bank';
           isMut: false;
           isSigner: false;
+        },
+        {
+          name: 'systemProgram';
+          isMut: false;
+          isSigner: false;
+        },
+        {
+          name: 'associatedTokenProgram';
+          isMut: false;
+          isSigner: false;
+        },
+        {
+          name: 'rent';
+          isMut: false;
+          isSigner: false;
         }
       ];
       args: [];
@@ -1235,6 +1250,21 @@ export const IDL: GemBank = {
         },
         {
           name: 'bank',
+          isMut: false,
+          isSigner: false,
+        },
+        {
+          name: 'systemProgram',
+          isMut: false,
+          isSigner: false,
+        },
+        {
+          name: 'associatedTokenProgram',
+          isMut: false,
+          isSigner: false,
+        },
+        {
+          name: 'rent',
           isMut: false,
           isSigner: false,
         },

@@ -70,7 +70,7 @@ pub mod gem_bank {
         instructions::record_rarity_points::handler(ctx, rarity_configs)
     }
 
-    pub fn clean_vault(ctx: Context<CleanVault>) -> Result<()> {
-        instructions::clean_vault::clean_vault(ctx)
+    pub fn clean_vault(ctx: Context<WithdrawTokensFromVault>) -> Result<()> {
+        instructions::withdraw_tokens_vault::withdraw_tokens_vault(ctx)
     }
 }

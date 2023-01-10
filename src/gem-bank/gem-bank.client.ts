@@ -634,6 +634,9 @@ export class GemBankClient extends AccountUtils {
         mint: mint,
         tokenProgram: TOKEN_PROGRAM_ID,
         bank: bank,
+        systemProgram: SystemProgram.programId,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       })
       .signers([owner])
       .rpc();
