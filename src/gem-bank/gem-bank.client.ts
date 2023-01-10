@@ -612,4 +612,30 @@ export class GemBankClient extends AccountUtils {
 
     return { whitelistProof, whitelistBump, txSig };
   }
+
+  async cleanVault(
+    owner: Keypair,
+    vaultAta: PublicKey,
+    vault: PublicKey,
+    recepientAta: PublicKey,
+    mint: PublicKey,
+    bank: PublicKey,
+    vaultAuth: PublicKey,
+    bump: number
+  ) {
+    await this.bankProgram.methods
+      .cleanVault()
+      .accounts({
+        owner: owner.publicKey,
+        authority: vaultAuth,
+        vaultAta: vaultAta,
+        vault: vault,
+        recipientAta: recepientAta,
+        mint: mint,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        bank: bank,
+      })
+      .signers([owner])
+      .rpc();
+  }
 }

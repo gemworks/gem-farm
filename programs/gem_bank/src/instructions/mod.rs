@@ -1,4 +1,5 @@
 pub mod add_to_whitelist;
+pub mod clean_vault;
 pub mod deposit_gem;
 pub mod init_bank;
 pub mod init_vault;
@@ -11,6 +12,7 @@ pub mod update_vault_owner;
 pub mod withdraw_gem;
 
 pub use add_to_whitelist::*;
+pub use clean_vault::*;
 pub use deposit_gem::*;
 pub use init_bank::*;
 pub use init_vault::*;
