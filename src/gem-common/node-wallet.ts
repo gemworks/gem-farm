@@ -19,6 +19,12 @@ export class NodeWallet extends AccountUtils {
     this.wallet = wallet;
   }
 
+  async topUpWallet(lamports: number) {
+    await this.conn.confirmTransaction(
+      await this.conn.requestAirdrop(this.wallet.publicKey, lamports)
+    );
+  }
+
   async createFundedWallet(lamports: number): Promise<Keypair> {
     const wallet = Keypair.generate();
     const tx = new Transaction().add(

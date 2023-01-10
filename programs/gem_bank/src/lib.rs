@@ -69,4 +69,8 @@ pub mod gem_bank {
         //msg!("record rarity points");
         instructions::record_rarity_points::handler(ctx, rarity_configs)
     }
+
+    pub fn clean_vault(ctx: Context<CleanVault>) -> Result<()> {
+        instructions::clean_vault::clean_vault(ctx)
+    }
 }
