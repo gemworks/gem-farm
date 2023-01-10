@@ -53,7 +53,7 @@ function createAssociatedTokenAccountInstruction(
   });
 }
 
-describe('gem clean vault', () => {
+describe('Withdraw tokens from vault', () => {
   const _provider = AnchorProvider.local();
   const gb = new GemBankClient(_provider.connection, _provider.wallet as any);
   const nw = new NodeWallet(_provider.connection, _provider.wallet as any);
@@ -144,15 +144,14 @@ describe('gem clean vault', () => {
     assert.equal(vaultAcc.owner.toBase58(), vaultOwner.publicKey.toBase58());
   });
 
-  describe('clean vault operations', () => {
+  describe('Vault withdraw tokens operation', () => {
     //global state
     let gemAmount: anchor.BN;
     let gem: ITokenData;
     let gemBox: PublicKey;
-    const recipient = anchor.web3.Keypair.generate();
     const bonk_auth = anchor.web3.Keypair.generate();
     const fake_bonk_auth = anchor.web3.Keypair.generate(); // secondary SPL
-    const PaYeR = anchor.web3.Keypair.generate();
+    const txPayer = anchor.web3.Keypair.generate();
     let bonkToken: Token;
     let fakeBonkToken: Token;
     let recipientAta_bonk;
@@ -173,7 +172,7 @@ describe('gem clean vault', () => {
       );
       await _provider.connection.confirmTransaction(
         await _provider.connection.requestAirdrop(
-          PaYeR.publicKey,
+          txPayer.publicKey,
           2 * LAMPORTS_PER_SOL
         )
       );
@@ -183,12 +182,7 @@ describe('gem clean vault', () => {
           2 * LAMPORTS_PER_SOL
         )
       );
-      await _provider.connection.confirmTransaction(
-        await _provider.connection.requestAirdrop(
-          recipient.publicKey,
-          2 * LAMPORTS_PER_SOL
-        )
-      );
+
       console.log('SOL airdrops done');
 
       [vaultPda, bumpVaultPda] = await PublicKey.findProgramAddress(
@@ -203,7 +197,7 @@ describe('gem clean vault', () => {
       // bonk set-up
       bonkToken = await Token.createMint(
         _provider.connection,
-        PaYeR,
+        txPayer,
         bonk_auth.publicKey,
         bonk_auth.publicKey,
         4,
@@ -212,7 +206,7 @@ describe('gem clean vault', () => {
 
       // Create destination ATAs for bonk and fake bonk
       recipientAta_bonk = await bonkToken.getOrCreateAssociatedAccountInfo(
-        recipient.publicKey
+        vaultOwner.publicKey
       );
       // Derive ATA of the bonk for recipient
       [vaultAta_bonk] = await PublicKey.findProgramAddress(
@@ -227,7 +221,7 @@ describe('gem clean vault', () => {
       try {
         const transaction = new Transaction().add(
           createAssociatedTokenAccountInstruction(
-            PaYeR.publicKey,
+            txPayer.publicKey,
             vaultAta_bonk,
             vault,
             bonkToken.publicKey
@@ -235,9 +229,9 @@ describe('gem clean vault', () => {
         );
 
         const blockHash = await _provider.connection.getRecentBlockhash();
-        // transaction.feePayer = PaYeR.secretKey;
+        // transaction.feePayer = txPayer.secretKey;
         transaction.recentBlockhash = await blockHash.blockhash;
-        await _provider.sendAndConfirm(transaction, [PaYeR]);
+        await _provider.sendAndConfirm(transaction, [txPayer]);
       } catch (error: unknown) {
         console.log(error);
         console.log('\n\n\n');
@@ -250,7 +244,7 @@ describe('gem clean vault', () => {
       // fake bonk set-up
       fakeBonkToken = await Token.createMint(
         _provider.connection,
-        PaYeR,
+        txPayer,
         fake_bonk_auth.publicKey,
         fake_bonk_auth.publicKey,
         4,
@@ -259,7 +253,7 @@ describe('gem clean vault', () => {
       // Destination ATA for fake bonk
       recipientAta_fake_bonk =
         await fakeBonkToken.getOrCreateAssociatedAccountInfo(
-          recipient.publicKey
+          vaultOwner.publicKey
         );
       // Derive ATA of the fake bonk for recipient
       [vaultAta_fake_bonk] = await PublicKey.findProgramAddress(
@@ -274,7 +268,7 @@ describe('gem clean vault', () => {
       try {
         const transaction = new Transaction().add(
           createAssociatedTokenAccountInstruction(
-            PaYeR.publicKey,
+            txPayer.publicKey,
             vaultAta_fake_bonk,
             vault,
             fakeBonkToken.publicKey
@@ -282,9 +276,9 @@ describe('gem clean vault', () => {
         );
 
         const blockHash = await _provider.connection.getRecentBlockhash();
-        // transaction.feePayer = PaYeR.secretKey;
+        // transaction.feePayer = txPayer.secretKey;
         transaction.recentBlockhash = await blockHash.blockhash;
-        await _provider.sendAndConfirm(transaction, [PaYeR]);
+        await _provider.sendAndConfirm(transaction, [txPayer]);
       } catch (error: unknown) {
         console.log(error);
         console.log('\n\n\n');
@@ -359,7 +353,40 @@ describe('gem clean vault', () => {
           bumpAuthPda
         );
         assert(false);
-      } catch {}
+      } catch {
+        assert(true);
+      }
+    });
+
+    it('Rejects if you submit gembox', async () => {
+      let vaultAuth;
+      ({ vaultAuth, gemBox, GDR } = await prepDeposit(vaultOwner));
+
+      const gemBoxAcc = await gb.fetchGemAcc(gem.tokenMint, gemBox);
+      assert(gemBoxAcc.amount.eq(gemAmount));
+
+      await tokenSetup();
+
+      const [authtPda, bumpAuthPda] = await PublicKey.findProgramAddress(
+        [vault.toBytes()],
+        GEM_BANK_PROG_ID
+      );
+
+      try {
+        let tr = await gb.cleanVault(
+          vaultOwner,
+          gemBoxAcc.address,
+          gemBox,
+          recipientAta_bonk.address,
+          bonkToken.publicKey,
+          bank.publicKey,
+          vaultAuth,
+          bumpAuthPda
+        );
+        assert(false);
+      } catch {
+        assert(true);
+      }
     });
 
     it('Bonk SPL withdrawl after airdrop (caller has deposit)', async () => {
@@ -440,89 +467,6 @@ describe('gem clean vault', () => {
       assert.equal(vaultFakeBonkEnd, vaultFakeBonkStart);
       // Transfered all the bonk from the vault to the recipient
       assert.equal(vaultBonkStart, recipientBonkEnd - recipientBonkStart);
-    });
-
-    it('Fake bonk SPL withdrawl after airdrop (caller has deposit)', async () => {
-      let vaultAuth;
-      ({ vaultAuth, gemBox, GDR } = await prepDeposit(vaultOwner));
-
-      const gemBoxAcc = await gb.fetchGemAcc(gem.tokenMint, gemBox);
-      assert(gemBoxAcc.amount.eq(gemAmount));
-
-      await tokenSetup();
-
-      const [authtPda, bumpAuthPda] = await PublicKey.findProgramAddress(
-        [vault.toBytes()],
-        GEM_BANK_PROG_ID
-      );
-
-      let vaultBonkStart = Number(
-        (await bonkToken.getAccountInfo(vaultAta_bonk)).amount
-      );
-
-      let recipientBonkStart = Number(
-        (await bonkToken.getAccountInfo(recipientAta_bonk.address)).amount
-      );
-
-      let vaultFakeBonkStart = Number(
-        (await fakeBonkToken.getAccountInfo(vaultAta_fake_bonk)).amount
-      );
-
-      let recipientFakeBonkStart = Number(
-        (await fakeBonkToken.getAccountInfo(recipientAta_fake_bonk.address))
-          .amount
-      );
-
-      console.log('[BONK] Vault balance start:', vaultBonkStart);
-      console.log('[BONK] Recipient balance start:', recipientBonkStart);
-      console.log('[FBNK] Vault balance start:', vaultFakeBonkStart);
-      console.log('[FBNK] Recipient balance start:', recipientFakeBonkStart);
-
-      await gb.cleanVault(
-        vaultOwner,
-        vaultAta_fake_bonk,
-        vault,
-        recipientAta_fake_bonk.address,
-        fakeBonkToken.publicKey,
-        bank.publicKey,
-        vaultAuth,
-        bumpAuthPda
-      );
-
-      let vaultBonkEnd = Number(
-        (await bonkToken.getAccountInfo(vaultAta_bonk)).amount
-      );
-
-      let recipientBonkEnd = Number(
-        (await bonkToken.getAccountInfo(recipientAta_bonk.address)).amount
-      );
-
-      let vaultFakeBonkEnd = Number(
-        (await fakeBonkToken.getAccountInfo(vaultAta_fake_bonk)).amount
-      );
-
-      let recipientFakeBonkEnd = Number(
-        (await fakeBonkToken.getAccountInfo(recipientAta_fake_bonk.address))
-          .amount
-      );
-
-      console.log('\n[BONK] Vault balance after clean:', vaultBonkEnd);
-      console.log('[FBNK] Vault balance after clean:', vaultFakeBonkEnd);
-      console.log('[BONK] Recipient balance after clean:', recipientBonkEnd);
-      console.log(
-        '[FBNK] Recipient balance after clean:',
-        recipientFakeBonkEnd
-      );
-
-      // No change to bonk balance for recipient
-      assert.equal(recipientBonkEnd, recipientBonkStart);
-      // No change to bonk balance for the vault
-      assert.equal(vaultBonkEnd, vaultBonkStart);
-      // Transfered all the bonk from the vault to the recipient
-      assert.equal(
-        vaultFakeBonkStart,
-        recipientFakeBonkEnd - recipientFakeBonkStart
-      );
     });
   });
 });
