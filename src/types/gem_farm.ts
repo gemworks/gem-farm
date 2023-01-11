@@ -723,6 +723,11 @@ export type GemFarm = {
     },
     {
       "name": "refreshFarmerSigned",
+      "docs": [
+        "this one needs to be called by the farmer themselves",
+        "it's useful if for some reason they can't re-enroll in another fixed reward cycle (eg reward exhausted)",
+        "but they want to be able to refresh themselves and claim their earned rewards up to this point"
+      ],
       "accounts": [
         {
           "name": "farm",
@@ -1033,6 +1038,10 @@ export type GemFarm = {
   "accounts": [
     {
       "name": "authorizationProof",
+      "docs": [
+        "if this PDA exists, this means the funder recorded below has been authorized by the",
+        "farm recorded below to fund rewards"
+      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -1046,6 +1055,9 @@ export type GemFarm = {
           },
           {
             "name": "reserved",
+            "docs": [
+              "reserved for future updates, has to be /8"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -1067,10 +1079,16 @@ export type GemFarm = {
           },
           {
             "name": "identity",
+            "docs": [
+              "the identity of the farmer = their public key"
+            ],
             "type": "publicKey"
           },
           {
             "name": "vault",
+            "docs": [
+              "vault storing all of the farmer's gems"
+            ],
             "type": "publicKey"
           },
           {
@@ -1081,18 +1099,30 @@ export type GemFarm = {
           },
           {
             "name": "gemsStaked",
+            "docs": [
+              "total number of gems at the time when the vault is locked"
+            ],
             "type": "u64"
           },
           {
             "name": "rarityPointsStaked",
+            "docs": [
+              "total number of gems * rarity of each gem (1 if un-appraised)"
+            ],
             "type": "u64"
           },
           {
             "name": "minStakingEndsTs",
+            "docs": [
+              "this will be updated when they decide to unstake taking into acc. config set at farm level"
+            ],
             "type": "u64"
           },
           {
             "name": "cooldownEndsTs",
+            "docs": [
+              "this will be updated when they decide to unstake taking into acc. config set at farm level"
+            ],
             "type": "u64"
           },
           {
@@ -1109,6 +1139,9 @@ export type GemFarm = {
           },
           {
             "name": "reserved",
+            "docs": [
+              "reserved for future updates, has to be /8"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -1130,14 +1163,25 @@ export type GemFarm = {
           },
           {
             "name": "farmManager",
+            "docs": [
+              "authorizes funders, whitelists mints/creators, sets farm config params",
+              "can update itself to another Pubkey"
+            ],
             "type": "publicKey"
           },
           {
             "name": "farmTreasury",
+            "docs": [
+              "used for collecting any fees earned by the farm"
+            ],
             "type": "publicKey"
           },
           {
             "name": "farmAuthority",
+            "docs": [
+              "signs off on treasury payouts and on any operations related to the bank",
+              "(configured as bank manager)"
+            ],
             "type": "publicKey"
           },
           {
@@ -1155,6 +1199,9 @@ export type GemFarm = {
           },
           {
             "name": "bank",
+            "docs": [
+              "each farm controls a single bank. each farmer gets a vault in that bank"
+            ],
             "type": "publicKey"
           },
           {
@@ -1165,22 +1212,37 @@ export type GemFarm = {
           },
           {
             "name": "farmerCount",
+            "docs": [
+              "total count, including initialized but inactive farmers"
+            ],
             "type": "u64"
           },
           {
             "name": "stakedFarmerCount",
+            "docs": [
+              "currently staked farmer count"
+            ],
             "type": "u64"
           },
           {
             "name": "gemsStaked",
+            "docs": [
+              "currently staked gem count"
+            ],
             "type": "u64"
           },
           {
             "name": "rarityPointsStaked",
+            "docs": [
+              "currently staked gem count, where each gem is multiplied by its rarity score (1 if absent)"
+            ],
             "type": "u64"
           },
           {
             "name": "authorizedFunderCount",
+            "docs": [
+              "how many accounts can create funding schedules"
+            ],
             "type": "u64"
           },
           {
@@ -1203,6 +1265,9 @@ export type GemFarm = {
           },
           {
             "name": "reserved",
+            "docs": [
+              "reserved for future updates, has to be /8"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -1268,14 +1333,23 @@ export type GemFarm = {
         "fields": [
           {
             "name": "paidOutReward",
+            "docs": [
+              "total, not per rarity point. Never goes down (ie is cumulative)"
+            ],
             "type": "u64"
           },
           {
             "name": "accruedReward",
+            "docs": [
+              "total, not per rarity point. Never goes down (ie is cumulative)"
+            ],
             "type": "u64"
           },
           {
             "name": "variableRate",
+            "docs": [
+              "only one of these two (fixed and variable) will actually be used, per reward"
+            ],
             "type": {
               "defined": "FarmerVariableRateReward"
             }
@@ -1288,6 +1362,9 @@ export type GemFarm = {
           },
           {
             "name": "reserved",
+            "docs": [
+              "reserved for future updates, has to be /8"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -1305,12 +1382,19 @@ export type GemFarm = {
         "fields": [
           {
             "name": "lastRecordedAccruedRewardPerRarityPoint",
+            "docs": [
+              "used to keep track of how much of the variable reward has been updated for this farmer",
+              "(read more in variable rate config)"
+            ],
             "type": {
               "defined": "Number128"
             }
           },
           {
             "name": "reserved",
+            "docs": [
+              "reserved for future updates, has to be /8"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -1328,18 +1412,36 @@ export type GemFarm = {
         "fields": [
           {
             "name": "beginStakingTs",
+            "docs": [
+              "this is the time the farmer staked",
+              "can be WAY BACK in the past, if we've rolled them multiple times"
+            ],
             "type": "u64"
           },
           {
             "name": "beginScheduleTs",
+            "docs": [
+              "this is the time the latest reward schedule they subscribed to begins",
+              "(this + promised duration = end_schedule_ts)"
+            ],
             "type": "u64"
           },
           {
             "name": "lastUpdatedTs",
+            "docs": [
+              "always set to upper bound, not just now_ts (except funding)"
+            ],
             "type": "u64"
           },
           {
             "name": "promisedSchedule",
+            "docs": [
+              "when a farmer stakes with the fixed schedule, at the time of staking,",
+              "we promise them a schedule for a certain duration (eg 1 token/rarity point/s for 100s)",
+              "that then \"reserves\" a certain amount of funds so that they can't be promised to other farmers",
+              "only if the farmer unstakes, will the reserve be void, and the funds become available again",
+              "for either funding other farmers or withdrawing (when the reward is cancelled)"
+            ],
             "type": {
               "defined": "FixedRateSchedule"
             }
@@ -1350,6 +1452,9 @@ export type GemFarm = {
           },
           {
             "name": "reserved",
+            "docs": [
+              "reserved for future updates, has to be /8"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -1382,6 +1487,9 @@ export type GemFarm = {
     },
     {
       "name": "MaxCounts",
+      "docs": [
+        "refers to staked counts"
+      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -1402,6 +1510,9 @@ export type GemFarm = {
     },
     {
       "name": "FundsTracker",
+      "docs": [
+        "these numbers should only ever go up - ie they are cummulative"
+      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -1427,6 +1538,10 @@ export type GemFarm = {
         "fields": [
           {
             "name": "durationSec",
+            "docs": [
+              "total duration for which the reward has been funded",
+              "updated with each new funding round"
+            ],
             "type": "u64"
           },
           {
@@ -1435,6 +1550,10 @@ export type GemFarm = {
           },
           {
             "name": "lockEndTs",
+            "docs": [
+              "this will be set = to reward_end_ts if farm manager decides to lock up their reward",
+              "gives stakers the certainty it won't be withdrawn"
+            ],
             "type": "u64"
           }
         ]
@@ -1447,10 +1566,18 @@ export type GemFarm = {
         "fields": [
           {
             "name": "rewardMint",
+            "docs": [
+              "in v0 the next 3 fields (mint, pot type) are set ONLY once, at farm init",
+              "and can't ever be changed for security reasons",
+              "potentially in v1++ might find a way around it, but for now just use a new farm"
+            ],
             "type": "publicKey"
           },
           {
             "name": "rewardPot",
+            "docs": [
+              "where the reward is stored"
+            ],
             "type": "publicKey"
           },
           {
@@ -1461,6 +1588,9 @@ export type GemFarm = {
           },
           {
             "name": "fixedRate",
+            "docs": [
+              "only one of these two (fixed and variable) will actually be used, per reward"
+            ],
             "type": {
               "defined": "FixedRateReward"
             }
@@ -1485,6 +1615,9 @@ export type GemFarm = {
           },
           {
             "name": "reserved",
+            "docs": [
+              "reserved for future updates, has to be /8"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -1502,10 +1635,16 @@ export type GemFarm = {
         "fields": [
           {
             "name": "rewardRate",
+            "docs": [
+              "tokens/denominator/rarity point / sec"
+            ],
             "type": "u64"
           },
           {
             "name": "requiredTenure",
+            "docs": [
+              "min amount of time that needs to pass for the above rate to come into effect"
+            ],
             "type": "u64"
           }
         ]
@@ -1518,6 +1657,9 @@ export type GemFarm = {
         "fields": [
           {
             "name": "baseRate",
+            "docs": [
+              "tokens/denominator / sec"
+            ],
             "type": "u64"
           },
           {
@@ -1546,6 +1688,10 @@ export type GemFarm = {
           },
           {
             "name": "denominator",
+            "docs": [
+              "needed to slow down the payout schedule (else min would be 1 token/rarity point/s or 86k/rarity point/day",
+              "only used in fixed rate - in variable overall duration serves as sufficient speed regulator"
+            ],
             "type": "u64"
           }
         ]
@@ -1564,10 +1710,19 @@ export type GemFarm = {
           },
           {
             "name": "amount",
+            "docs": [
+              "total amount that is being sent with the ix - will be added ON TOP of existing available funding"
+            ],
             "type": "u64"
           },
           {
             "name": "durationSec",
+            "docs": [
+              "duration the funding is being committed for",
+              "eg if commit funding for 100s and a farmer shows up 3s in, they will be promised 97s at above schedule",
+              "set this carefully!",
+              "every farmer enrolled will be \"reserved\" an amount to cover the schedule for this duration"
+            ],
             "type": "u64"
           }
         ]
@@ -1580,16 +1735,25 @@ export type GemFarm = {
         "fields": [
           {
             "name": "schedule",
+            "docs": [
+              "configured on funding"
+            ],
             "type": {
               "defined": "FixedRateSchedule"
             }
           },
           {
             "name": "reservedAmount",
+            "docs": [
+              "amount that has been promised to existing stakers and hence can't be withdrawn"
+            ],
             "type": "u64"
           },
           {
             "name": "reserved",
+            "docs": [
+              "reserved for future updates, has to be /8"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -1607,10 +1771,16 @@ export type GemFarm = {
         "fields": [
           {
             "name": "amount",
+            "docs": [
+              "total amount of reward"
+            ],
             "type": "u64"
           },
           {
             "name": "durationSec",
+            "docs": [
+              "over which period it's active"
+            ],
             "type": "u64"
           }
         ]
@@ -1623,22 +1793,39 @@ export type GemFarm = {
         "fields": [
           {
             "name": "rewardRate",
+            "docs": [
+              "in tokens/s, = calculated as total reward pot at initialization / reward duration"
+            ],
             "type": {
               "defined": "Number128"
             }
           },
           {
             "name": "rewardLastUpdatedTs",
+            "docs": [
+              "set to upper bound, not just now_ts (except funding, when there is no upper bound)"
+            ],
             "type": "u64"
           },
           {
             "name": "accruedRewardPerRarityPoint",
+            "docs": [
+              "this is somewhat redundant with total_accrued_to_stakers in funds, but necessary",
+              "think of it as a \"flag in the ground\" that gets moved forward as more rewards accrue to the pool",
+              "when a farmer tries to figure out how much they're due from the pool, we:",
+              "1) compare their latest record of flag position, with actual flag position",
+              "2) multiply the difference by the amount they have staked",
+              "3) update their record of flag position, so that next time we don't count this distance again"
+            ],
             "type": {
               "defined": "Number128"
             }
           },
           {
             "name": "reserved",
+            "docs": [
+              "reserved for future updates, has to be /8"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -2428,6 +2615,11 @@ export const IDL: GemFarm = {
     },
     {
       "name": "refreshFarmerSigned",
+      "docs": [
+        "this one needs to be called by the farmer themselves",
+        "it's useful if for some reason they can't re-enroll in another fixed reward cycle (eg reward exhausted)",
+        "but they want to be able to refresh themselves and claim their earned rewards up to this point"
+      ],
       "accounts": [
         {
           "name": "farm",
@@ -2738,6 +2930,10 @@ export const IDL: GemFarm = {
   "accounts": [
     {
       "name": "authorizationProof",
+      "docs": [
+        "if this PDA exists, this means the funder recorded below has been authorized by the",
+        "farm recorded below to fund rewards"
+      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -2751,6 +2947,9 @@ export const IDL: GemFarm = {
           },
           {
             "name": "reserved",
+            "docs": [
+              "reserved for future updates, has to be /8"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -2772,10 +2971,16 @@ export const IDL: GemFarm = {
           },
           {
             "name": "identity",
+            "docs": [
+              "the identity of the farmer = their public key"
+            ],
             "type": "publicKey"
           },
           {
             "name": "vault",
+            "docs": [
+              "vault storing all of the farmer's gems"
+            ],
             "type": "publicKey"
           },
           {
@@ -2786,18 +2991,30 @@ export const IDL: GemFarm = {
           },
           {
             "name": "gemsStaked",
+            "docs": [
+              "total number of gems at the time when the vault is locked"
+            ],
             "type": "u64"
           },
           {
             "name": "rarityPointsStaked",
+            "docs": [
+              "total number of gems * rarity of each gem (1 if un-appraised)"
+            ],
             "type": "u64"
           },
           {
             "name": "minStakingEndsTs",
+            "docs": [
+              "this will be updated when they decide to unstake taking into acc. config set at farm level"
+            ],
             "type": "u64"
           },
           {
             "name": "cooldownEndsTs",
+            "docs": [
+              "this will be updated when they decide to unstake taking into acc. config set at farm level"
+            ],
             "type": "u64"
           },
           {
@@ -2814,6 +3031,9 @@ export const IDL: GemFarm = {
           },
           {
             "name": "reserved",
+            "docs": [
+              "reserved for future updates, has to be /8"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -2835,14 +3055,25 @@ export const IDL: GemFarm = {
           },
           {
             "name": "farmManager",
+            "docs": [
+              "authorizes funders, whitelists mints/creators, sets farm config params",
+              "can update itself to another Pubkey"
+            ],
             "type": "publicKey"
           },
           {
             "name": "farmTreasury",
+            "docs": [
+              "used for collecting any fees earned by the farm"
+            ],
             "type": "publicKey"
           },
           {
             "name": "farmAuthority",
+            "docs": [
+              "signs off on treasury payouts and on any operations related to the bank",
+              "(configured as bank manager)"
+            ],
             "type": "publicKey"
           },
           {
@@ -2860,6 +3091,9 @@ export const IDL: GemFarm = {
           },
           {
             "name": "bank",
+            "docs": [
+              "each farm controls a single bank. each farmer gets a vault in that bank"
+            ],
             "type": "publicKey"
           },
           {
@@ -2870,22 +3104,37 @@ export const IDL: GemFarm = {
           },
           {
             "name": "farmerCount",
+            "docs": [
+              "total count, including initialized but inactive farmers"
+            ],
             "type": "u64"
           },
           {
             "name": "stakedFarmerCount",
+            "docs": [
+              "currently staked farmer count"
+            ],
             "type": "u64"
           },
           {
             "name": "gemsStaked",
+            "docs": [
+              "currently staked gem count"
+            ],
             "type": "u64"
           },
           {
             "name": "rarityPointsStaked",
+            "docs": [
+              "currently staked gem count, where each gem is multiplied by its rarity score (1 if absent)"
+            ],
             "type": "u64"
           },
           {
             "name": "authorizedFunderCount",
+            "docs": [
+              "how many accounts can create funding schedules"
+            ],
             "type": "u64"
           },
           {
@@ -2908,6 +3157,9 @@ export const IDL: GemFarm = {
           },
           {
             "name": "reserved",
+            "docs": [
+              "reserved for future updates, has to be /8"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -2973,14 +3225,23 @@ export const IDL: GemFarm = {
         "fields": [
           {
             "name": "paidOutReward",
+            "docs": [
+              "total, not per rarity point. Never goes down (ie is cumulative)"
+            ],
             "type": "u64"
           },
           {
             "name": "accruedReward",
+            "docs": [
+              "total, not per rarity point. Never goes down (ie is cumulative)"
+            ],
             "type": "u64"
           },
           {
             "name": "variableRate",
+            "docs": [
+              "only one of these two (fixed and variable) will actually be used, per reward"
+            ],
             "type": {
               "defined": "FarmerVariableRateReward"
             }
@@ -2993,6 +3254,9 @@ export const IDL: GemFarm = {
           },
           {
             "name": "reserved",
+            "docs": [
+              "reserved for future updates, has to be /8"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -3010,12 +3274,19 @@ export const IDL: GemFarm = {
         "fields": [
           {
             "name": "lastRecordedAccruedRewardPerRarityPoint",
+            "docs": [
+              "used to keep track of how much of the variable reward has been updated for this farmer",
+              "(read more in variable rate config)"
+            ],
             "type": {
               "defined": "Number128"
             }
           },
           {
             "name": "reserved",
+            "docs": [
+              "reserved for future updates, has to be /8"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -3033,18 +3304,36 @@ export const IDL: GemFarm = {
         "fields": [
           {
             "name": "beginStakingTs",
+            "docs": [
+              "this is the time the farmer staked",
+              "can be WAY BACK in the past, if we've rolled them multiple times"
+            ],
             "type": "u64"
           },
           {
             "name": "beginScheduleTs",
+            "docs": [
+              "this is the time the latest reward schedule they subscribed to begins",
+              "(this + promised duration = end_schedule_ts)"
+            ],
             "type": "u64"
           },
           {
             "name": "lastUpdatedTs",
+            "docs": [
+              "always set to upper bound, not just now_ts (except funding)"
+            ],
             "type": "u64"
           },
           {
             "name": "promisedSchedule",
+            "docs": [
+              "when a farmer stakes with the fixed schedule, at the time of staking,",
+              "we promise them a schedule for a certain duration (eg 1 token/rarity point/s for 100s)",
+              "that then \"reserves\" a certain amount of funds so that they can't be promised to other farmers",
+              "only if the farmer unstakes, will the reserve be void, and the funds become available again",
+              "for either funding other farmers or withdrawing (when the reward is cancelled)"
+            ],
             "type": {
               "defined": "FixedRateSchedule"
             }
@@ -3055,6 +3344,9 @@ export const IDL: GemFarm = {
           },
           {
             "name": "reserved",
+            "docs": [
+              "reserved for future updates, has to be /8"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -3087,6 +3379,9 @@ export const IDL: GemFarm = {
     },
     {
       "name": "MaxCounts",
+      "docs": [
+        "refers to staked counts"
+      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -3107,6 +3402,9 @@ export const IDL: GemFarm = {
     },
     {
       "name": "FundsTracker",
+      "docs": [
+        "these numbers should only ever go up - ie they are cummulative"
+      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -3132,6 +3430,10 @@ export const IDL: GemFarm = {
         "fields": [
           {
             "name": "durationSec",
+            "docs": [
+              "total duration for which the reward has been funded",
+              "updated with each new funding round"
+            ],
             "type": "u64"
           },
           {
@@ -3140,6 +3442,10 @@ export const IDL: GemFarm = {
           },
           {
             "name": "lockEndTs",
+            "docs": [
+              "this will be set = to reward_end_ts if farm manager decides to lock up their reward",
+              "gives stakers the certainty it won't be withdrawn"
+            ],
             "type": "u64"
           }
         ]
@@ -3152,10 +3458,18 @@ export const IDL: GemFarm = {
         "fields": [
           {
             "name": "rewardMint",
+            "docs": [
+              "in v0 the next 3 fields (mint, pot type) are set ONLY once, at farm init",
+              "and can't ever be changed for security reasons",
+              "potentially in v1++ might find a way around it, but for now just use a new farm"
+            ],
             "type": "publicKey"
           },
           {
             "name": "rewardPot",
+            "docs": [
+              "where the reward is stored"
+            ],
             "type": "publicKey"
           },
           {
@@ -3166,6 +3480,9 @@ export const IDL: GemFarm = {
           },
           {
             "name": "fixedRate",
+            "docs": [
+              "only one of these two (fixed and variable) will actually be used, per reward"
+            ],
             "type": {
               "defined": "FixedRateReward"
             }
@@ -3190,6 +3507,9 @@ export const IDL: GemFarm = {
           },
           {
             "name": "reserved",
+            "docs": [
+              "reserved for future updates, has to be /8"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -3207,10 +3527,16 @@ export const IDL: GemFarm = {
         "fields": [
           {
             "name": "rewardRate",
+            "docs": [
+              "tokens/denominator/rarity point / sec"
+            ],
             "type": "u64"
           },
           {
             "name": "requiredTenure",
+            "docs": [
+              "min amount of time that needs to pass for the above rate to come into effect"
+            ],
             "type": "u64"
           }
         ]
@@ -3223,6 +3549,9 @@ export const IDL: GemFarm = {
         "fields": [
           {
             "name": "baseRate",
+            "docs": [
+              "tokens/denominator / sec"
+            ],
             "type": "u64"
           },
           {
@@ -3251,6 +3580,10 @@ export const IDL: GemFarm = {
           },
           {
             "name": "denominator",
+            "docs": [
+              "needed to slow down the payout schedule (else min would be 1 token/rarity point/s or 86k/rarity point/day",
+              "only used in fixed rate - in variable overall duration serves as sufficient speed regulator"
+            ],
             "type": "u64"
           }
         ]
@@ -3269,10 +3602,19 @@ export const IDL: GemFarm = {
           },
           {
             "name": "amount",
+            "docs": [
+              "total amount that is being sent with the ix - will be added ON TOP of existing available funding"
+            ],
             "type": "u64"
           },
           {
             "name": "durationSec",
+            "docs": [
+              "duration the funding is being committed for",
+              "eg if commit funding for 100s and a farmer shows up 3s in, they will be promised 97s at above schedule",
+              "set this carefully!",
+              "every farmer enrolled will be \"reserved\" an amount to cover the schedule for this duration"
+            ],
             "type": "u64"
           }
         ]
@@ -3285,16 +3627,25 @@ export const IDL: GemFarm = {
         "fields": [
           {
             "name": "schedule",
+            "docs": [
+              "configured on funding"
+            ],
             "type": {
               "defined": "FixedRateSchedule"
             }
           },
           {
             "name": "reservedAmount",
+            "docs": [
+              "amount that has been promised to existing stakers and hence can't be withdrawn"
+            ],
             "type": "u64"
           },
           {
             "name": "reserved",
+            "docs": [
+              "reserved for future updates, has to be /8"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -3312,10 +3663,16 @@ export const IDL: GemFarm = {
         "fields": [
           {
             "name": "amount",
+            "docs": [
+              "total amount of reward"
+            ],
             "type": "u64"
           },
           {
             "name": "durationSec",
+            "docs": [
+              "over which period it's active"
+            ],
             "type": "u64"
           }
         ]
@@ -3328,22 +3685,39 @@ export const IDL: GemFarm = {
         "fields": [
           {
             "name": "rewardRate",
+            "docs": [
+              "in tokens/s, = calculated as total reward pot at initialization / reward duration"
+            ],
             "type": {
               "defined": "Number128"
             }
           },
           {
             "name": "rewardLastUpdatedTs",
+            "docs": [
+              "set to upper bound, not just now_ts (except funding, when there is no upper bound)"
+            ],
             "type": "u64"
           },
           {
             "name": "accruedRewardPerRarityPoint",
+            "docs": [
+              "this is somewhat redundant with total_accrued_to_stakers in funds, but necessary",
+              "think of it as a \"flag in the ground\" that gets moved forward as more rewards accrue to the pool",
+              "when a farmer tries to figure out how much they're due from the pool, we:",
+              "1) compare their latest record of flag position, with actual flag position",
+              "2) multiply the difference by the amount they have staked",
+              "3) update their record of flag position, so that next time we don't count this distance again"
+            ],
             "type": {
               "defined": "Number128"
             }
           },
           {
             "name": "reserved",
+            "docs": [
+              "reserved for future updates, has to be /8"
+            ],
             "type": {
               "array": [
                 "u8",

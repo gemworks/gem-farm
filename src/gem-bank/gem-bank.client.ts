@@ -613,32 +613,44 @@ export class GemBankClient extends AccountUtils {
     return { whitelistProof, whitelistBump, txSig };
   }
 
-  async cleanVault(
-    owner: Keypair,
-    vaultAta: PublicKey,
-    vault: PublicKey,
-    recepientAta: PublicKey,
-    mint: PublicKey,
+  async withdrawTokensFromVault(
     bank: PublicKey,
-    vaultAuth: PublicKey,
-    bump: number
+    vault: PublicKey,
+    vaultOwner: PublicKey | Keypair,
+    tokenMint: PublicKey,
   ) {
-    await this.bankProgram.methods
-      .cleanVault()
+    const [vaultAuth, vaultAuthBump] = await findVaultAuthorityPDA(vault);
+
+    const recipientAta = await this.findATA(tokenMint, isKp(vaultOwner) ? (<Keypair>vaultOwner).publicKey : <PublicKey>vaultOwner);
+    const vaultAta = await this.findATA(tokenMint, vaultAuth);
+
+    const signers = [];
+    if (isKp(vaultOwner)) signers.push(<Keypair>vaultOwner);
+
+    const builder = this.bankProgram.methods
+      .withdrawTokensVault()
       .accounts({
-        owner: owner.publicKey,
+        bank,
+        vault,
+        owner: isKp(vaultOwner) ? (<Keypair>vaultOwner).publicKey : vaultOwner,
         authority: vaultAuth,
-        vaultAta: vaultAta,
-        vault: vault,
-        recipientAta: recepientAta,
-        mint: mint,
+        recipientAta,
+        vaultAta,
+        mint: tokenMint,
         tokenProgram: TOKEN_PROGRAM_ID,
-        bank: bank,
         systemProgram: SystemProgram.programId,
-        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
       })
-      .signers([owner])
-      .rpc();
+      .signers(signers);
+
+    return {
+      recipientAta,
+      vaultAta,
+      vaultAuth,
+      vaultAuthBump,
+      gemDestination: recipientAta,
+      builder,
+    };
   }
 }

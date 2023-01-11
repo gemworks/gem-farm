@@ -28,6 +28,7 @@
   "scripts": {
     "build": "anchor build && ./scripts/cp_idl.sh",
     "test": "yarn build && anchor test --skip-build",
+    "fast-test": "anchor test --skip-build",
     "pub": "rm -rf ./dist && tsc && npm version patch --force && npm publish --access public",
     "update:apps": "cd ./app/gem-bank && yarn update && cd ../gem-farm && yarn update",
     "update:anchor": "yarn upgrade @project-serum/anchor --latest --check-files"
