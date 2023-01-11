@@ -451,7 +451,7 @@ export type GemBank = {
       ]
     },
     {
-      "name": "withdrawTokensVault",
+      "name": "withdrawTokensAuth",
       "accounts": [
         {
           "name": "bank",
@@ -464,12 +464,14 @@ export type GemBank = {
           "isSigner": false
         },
         {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
           "name": "authority",
           "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "CHECK"
-          ]
+          "isSigner": false
         },
         {
           "name": "vaultAta",
@@ -485,11 +487,6 @@ export type GemBank = {
           "name": "mint",
           "isMut": false,
           "isSigner": false
-        },
-        {
-          "name": "owner",
-          "isMut": true,
-          "isSigner": true
         },
         {
           "name": "tokenProgram",
@@ -1242,7 +1239,7 @@ export const IDL: GemBank = {
       ]
     },
     {
-      "name": "withdrawTokensVault",
+      "name": "withdrawTokensAuth",
       "accounts": [
         {
           "name": "bank",
@@ -1255,12 +1252,14 @@ export const IDL: GemBank = {
           "isSigner": false
         },
         {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
           "name": "authority",
           "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "CHECK"
-          ]
+          "isSigner": false
         },
         {
           "name": "vaultAta",
@@ -1276,11 +1275,6 @@ export const IDL: GemBank = {
           "name": "mint",
           "isMut": false,
           "isSigner": false
-        },
-        {
-          "name": "owner",
-          "isMut": true,
-          "isSigner": true
         },
         {
           "name": "tokenProgram",

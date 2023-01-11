@@ -451,7 +451,7 @@
       ]
     },
     {
-      "name": "withdrawTokensVault",
+      "name": "withdrawTokensAuth",
       "accounts": [
         {
           "name": "bank",
@@ -464,12 +464,14 @@
           "isSigner": false
         },
         {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
           "name": "authority",
           "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "CHECK"
-          ]
+          "isSigner": false
         },
         {
           "name": "vaultAta",
@@ -485,11 +487,6 @@
           "name": "mint",
           "isMut": false,
           "isSigner": false
-        },
-        {
-          "name": "owner",
-          "isMut": true,
-          "isSigner": true
         },
         {
           "name": "tokenProgram",

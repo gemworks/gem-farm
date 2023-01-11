@@ -9,7 +9,7 @@ pub mod set_vault_lock;
 pub mod update_bank_manager;
 pub mod update_vault_owner;
 pub mod withdraw_gem;
-pub mod withdraw_tokens_vault;
+pub mod withdraw_tokens_auth;
 
 pub use add_to_whitelist::*;
 pub use deposit_gem::*;
@@ -22,4 +22,4 @@ pub use set_vault_lock::*;
 pub use update_bank_manager::*;
 pub use update_vault_owner::*;
 pub use withdraw_gem::*;
-pub use withdraw_tokens_vault::*;
+pub use withdraw_tokens_auth::*;

@@ -8,7 +8,7 @@ use gem_common::errors::ErrorCode;
 use crate::state::*;
 
 #[derive(Accounts)]
-pub struct WithdrawTokensFromAuthority<'info> {
+pub struct WithdrawTokensAuthority<'info> {
     //bank
     pub bank: Box<Account<'info, Bank>>,
 
@@ -18,7 +18,7 @@ pub struct WithdrawTokensFromAuthority<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
     /// CHECK:
-    #[account(seeds = [vault.key().as_ref()], bump = bump_auth)]
+    #[account(seeds = [vault.key().as_ref()], bump = vault.authority_bump_seed[0])]
     pub authority: AccountInfo<'info>,
 
     //token
@@ -42,7 +42,7 @@ pub struct WithdrawTokensFromAuthority<'info> {
     pub rent: Sysvar<'info, Rent>,
 }
 
-impl<'info> WithdrawTokensFromAuthority<'info> {
+impl<'info> WithdrawTokensAuthority<'info> {
     fn transfer_ctx(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
         CpiContext::new(
             self.token_program.to_account_info(),
@@ -55,7 +55,7 @@ impl<'info> WithdrawTokensFromAuthority<'info> {
     }
 }
 
-pub fn withdraw_tokens_vault(ctx: Context<WithdrawTokensFromAuthority>) -> Result<()> {
+pub fn handler(ctx: Context<WithdrawTokensAuthority>) -> Result<()> {
     let vault: &Box<Account<Vault>> = &ctx.accounts.vault;
     let vault_ata: &Pubkey = &ctx.accounts.vault_ata.clone().key();
 

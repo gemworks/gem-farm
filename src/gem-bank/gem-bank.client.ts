@@ -613,7 +613,7 @@ export class GemBankClient extends AccountUtils {
     return { whitelistProof, whitelistBump, txSig };
   }
 
-  async withdrawTokensFromVault(
+  async withdrawTokensAuth(
     bank: PublicKey,
     vault: PublicKey,
     vaultOwner: PublicKey | Keypair,
@@ -628,7 +628,7 @@ export class GemBankClient extends AccountUtils {
     if (isKp(vaultOwner)) signers.push(<Keypair>vaultOwner);
 
     const builder = this.bankProgram.methods
-      .withdrawTokensVault()
+      .withdrawTokensAuth()
       .accounts({
         bank,
         vault,

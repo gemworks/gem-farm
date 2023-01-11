@@ -52,7 +52,7 @@ function createAssociatedTokenAccountInstruction(
   });
 }
 
-describe('Withdraw tokens from vault', () => {
+describe('Withdraw tokens owned by authority', () => {
   const _provider = AnchorProvider.local();
   const gb = new GemBankClient(_provider.connection, _provider.wallet as any);
   const nw = new NodeWallet(_provider.connection, _provider.wallet as any);
@@ -187,7 +187,7 @@ describe('Withdraw tokens from vault', () => {
     expect(vaultBonkStart).to.be.gt(0);
     expect(recipientBonkStart).to.eq(0);
 
-    const {builder} = await gb.withdrawTokensFromVault(
+    const {builder} = await gb.withdrawTokensAuth(
       bank.publicKey,
       vault,
       vaultOwner,
@@ -207,7 +207,7 @@ describe('Withdraw tokens from vault', () => {
 
   it('withdraws bonk (gems present)', async () => {
     ({vaultAuth, gemBox} = await prepDeposit(vaultOwner));
-    const gemBoxAcc = await gb.fetchGemAcc(gem.tokenMint, gemBox);
+    let gemBoxAcc = await gb.fetchGemAcc(gem.tokenMint, gemBox);
     assert(gemBoxAcc.amount.eq(gemAmount));
 
     let vaultBonkStart = Number(
@@ -219,7 +219,7 @@ describe('Withdraw tokens from vault', () => {
     expect(vaultBonkStart).to.be.gt(0);
     expect(recipientBonkStart).to.eq(0);
 
-    const {builder} = await gb.withdrawTokensFromVault(
+    const {builder} = await gb.withdrawTokensAuth(
       bank.publicKey,
       vault,
       vaultOwner,
@@ -235,11 +235,14 @@ describe('Withdraw tokens from vault', () => {
     );
     expect(vaultBonkEnd).to.eq(0);
     expect(recipientBonkEnd).to.eq(vaultBonkStart);
+
+    gemBoxAcc = await gb.fetchGemAcc(gem.tokenMint, gemBox);
+    assert(gemBoxAcc.amount.eq(gemAmount));
   });
 
   it('fails to withdraw actual gems', async () => {
     ({vaultAuth, gemBox} = await prepDeposit(vaultOwner));
-    const gemBoxAcc = await gb.fetchGemAcc(gem.tokenMint, gemBox);
+    let gemBoxAcc = await gb.fetchGemAcc(gem.tokenMint, gemBox);
     assert(gemBoxAcc.amount.eq(gemAmount));
 
     let vaultBonkStart = Number(
@@ -258,7 +261,7 @@ describe('Withdraw tokens from vault', () => {
       vaultOwner.publicKey,
     );
     const builder = gb.bankProgram.methods
-      .withdrawTokensVault()
+      .withdrawTokensAuth()
       .accounts({
         bank: bank.publicKey,
         vault,
@@ -286,5 +289,8 @@ describe('Withdraw tokens from vault', () => {
     );
     expect(vaultBonkEnd).to.eq(vaultBonkStart);
     expect(recipientBonkEnd).to.eq(0);
+
+    gemBoxAcc = await gb.fetchGemAcc(gem.tokenMint, gemBox);
+    assert(gemBoxAcc.amount.eq(gemAmount));
   });
 });
