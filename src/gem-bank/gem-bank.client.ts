@@ -612,4 +612,45 @@ export class GemBankClient extends AccountUtils {
 
     return { whitelistProof, whitelistBump, txSig };
   }
+
+  async withdrawTokensAuth(
+    bank: PublicKey,
+    vault: PublicKey,
+    vaultOwner: PublicKey | Keypair,
+    tokenMint: PublicKey,
+  ) {
+    const [vaultAuth, vaultAuthBump] = await findVaultAuthorityPDA(vault);
+
+    const recipientAta = await this.findATA(tokenMint, isKp(vaultOwner) ? (<Keypair>vaultOwner).publicKey : <PublicKey>vaultOwner);
+    const vaultAta = await this.findATA(tokenMint, vaultAuth);
+
+    const signers = [];
+    if (isKp(vaultOwner)) signers.push(<Keypair>vaultOwner);
+
+    const builder = this.bankProgram.methods
+      .withdrawTokensAuth()
+      .accounts({
+        bank,
+        vault,
+        owner: isKp(vaultOwner) ? (<Keypair>vaultOwner).publicKey : vaultOwner,
+        authority: vaultAuth,
+        recipientAta,
+        vaultAta,
+        mint: tokenMint,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      })
+      .signers(signers);
+
+    return {
+      recipientAta,
+      vaultAta,
+      vaultAuth,
+      vaultAuthBump,
+      gemDestination: recipientAta,
+      builder,
+    };
+  }
 }

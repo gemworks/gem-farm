@@ -57,7 +57,8 @@ pub enum ErrorCode {
     #[msg("whitelist proof exists but for the wrong type")]
     WrongWhitelistType,
 
-    Reserved24,
+    #[msg("attempted transfer not allowed")]
+    TransferNotAllowed,
     Reserved25,
     Reserved26,
     Reserved27,

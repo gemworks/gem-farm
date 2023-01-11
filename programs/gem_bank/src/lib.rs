@@ -69,4 +69,8 @@ pub mod gem_bank {
         //msg!("record rarity points");
         instructions::record_rarity_points::handler(ctx, rarity_configs)
     }
+
+    pub fn withdraw_tokens_auth(ctx: Context<WithdrawTokensAuthority>) -> Result<()> {
+        instructions::withdraw_tokens_auth::handler(ctx)
+    }
 }

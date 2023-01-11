@@ -449,6 +449,67 @@ export type GemBank = {
           }
         }
       ]
+    },
+    {
+      "name": "withdrawTokensAuth",
+      "accounts": [
+        {
+          "name": "bank",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "vault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "vaultAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "recipientAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
@@ -463,6 +524,10 @@ export type GemBank = {
           },
           {
             "name": "bankManager",
+            "docs": [
+              "sole control over gem whitelist, un/locking the vaults, and bank flags",
+              "can update itself to another Pubkey"
+            ],
             "type": "publicKey"
           },
           {
@@ -471,18 +536,32 @@ export type GemBank = {
           },
           {
             "name": "whitelistedCreators",
+            "docs": [
+              "only gems allowed will be those that have EITHER a:",
+              "1) creator from this list"
+            ],
             "type": "u32"
           },
           {
             "name": "whitelistedMints",
+            "docs": [
+              "OR",
+              "2) mint from this list"
+            ],
             "type": "u32"
           },
           {
             "name": "vaultCount",
+            "docs": [
+              "total vault count registered with this bank"
+            ],
             "type": "u64"
           },
           {
             "name": "reserved",
+            "docs": [
+              "reserved for future updates, has to be /8"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -495,27 +574,48 @@ export type GemBank = {
     },
     {
       "name": "gemDepositReceipt",
+      "docs": [
+        "GDR is necessary to locate all gem boxes for a given bank/vault",
+        "see fetchAllGdrPDAs() in TS client"
+      ],
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "vault",
+            "docs": [
+              "each gem gox sits inside a single vault"
+            ],
             "type": "publicKey"
           },
           {
             "name": "gemBoxAddress",
+            "docs": [
+              "the token account that actually holds the deposited gem(s)"
+            ],
             "type": "publicKey"
           },
           {
             "name": "gemMint",
+            "docs": [
+              "the following is really stored for convenience, so we don't have to fetch gem account separately"
+            ],
             "type": "publicKey"
           },
           {
             "name": "gemCount",
+            "docs": [
+              "number of gems deposited into this GDR",
+              "in theory, if each gem is actually an NFT this number would be 1",
+              "but the vault is generic enough to support fungible tokens as well, so this can be >1"
+            ],
             "type": "u64"
           },
           {
             "name": "reserved",
+            "docs": [
+              "reserved for future updates, has to be /8"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -545,18 +645,32 @@ export type GemBank = {
         "fields": [
           {
             "name": "bank",
+            "docs": [
+              "each vault is registered with a single bank, used for indexing"
+            ],
             "type": "publicKey"
           },
           {
             "name": "owner",
+            "docs": [
+              "responsible for signing deposits / withdrawals into the vault",
+              "(!) NOTE: does NOT un/lock the vault - the bank manager does that",
+              "can update itself to another Pubkey"
+            ],
             "type": "publicKey"
           },
           {
             "name": "creator",
+            "docs": [
+              "pubkey used to create the vault, baked into vault's PDA - NOT CHANGEABLE"
+            ],
             "type": "publicKey"
           },
           {
             "name": "authority",
+            "docs": [
+              "signs off on any token transfers out of the gem boxes controlled by the vault"
+            ],
             "type": "publicKey"
           },
           {
@@ -574,6 +688,9 @@ export type GemBank = {
           },
           {
             "name": "locked",
+            "docs": [
+              "when the vault is locked, no gems can move in/out of it"
+            ],
             "type": "bool"
           },
           {
@@ -587,18 +704,31 @@ export type GemBank = {
           },
           {
             "name": "gemBoxCount",
+            "docs": [
+              "total number of token mints stored in the vault (gem box per mint)"
+            ],
             "type": "u64"
           },
           {
             "name": "gemCount",
+            "docs": [
+              "gem_boxes can store >1 token, see detailed explanation on GDR"
+            ],
             "type": "u64"
           },
           {
             "name": "rarityPoints",
+            "docs": [
+              "each gem has a rarity of 1 if not specified",
+              "thus worst case, when rarities aren't enabled, this is == gem_count"
+            ],
             "type": "u64"
           },
           {
             "name": "reserved",
+            "docs": [
+              "reserved for future updates, has to be /8"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -611,6 +741,12 @@ export type GemBank = {
     },
     {
       "name": "whitelistProof",
+      "docs": [
+        "whitelists are used to control what gems can/can't go into the vault",
+        "currently 2 types of vault lists are supported: by mint and by creator",
+        "if the whitelist PDA exists, then the mint/creator is considered accepted",
+        "if at least 1 whitelist PDA exists total, then all deposit attempts will start getting checked"
+      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -1101,6 +1237,67 @@ export const IDL: GemBank = {
           }
         }
       ]
+    },
+    {
+      "name": "withdrawTokensAuth",
+      "accounts": [
+        {
+          "name": "bank",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "vault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "vaultAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "recipientAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
@@ -1115,6 +1312,10 @@ export const IDL: GemBank = {
           },
           {
             "name": "bankManager",
+            "docs": [
+              "sole control over gem whitelist, un/locking the vaults, and bank flags",
+              "can update itself to another Pubkey"
+            ],
             "type": "publicKey"
           },
           {
@@ -1123,18 +1324,32 @@ export const IDL: GemBank = {
           },
           {
             "name": "whitelistedCreators",
+            "docs": [
+              "only gems allowed will be those that have EITHER a:",
+              "1) creator from this list"
+            ],
             "type": "u32"
           },
           {
             "name": "whitelistedMints",
+            "docs": [
+              "OR",
+              "2) mint from this list"
+            ],
             "type": "u32"
           },
           {
             "name": "vaultCount",
+            "docs": [
+              "total vault count registered with this bank"
+            ],
             "type": "u64"
           },
           {
             "name": "reserved",
+            "docs": [
+              "reserved for future updates, has to be /8"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -1147,27 +1362,48 @@ export const IDL: GemBank = {
     },
     {
       "name": "gemDepositReceipt",
+      "docs": [
+        "GDR is necessary to locate all gem boxes for a given bank/vault",
+        "see fetchAllGdrPDAs() in TS client"
+      ],
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "vault",
+            "docs": [
+              "each gem gox sits inside a single vault"
+            ],
             "type": "publicKey"
           },
           {
             "name": "gemBoxAddress",
+            "docs": [
+              "the token account that actually holds the deposited gem(s)"
+            ],
             "type": "publicKey"
           },
           {
             "name": "gemMint",
+            "docs": [
+              "the following is really stored for convenience, so we don't have to fetch gem account separately"
+            ],
             "type": "publicKey"
           },
           {
             "name": "gemCount",
+            "docs": [
+              "number of gems deposited into this GDR",
+              "in theory, if each gem is actually an NFT this number would be 1",
+              "but the vault is generic enough to support fungible tokens as well, so this can be >1"
+            ],
             "type": "u64"
           },
           {
             "name": "reserved",
+            "docs": [
+              "reserved for future updates, has to be /8"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -1197,18 +1433,32 @@ export const IDL: GemBank = {
         "fields": [
           {
             "name": "bank",
+            "docs": [
+              "each vault is registered with a single bank, used for indexing"
+            ],
             "type": "publicKey"
           },
           {
             "name": "owner",
+            "docs": [
+              "responsible for signing deposits / withdrawals into the vault",
+              "(!) NOTE: does NOT un/lock the vault - the bank manager does that",
+              "can update itself to another Pubkey"
+            ],
             "type": "publicKey"
           },
           {
             "name": "creator",
+            "docs": [
+              "pubkey used to create the vault, baked into vault's PDA - NOT CHANGEABLE"
+            ],
             "type": "publicKey"
           },
           {
             "name": "authority",
+            "docs": [
+              "signs off on any token transfers out of the gem boxes controlled by the vault"
+            ],
             "type": "publicKey"
           },
           {
@@ -1226,6 +1476,9 @@ export const IDL: GemBank = {
           },
           {
             "name": "locked",
+            "docs": [
+              "when the vault is locked, no gems can move in/out of it"
+            ],
             "type": "bool"
           },
           {
@@ -1239,18 +1492,31 @@ export const IDL: GemBank = {
           },
           {
             "name": "gemBoxCount",
+            "docs": [
+              "total number of token mints stored in the vault (gem box per mint)"
+            ],
             "type": "u64"
           },
           {
             "name": "gemCount",
+            "docs": [
+              "gem_boxes can store >1 token, see detailed explanation on GDR"
+            ],
             "type": "u64"
           },
           {
             "name": "rarityPoints",
+            "docs": [
+              "each gem has a rarity of 1 if not specified",
+              "thus worst case, when rarities aren't enabled, this is == gem_count"
+            ],
             "type": "u64"
           },
           {
             "name": "reserved",
+            "docs": [
+              "reserved for future updates, has to be /8"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -1263,6 +1529,12 @@ export const IDL: GemBank = {
     },
     {
       "name": "whitelistProof",
+      "docs": [
+        "whitelists are used to control what gems can/can't go into the vault",
+        "currently 2 types of vault lists are supported: by mint and by creator",
+        "if the whitelist PDA exists, then the mint/creator is considered accepted",
+        "if at least 1 whitelist PDA exists total, then all deposit attempts will start getting checked"
+      ],
       "type": {
         "kind": "struct",
         "fields": [

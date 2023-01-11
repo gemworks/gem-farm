@@ -1,6 +1,6 @@
 {
   "name": "@gemworks/gem-farm-ts",
-  "version": "0.24.1",
+  "version": "0.24.2",
   "description": "sdk for Gem Farm (by GemWorks 💎)",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -28,6 +28,7 @@
   "scripts": {
     "build": "anchor build && ./scripts/cp_idl.sh",
     "test": "yarn build && anchor test --skip-build",
+    "fast-test": "anchor test --skip-build",
     "pub": "rm -rf ./dist && tsc && npm version patch --force && npm publish --access public",
     "update:apps": "cd ./app/gem-bank && yarn update && cd ../gem-farm && yarn update",
     "update:anchor": "yarn upgrade @project-serum/anchor --latest --check-files"
@@ -48,7 +49,7 @@
     "chai-as-promised": "^7.1.1",
     "mocha": "^9.0.3",
     "prettier": "^2.5.0",
-    "ts-mocha": "^8.0.0",
+    "ts-mocha": "^10.0.0",
     "typescript": "^4.3.5"
   }
 }
