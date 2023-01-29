@@ -11,6 +11,7 @@ pub mod shared;
 pub mod update_bank_manager;
 pub mod update_vault_owner;
 pub mod withdraw_gem;
+pub mod withdraw_gem_pnft;
 pub mod withdraw_tokens_auth;
 
 pub use add_to_whitelist::*;
@@ -26,4 +27,5 @@ pub use shared::*;
 pub use update_bank_manager::*;
 pub use update_vault_owner::*;
 pub use withdraw_gem::*;
+pub use withdraw_gem_pnft::*;
 pub use withdraw_tokens_auth::*;

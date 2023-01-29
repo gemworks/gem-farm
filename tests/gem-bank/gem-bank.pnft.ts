@@ -2,9 +2,10 @@ import * as anchor from '@project-serum/anchor';
 import { AnchorProvider, BN } from '@project-serum/anchor';
 import { GemBankClient, ITokenData, NodeWallet } from '../../src';
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
-import { assert } from 'chai';
+import { assert, expect } from 'chai';
 import { beforeEach } from 'mocha';
 import {
+  buildAndSendTx,
   createAndFundATA,
   createTokenAuthorizationRules,
 } from '../../src/gem-common/pnft';
@@ -70,7 +71,7 @@ describe('gem bank pnft', () => {
       .map((_) => ({ address: Keypair.generate().publicKey, share: 20 }));
     const { mint, ata } = await createAndFundATA({
       provider: _provider,
-      owner: gemOwner,
+      owner: vaultOwner,
       creators,
       royaltyBps: 1000,
       programmable: true,
@@ -78,7 +79,7 @@ describe('gem bank pnft', () => {
     });
 
     //deposit
-    await gb.buildDepositGemPnft(
+    const { ixs } = await gb.buildDepositGemPnft(
       bank.publicKey,
       vault,
       vaultOwner,
@@ -86,6 +87,32 @@ describe('gem bank pnft', () => {
       mint,
       ata
     );
+    await buildAndSendTx({
+      provider: _provider,
+      ixs,
+      extraSigners: [vaultOwner],
+    });
+
+    let vaultAcc = await gb.fetchVaultAcc(vault);
+    expect(vaultAcc.gemCount.toNumber()).to.eq(1);
+
+    //withdraw
+    const { ixs: withdrawIxs } = await gb.buildWithdrawGemPnft(
+      bank.publicKey,
+      vault,
+      vaultOwner,
+      new BN(1),
+      mint,
+      ata
+    );
+    await buildAndSendTx({
+      provider: _provider,
+      ixs: withdrawIxs,
+      extraSigners: [vaultOwner],
+    });
+
+    vaultAcc = await gb.fetchVaultAcc(vault);
+    expect(vaultAcc.gemCount.toNumber()).to.eq(0);
   });
 
   it('deposits and withdraws pnft (1 ruleset)', async () => {});

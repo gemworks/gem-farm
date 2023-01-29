@@ -241,7 +241,7 @@ pub fn handler<'info>(
         &ctx.accounts.owner.to_account_info(),
         &ctx.accounts.gem_source,
         &ctx.accounts.gem_box,
-        &ctx.accounts.vault.to_account_info(),
+        &ctx.accounts.authority.to_account_info(),
         &ctx.accounts.gem_mint,
         &ctx.accounts.gem_metadata,
         &ctx.accounts.gem_edition,

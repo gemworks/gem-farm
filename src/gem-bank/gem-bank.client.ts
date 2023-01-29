@@ -471,7 +471,9 @@ export class GemBankClient extends AccountUtils {
     gemMint: PublicKey,
     gemSource: PublicKey,
     mintProof?: PublicKey,
-    creatorProof?: PublicKey
+    creatorProof?: PublicKey,
+    compute = 400000,
+    priorityFee = 1
   ) {
     const [gemBox, gemBoxBump] = await findGemBoxPDA(vault, gemMint);
     const [GDR, GDRBump] = await findGdrPDA(vault, gemMint);
@@ -555,7 +557,10 @@ export class GemBankClient extends AccountUtils {
       .remainingAccounts(remainingAccounts)
       .signers(signers);
 
-    const [modifyComputeUnits, addPriorityFee] = getTotalComputeIxs(400000, 1);
+    const [modifyComputeUnits, addPriorityFee] = getTotalComputeIxs(
+      compute,
+      priorityFee
+    );
 
     const ixs = [
       modifyComputeUnits,
@@ -578,6 +583,7 @@ export class GemBankClient extends AccountUtils {
       ownerTokenRecordPda,
       destTokenRecordBump,
       destTokenRecordPda,
+      meta,
     };
   }
 
@@ -677,6 +683,123 @@ export class GemBankClient extends AccountUtils {
       vaultAuthBump,
       gemDestination,
       builder,
+    };
+  }
+
+  async buildWithdrawGemPnft(
+    bank: PublicKey,
+    vault: PublicKey,
+    vaultOwner: PublicKey | Keypair,
+    gemAmount: BN,
+    gemMint: PublicKey,
+    receiver: PublicKey,
+    compute = 400000,
+    priorityFee = 1
+  ) {
+    const [gemBox, gemBoxBump] = await findGemBoxPDA(vault, gemMint);
+    const [GDR, GDRBump] = await findGdrPDA(vault, gemMint);
+    const [vaultAuth, vaultAuthBump] = await findVaultAuthorityPDA(vault);
+    const [gemRarity, gemRarityBump] = await findRarityPDA(bank, gemMint);
+
+    const gemDestination = await this.findATA(gemMint, receiver);
+
+    const signers = [];
+    if (isKp(vaultOwner)) signers.push(<Keypair>vaultOwner);
+
+    //pnft
+    const {
+      meta,
+      ownerTokenRecordBump,
+      ownerTokenRecordPda,
+      destTokenRecordBump,
+      destTokenRecordPda,
+      ruleSet,
+      nftEditionPda,
+      authDataSerialized,
+    } = await this.prepPnftAccounts({
+      nftMint: gemMint,
+      destAta: gemDestination,
+      authData: null, //currently useless
+      sourceAta: gemBox,
+    });
+    const remainingAccounts = [];
+    if (!!ruleSet) {
+      remainingAccounts.push({
+        pubkey: ruleSet,
+        isSigner: false,
+        isWritable: false,
+      });
+    }
+
+    console.log(
+      `withdrawing ${gemAmount} gems from ${gemBox.toBase58()}, GDR ${GDR.toBase58()}`
+    );
+    const builder = this.bankProgram.methods
+      .withdrawGemPnft(
+        vaultAuthBump,
+        gemBoxBump,
+        GDRBump,
+        gemRarityBump,
+        gemAmount,
+        authDataSerialized,
+        !!ruleSet
+      )
+      .accounts({
+        bank,
+        vault,
+        owner: isKp(vaultOwner) ? (<Keypair>vaultOwner).publicKey : vaultOwner,
+        authority: vaultAuth,
+        gemBox,
+        gemDepositReceipt: GDR,
+        gemDestination,
+        gemMint,
+        gemRarity,
+        receiver,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        gemMetadata: meta,
+        gemEdition: nftEditionPda,
+        destTokenRecord: destTokenRecordPda,
+        ownerTokenRecord: ownerTokenRecordPda,
+        pnftShared: {
+          authorizationRulesProgram: AUTH_PROG_ID,
+          tokenMetadataProgram: TMETA_PROG_ID,
+          instructions: SYSVAR_INSTRUCTIONS_PUBKEY,
+        },
+      })
+      .signers(signers)
+      .remainingAccounts(remainingAccounts);
+
+    const [modifyComputeUnits, addPriorityFee] = getTotalComputeIxs(
+      compute,
+      priorityFee
+    );
+
+    const ixs = [
+      modifyComputeUnits,
+      addPriorityFee,
+      await builder.instruction(),
+    ];
+
+    return {
+      gemBox,
+      gemBoxBump,
+      GDR,
+      GDRBump,
+      gemRarity,
+      gemRarityBump,
+      vaultAuth,
+      vaultAuthBump,
+      gemDestination,
+      builder,
+      ixs,
+      ownerTokenRecordBump,
+      ownerTokenRecordPda,
+      destTokenRecordBump,
+      destTokenRecordPda,
+      meta,
     };
   }
 

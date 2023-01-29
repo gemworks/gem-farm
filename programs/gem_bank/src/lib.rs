@@ -87,4 +87,17 @@ pub mod gem_bank {
     ) -> Result<()> {
         instructions::deposit_gem_pnft::handler(ctx, amount, authorization_data, rules_acc_present)
     }
+
+    pub fn withdraw_gem_pnft<'info>(
+        ctx: Context<'_, '_, '_, 'info, WithdrawGemPnft<'info>>,
+        _bump_auth: u8,
+        _bump_gem_box: u8,
+        _bump_gdr: u8,
+        _bump_rarity: u8,
+        amount: u64,
+        authorization_data: Option<AuthorizationDataLocal>,
+        rules_acc_present: bool,
+    ) -> Result<()> {
+        instructions::withdraw_gem_pnft::handler(ctx, amount, authorization_data, rules_acc_present)
+    }
 }
