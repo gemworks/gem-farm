@@ -6,6 +6,9 @@ declare_id!("bankHHdqMuaaST4qQk6mkzxGeKPHWmqdgor6Gs8r88m");
 pub mod instructions;
 pub mod state;
 
+pub use instructions::*;
+pub use state::*;
+
 #[program]
 pub mod gem_bank {
     use super::*;
@@ -35,8 +38,10 @@ pub mod gem_bank {
         _bump_auth: u8,
         _bump_rarity: u8,
         amount: u64,
+        authorization_data: Option<AuthorizationDataLocal>,
+        rules_acc_present: bool,
     ) -> Result<()> {
-        instructions::deposit_gem::handler(ctx, amount)
+        instructions::deposit_gem::handler(ctx, amount, authorization_data, rules_acc_present)
     }
 
     pub fn withdraw_gem(
