@@ -8,7 +8,6 @@ import {
   SYSVAR_INSTRUCTIONS_PUBKEY,
 } from '@solana/web3.js';
 import {
-  AccountInfo,
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token';
@@ -30,7 +29,6 @@ import {
 import { Metaplex } from '@metaplex-foundation/js';
 import { PROGRAM_ID as AUTH_PROG_ID } from '@metaplex-foundation/mpl-token-auth-rules';
 import {
-  buildAndSendTx,
   fetchNft,
   findTokenRecordPDA,
   getTotalComputeIxs,
@@ -100,7 +98,7 @@ export class GemBankClient extends AccountUtils {
     return this.bankProgram.account.gemDepositReceipt.fetch(GDR);
   }
 
-  async fetchGemAcc(mint: PublicKey, gemAcc: PublicKey): Promise<AccountInfo> {
+  async fetchGemAcc(mint: PublicKey, gemAcc: PublicKey) {
     return this.deserializeTokenAccount(mint, gemAcc);
   }
 

@@ -5,7 +5,8 @@ import {
   MintInfo,
   Token,
   TOKEN_PROGRAM_ID,
-} from '@solana/spl-token';
+  //@ts-ignore
+} from '@solana/spl-token-018';
 
 export interface ITokenData {
   tokenMint: PublicKey;
