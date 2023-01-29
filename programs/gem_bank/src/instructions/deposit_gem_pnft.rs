@@ -130,7 +130,6 @@ pub struct DepositGemPnft<'info> {
     // remaining accounts could be passed, in this order:
     // - rules account
     // - mint_whitelist_proof
-    // - gem_metadata <- if we got to this point we can assume gem = NFT, not a fungible token
     // - creator_whitelist_proof
 }
 
@@ -189,12 +188,10 @@ fn assert_whitelisted<'info>(
 
     // if mint verification above failed, attempt to verify based on creator
     if bank.whitelisted_creators > 0 {
-        // 2 additional accounts are expected - metadata and creator whitelist proof
-        let metadata_info = next_account_info(remaining_accs)?;
         let creator_whitelist_proof_info = next_account_info(remaining_accs)?;
 
-        // verify metadata is legit
-        let metadata = assert_decode_metadata(&mint, &metadata_info)?;
+        //here metadata passed in as a fixed account
+        let metadata = assert_decode_metadata(&mint, &ctx.accounts.gem_metadata)?;
 
         // metaplex constraints this to max 5, so won't go crazy on compute
         // (empirical testing showed there's practically 0 diff between stopping at 0th and 5th creator)

@@ -473,7 +473,6 @@ export class GemBankClient extends AccountUtils {
     gemMint: PublicKey,
     gemSource: PublicKey,
     mintProof?: PublicKey,
-    metadata?: PublicKey,
     creatorProof?: PublicKey
   ) {
     const [gemBox, gemBoxBump] = await findGemBoxPDA(vault, gemMint);
@@ -508,12 +507,6 @@ export class GemBankClient extends AccountUtils {
     if (mintProof)
       remainingAccounts.push({
         pubkey: mintProof,
-        isWritable: false,
-        isSigner: false,
-      });
-    if (metadata)
-      remainingAccounts.push({
-        pubkey: metadata,
         isWritable: false,
         isSigner: false,
       });

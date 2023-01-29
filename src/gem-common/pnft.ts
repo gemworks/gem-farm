@@ -1,5 +1,4 @@
 import {
-  AddressLookupTableAccount,
   Commitment,
   ComputeBudgetProgram,
   ConfirmOptions,
@@ -12,7 +11,6 @@ import {
   SYSVAR_INSTRUCTIONS_PUBKEY,
   Transaction,
   TransactionInstruction,
-  VersionedTransaction,
 } from '@solana/web3.js';
 import {
   keypairIdentity,
@@ -30,6 +28,7 @@ import {
   TokenStandard,
 } from '@metaplex-foundation/mpl-token-metadata/';
 import {
+  createCreateOrUpdateInstruction,
   Payload,
   PREFIX,
   PROGRAM_ID as AUTH_PROG_ID,
@@ -39,6 +38,7 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token';
+import { encode } from '@msgpack/msgpack';
 
 export const fetchNft = async (conn: Connection, mint: PublicKey) => {
   const mplex = new Metaplex(conn);
@@ -177,24 +177,6 @@ const _createFundedWallet = async (
   return keypair;
 };
 
-const _createATA = async (
-  provider: AnchorProvider,
-  mint: PublicKey,
-  owner: Keypair
-) => {
-  const ata = await getAssociatedTokenAddress(mint, owner.publicKey);
-  const createAtaIx = createAssociatedTokenAccountInstruction(
-    owner.publicKey,
-    ata,
-    owner.publicKey,
-    mint,
-    TOKEN_PROGRAM_ID,
-    ASSOCIATED_TOKEN_PROGRAM_ID
-  );
-  await buildAndSendTx({ provider, ixs: [createAtaIx], extraSigners: [owner] });
-  return { mint, owner, ata };
-};
-
 export type CreatorInput = {
   address: PublicKey;
   share: number;
@@ -202,6 +184,7 @@ export type CreatorInput = {
 };
 
 const _createAndMintPNft = async ({
+  provider,
   owner,
   mint,
   royaltyBps,
@@ -210,6 +193,7 @@ const _createAndMintPNft = async ({
   collectionVerified = true,
   ruleSet = null,
 }: {
+  provider: AnchorProvider;
   owner: Keypair;
   mint: Keypair;
   royaltyBps?: number;
@@ -343,6 +327,7 @@ const _createAndMintPNft = async ({
   // --------------------------------------- send
 
   await buildAndSendTx({
+    provider,
     ixs: [createIx, mintIx],
     extraSigners: [owner, mint],
   });
@@ -354,7 +339,7 @@ const _createAndMintPNft = async ({
   };
 };
 
-const _createAndFundATA = async ({
+export const createAndFundATA = async ({
   provider,
   owner,
   mint,
@@ -411,6 +396,7 @@ const _createAndFundATA = async ({
     //create programmable nft
     ({ metadataAddress, tokenAddress, masterEditionAddress } =
       await _createAndMintPNft({
+        provider,
         mint: usedMint,
         owner: usedOwner,
         royaltyBps,
@@ -454,4 +440,41 @@ const _createAndFundATA = async ({
     metadata: metadataAddress,
     masterEdition: masterEditionAddress,
   };
+};
+
+export const createTokenAuthorizationRules = async (
+  provider: AnchorProvider,
+  payer: Keypair,
+  name: string,
+  data?: Uint8Array
+) => {
+  const [ruleSetAddress] = await findRuleSetPDA(payer.publicKey, name);
+
+  // Encode the file using msgpack so the pre-encoded data can be written directly to a Solana program account
+  let finalData =
+    data ??
+    encode([
+      1,
+      payer.publicKey.toBuffer().toJSON().data,
+      name,
+      {
+        'Transfer:Owner': 'Pass',
+      },
+    ]);
+
+  let createIX = createCreateOrUpdateInstruction(
+    {
+      payer: payer.publicKey,
+      ruleSetPda: ruleSetAddress,
+      systemProgram: SystemProgram.programId,
+    },
+    {
+      createOrUpdateArgs: { __kind: 'V1', serializedRuleSet: finalData },
+    },
+    AUTH_PROG_ID
+  );
+
+  await buildAndSendTx({ provider, ixs: [createIX], extraSigners: [payer] });
+
+  return ruleSetAddress;
 };
