@@ -1,19 +1,20 @@
-use crate::instructions::FEE_WALLET;
-use anchor_lang::prelude::*;
-use anchor_lang::solana_program::program::invoke;
-use anchor_lang::solana_program::system_instruction;
+use std::str::FromStr;
+
+use anchor_lang::{
+    prelude::*,
+    solana_program::{program::invoke, system_instruction},
+};
 use anchor_spl::token::{Mint, Token, TokenAccount};
-use gem_bank::instructions::calc_rarity_points;
 use gem_bank::{
     self,
     cpi::accounts::{DepositGem, SetVaultLock},
+    instructions::calc_rarity_points,
     program::GemBank,
     state::{Bank, Vault},
 };
 use gem_common::*;
-use std::str::FromStr;
 
-use crate::state::*;
+use crate::{instructions::FEE_WALLET, state::*};
 
 const FEE_LAMPORTS: u64 = 2_000_000; // 0.002 SOL per stake/unstake
 const FD_FEE_LAMPORTS: u64 = 1_000_000; // half of that for FDs

@@ -1,5 +1,6 @@
 pub mod add_to_whitelist;
 pub mod deposit_gem;
+pub mod deposit_gem_pnft;
 pub mod init_bank;
 pub mod init_vault;
 pub mod record_rarity_points;
@@ -14,6 +15,7 @@ pub mod withdraw_tokens_auth;
 
 pub use add_to_whitelist::*;
 pub use deposit_gem::*;
+pub use deposit_gem_pnft::*;
 pub use init_bank::*;
 pub use init_vault::*;
 pub use record_rarity_points::*;

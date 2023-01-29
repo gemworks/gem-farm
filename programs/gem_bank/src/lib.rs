@@ -33,15 +33,13 @@ pub mod gem_bank {
         instructions::update_vault_owner::handler(ctx, new_owner)
     }
 
-    pub fn deposit_gem(
-        ctx: Context<DepositGem>,
+    pub fn deposit_gem<'info>(
+        ctx: Context<'_, '_, '_, 'info, DepositGem<'info>>,
         _bump_auth: u8,
         _bump_rarity: u8,
         amount: u64,
-        authorization_data: Option<AuthorizationDataLocal>,
-        rules_acc_present: bool,
     ) -> Result<()> {
-        instructions::deposit_gem::handler(ctx, amount, authorization_data, rules_acc_present)
+        instructions::deposit_gem::handler(ctx, amount)
     }
 
     pub fn withdraw_gem(
@@ -77,5 +75,16 @@ pub mod gem_bank {
 
     pub fn withdraw_tokens_auth(ctx: Context<WithdrawTokensAuthority>) -> Result<()> {
         instructions::withdraw_tokens_auth::handler(ctx)
+    }
+
+    pub fn deposit_gem_pnft<'info>(
+        ctx: Context<'_, '_, '_, 'info, DepositGemPnft<'info>>,
+        _bump_auth: u8,
+        _bump_rarity: u8,
+        amount: u64,
+        authorization_data: Option<AuthorizationDataLocal>,
+        rules_acc_present: bool,
+    ) -> Result<()> {
+        instructions::deposit_gem_pnft::handler(ctx, amount, authorization_data, rules_acc_present)
     }
 }

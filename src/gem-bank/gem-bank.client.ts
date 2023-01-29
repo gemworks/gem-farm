@@ -1,6 +1,12 @@
 import * as anchor from '@project-serum/anchor';
 import { AnchorProvider, BN, Idl, Program } from '@project-serum/anchor';
-import { Connection, Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
+import {
+  Connection,
+  Keypair,
+  PublicKey,
+  SystemProgram,
+  SYSVAR_INSTRUCTIONS_PUBKEY,
+} from '@solana/web3.js';
 import {
   AccountInfo,
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -16,6 +22,19 @@ import {
   findVaultPDA,
   findWhitelistProofPDA,
 } from './gem-bank.pda';
+import {
+  AuthorizationData,
+  Metadata,
+  PROGRAM_ID as TMETA_PROG_ID,
+} from '@metaplex-foundation/mpl-token-metadata';
+import { Metaplex } from '@metaplex-foundation/js';
+import { PROGRAM_ID as AUTH_PROG_ID } from '@metaplex-foundation/mpl-token-auth-rules';
+import {
+  buildAndSendTx,
+  fetchNft,
+  findTokenRecordPDA,
+  getTotalComputeIxs,
+} from '../gem-common/pnft';
 
 export enum BankFlags {
   FreezeVaults = 1 << 0,
@@ -446,6 +465,131 @@ export class GemBankClient extends AccountUtils {
     };
   }
 
+  async buildDepositGemPnft(
+    bank: PublicKey,
+    vault: PublicKey,
+    vaultOwner: PublicKey | Keypair,
+    gemAmount: BN,
+    gemMint: PublicKey,
+    gemSource: PublicKey,
+    mintProof?: PublicKey,
+    metadata?: PublicKey,
+    creatorProof?: PublicKey
+  ) {
+    const [gemBox, gemBoxBump] = await findGemBoxPDA(vault, gemMint);
+    const [GDR, GDRBump] = await findGdrPDA(vault, gemMint);
+    const [vaultAuth, vaultAuthBump] = await findVaultAuthorityPDA(vault);
+    const [gemRarity, gemRarityBump] = await findRarityPDA(bank, gemMint);
+
+    //pnft
+    const {
+      meta,
+      ownerTokenRecordBump,
+      ownerTokenRecordPda,
+      destTokenRecordBump,
+      destTokenRecordPda,
+      ruleSet,
+      nftEditionPda,
+      authDataSerialized,
+    } = await this.prepPnftAccounts({
+      nftMint: gemMint,
+      destAta: gemBox,
+      authData: null, //currently useless
+      sourceAta: gemSource,
+    });
+    const remainingAccounts = [];
+    if (!!ruleSet) {
+      remainingAccounts.push({
+        pubkey: ruleSet,
+        isSigner: false,
+        isWritable: false,
+      });
+    }
+    if (mintProof)
+      remainingAccounts.push({
+        pubkey: mintProof,
+        isWritable: false,
+        isSigner: false,
+      });
+    if (metadata)
+      remainingAccounts.push({
+        pubkey: metadata,
+        isWritable: false,
+        isSigner: false,
+      });
+    if (creatorProof)
+      remainingAccounts.push({
+        pubkey: creatorProof,
+        isWritable: false,
+        isSigner: false,
+      });
+
+    const signers = [];
+    if (isKp(vaultOwner)) signers.push(<Keypair>vaultOwner);
+
+    console.log(
+      `depositing ${gemAmount} gems into ${gemBox.toBase58()}, GDR ${GDR.toBase58()}`
+    );
+    const builder = this.bankProgram.methods
+      .depositGemPnft(
+        vaultAuthBump,
+        gemRarityBump,
+        gemAmount,
+        authDataSerialized,
+        !!ruleSet
+      )
+      .accounts({
+        bank,
+        vault,
+        owner: isKp(vaultOwner) ? (<Keypair>vaultOwner).publicKey : vaultOwner,
+        authority: vaultAuth,
+        gemBox,
+        gemDepositReceipt: GDR,
+        gemSource,
+        gemMint,
+        gemRarity,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        gemMetadata: meta,
+        gemEdition: nftEditionPda,
+        ownerTokenRecord: ownerTokenRecordPda,
+        destTokenRecord: destTokenRecordPda,
+        pnftShared: {
+          authorizationRulesProgram: AUTH_PROG_ID,
+          tokenMetadataProgram: TMETA_PROG_ID,
+          instructions: SYSVAR_INSTRUCTIONS_PUBKEY,
+        },
+      })
+      .remainingAccounts(remainingAccounts)
+      .signers(signers);
+
+    const [modifyComputeUnits, addPriorityFee] = getTotalComputeIxs(400000, 1);
+
+    const ixs = [
+      modifyComputeUnits,
+      addPriorityFee,
+      await builder.instruction(),
+    ];
+
+    return {
+      vaultAuth,
+      vaultAuthBump,
+      gemBox,
+      gemBoxBump,
+      GDR,
+      GDRBump,
+      gemRarity,
+      gemRarityBump,
+      builder,
+      ixs,
+      ownerTokenRecordBump,
+      ownerTokenRecordPda,
+      destTokenRecordBump,
+      destTokenRecordPda,
+    };
+  }
+
   async withdrawGem(
     bank: PublicKey,
     vault: PublicKey,
@@ -617,11 +761,14 @@ export class GemBankClient extends AccountUtils {
     bank: PublicKey,
     vault: PublicKey,
     vaultOwner: PublicKey | Keypair,
-    tokenMint: PublicKey,
+    tokenMint: PublicKey
   ) {
     const [vaultAuth, vaultAuthBump] = await findVaultAuthorityPDA(vault);
 
-    const recipientAta = await this.findATA(tokenMint, isKp(vaultOwner) ? (<Keypair>vaultOwner).publicKey : <PublicKey>vaultOwner);
+    const recipientAta = await this.findATA(
+      tokenMint,
+      isKp(vaultOwner) ? (<Keypair>vaultOwner).publicKey : <PublicKey>vaultOwner
+    );
     const vaultAta = await this.findATA(tokenMint, vaultAuth);
 
     const signers = [];
@@ -651,6 +798,68 @@ export class GemBankClient extends AccountUtils {
       vaultAuthBump,
       gemDestination: recipientAta,
       builder,
+    };
+  }
+
+  async prepPnftAccounts({
+    nftMetadata,
+    nftMint,
+    sourceAta,
+    destAta,
+    authData = null,
+  }: {
+    nftMetadata?: PublicKey;
+    nftMint: PublicKey;
+    sourceAta: PublicKey;
+    destAta: PublicKey;
+    authData?: AuthorizationData | null;
+  }) {
+    let meta;
+    let creators: PublicKey[] = [];
+    if (nftMetadata) {
+      meta = nftMetadata;
+    } else {
+      const nft = await fetchNft(this.provider.connection, nftMint);
+      meta = nft.metadataAddress;
+      creators = nft.creators.map((c) => c.address);
+    }
+
+    const inflatedMeta = await Metadata.fromAccountAddress(
+      this.provider.connection,
+      meta
+    );
+    const ruleSet = inflatedMeta.programmableConfig?.ruleSet;
+
+    const [ownerTokenRecordPda, ownerTokenRecordBump] =
+      await findTokenRecordPDA(nftMint, sourceAta);
+    const [destTokenRecordPda, destTokenRecordBump] = await findTokenRecordPDA(
+      nftMint,
+      destAta
+    );
+
+    //retrieve edition PDA
+    const mplex = new Metaplex(this.provider.connection);
+    const nftEditionPda = mplex.nfts().pdas().edition({ mint: nftMint });
+
+    //have to re-serialize due to anchor limitations
+    const authDataSerialized = authData
+      ? {
+          payload: Object.entries(authData.payload.map).map(([k, v]) => {
+            return { name: k, payload: v };
+          }),
+        }
+      : null;
+
+    return {
+      meta,
+      creators,
+      ownerTokenRecordBump,
+      ownerTokenRecordPda,
+      destTokenRecordBump,
+      destTokenRecordPda,
+      ruleSet,
+      nftEditionPda,
+      authDataSerialized,
     };
   }
 }

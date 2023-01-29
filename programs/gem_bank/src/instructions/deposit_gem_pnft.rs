@@ -1,15 +1,19 @@
-use std::str::FromStr;
+use std::{slice::Iter, str::FromStr};
 
 use anchor_lang::{prelude::*, Discriminator};
-use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
+use anchor_spl::{
+    associated_token::AssociatedToken,
+    token::{self, Mint, Token, TokenAccount, Transfer},
+};
 use arrayref::array_ref;
 use gem_common::{errors::ErrorCode, *};
+use mpl_token_metadata::state::{Metadata, TokenMetadataAccount};
 
-use crate::{assert_decode_metadata, state::*};
+use crate::*;
 
 #[derive(Accounts)]
 #[instruction(bump_auth: u8, bump_rarity: u8)]
-pub struct DepositGem<'info> {
+pub struct DepositGemPnft<'info> {
     // bank
     pub bank: Box<Account<'info, Bank>>,
 
@@ -63,24 +67,71 @@ pub struct DepositGem<'info> {
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+
+    // pfnt
+    //can't deserialize directly coz Anchor traits not implemented
+    /// CHECK: assert_decode_metadata + seeds below
+    #[account(
+        mut,
+        seeds=[
+            mpl_token_metadata::state::PREFIX.as_bytes(),
+            mpl_token_metadata::id().as_ref(),
+            gem_mint.key().as_ref(),
+        ],
+        seeds::program = mpl_token_metadata::id(),
+        bump
+    )]
+    pub gem_metadata: UncheckedAccount<'info>,
+
+    //note that MASTER EDITION and EDITION share the same seeds, and so it's valid to check them here
+    /// CHECK: seeds below
+    #[account(
+        seeds=[
+            mpl_token_metadata::state::PREFIX.as_bytes(),
+            mpl_token_metadata::id().as_ref(),
+            gem_mint.key().as_ref(),
+            mpl_token_metadata::state::EDITION.as_bytes(),
+        ],
+        seeds::program = mpl_token_metadata::id(),
+        bump
+    )]
+    pub gem_edition: UncheckedAccount<'info>,
+
+    /// CHECK: seeds below
+    #[account(mut,
+        seeds=[
+            mpl_token_metadata::state::PREFIX.as_bytes(),
+            mpl_token_metadata::id().as_ref(),
+            gem_mint.key().as_ref(),
+            mpl_token_metadata::state::TOKEN_RECORD_SEED.as_bytes(),
+            gem_source.key().as_ref()
+        ],
+        seeds::program = mpl_token_metadata::id(),
+        bump
+    )]
+    pub owner_token_record: UncheckedAccount<'info>,
+
+    /// CHECK: seeds below
+    #[account(mut,
+        seeds=[
+            mpl_token_metadata::state::PREFIX.as_bytes(),
+            mpl_token_metadata::id().as_ref(),
+            gem_mint.key().as_ref(),
+            mpl_token_metadata::state::TOKEN_RECORD_SEED.as_bytes(),
+            gem_box.key().as_ref()
+        ],
+        seeds::program = mpl_token_metadata::id(),
+        bump
+    )]
+    pub dest_token_record: UncheckedAccount<'info>,
+    pub pnft_shared: ProgNftShared<'info>,
     //
     // remaining accounts could be passed, in this order:
+    // - rules account
     // - mint_whitelist_proof
     // - gem_metadata <- if we got to this point we can assume gem = NFT, not a fungible token
     // - creator_whitelist_proof
-}
-
-impl<'info> DepositGem<'info> {
-    fn transfer_ctx(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
-        CpiContext::new(
-            self.token_program.to_account_info(),
-            Transfer {
-                from: self.gem_source.to_account_info(),
-                to: self.gem_box.to_account_info(),
-                authority: self.owner.to_account_info(),
-            },
-        )
-    }
 }
 
 fn assert_valid_whitelist_proof<'info>(
@@ -111,10 +162,12 @@ fn assert_valid_whitelist_proof<'info>(
     proof.contains_type(expected_whitelist_type)
 }
 
-fn assert_whitelisted<'info>(ctx: &Context<'_, '_, '_, 'info, DepositGem<'info>>) -> Result<()> {
+fn assert_whitelisted<'info>(
+    ctx: &Context<DepositGemPnft<'info>>,
+    remaining_accs: &mut Iter<AccountInfo<'info>>,
+) -> Result<()> {
     let bank = &*ctx.accounts.bank;
     let mint = &*ctx.accounts.gem_mint;
-    let remaining_accs = &mut ctx.remaining_accounts.iter();
 
     // whitelisted mint is always the 1st optional account
     // this is because it's applicable to both NFTs and standard fungible tokens
@@ -173,20 +226,40 @@ fn assert_whitelisted<'info>(ctx: &Context<'_, '_, '_, 'info, DepositGem<'info>>
     Err(error!(ErrorCode::NotWhitelisted))
 }
 
-/// if rarity account is present, extract rarities from there - else use 1 * amount
-pub fn calc_rarity_points(gem_rarity: &AccountInfo, amount: u64) -> Result<u64> {
-    if !gem_rarity.data_is_empty() {
-        let rarity_account = Account::<Rarity>::try_from(gem_rarity)?;
-        amount.try_mul(rarity_account.points as u64)
-    } else {
-        Ok(amount)
-    }
-}
-
 pub fn handler<'info>(
-    ctx: Context<'_, '_, '_, 'info, DepositGem<'info>>,
+    ctx: Context<'_, '_, '_, 'info, DepositGemPnft<'info>>,
     amount: u64,
+    authorization_data: Option<AuthorizationDataLocal>,
+    rules_acc_present: bool,
 ) -> Result<()> {
+    // do the transfer
+    let rem_acc = &mut ctx.remaining_accounts.iter();
+    let auth_rules = if rules_acc_present {
+        Some(next_account_info(rem_acc)?)
+    } else {
+        None
+    };
+    send_pnft(
+        &ctx.accounts.owner.to_account_info(),
+        &ctx.accounts.owner.to_account_info(),
+        &ctx.accounts.gem_source,
+        &ctx.accounts.gem_box,
+        &ctx.accounts.vault.to_account_info(),
+        &ctx.accounts.gem_mint,
+        &ctx.accounts.gem_metadata,
+        &ctx.accounts.gem_edition,
+        &ctx.accounts.system_program,
+        &ctx.accounts.token_program,
+        &ctx.accounts.associated_token_program,
+        &ctx.accounts.pnft_shared.instructions,
+        &ctx.accounts.owner_token_record,
+        &ctx.accounts.dest_token_record,
+        &ctx.accounts.pnft_shared.authorization_rules_program,
+        auth_rules,
+        authorization_data,
+        None,
+    )?;
+
     // fix missing discriminator check
     {
         let acct = ctx.accounts.gem_deposit_receipt.to_account_info();
@@ -201,7 +274,7 @@ pub fn handler<'info>(
     let bank = &*ctx.accounts.bank;
 
     if bank.whitelisted_mints > 0 || bank.whitelisted_creators > 0 {
-        assert_whitelisted(&ctx)?;
+        assert_whitelisted(&ctx, rem_acc)?;
     }
 
     // verify vault not suspended
@@ -211,14 +284,6 @@ pub fn handler<'info>(
     if vault.access_suspended(bank.flags)? {
         return Err(error!(ErrorCode::VaultAccessSuspended));
     }
-
-    // do the transfer
-    token::transfer(
-        ctx.accounts
-            .transfer_ctx()
-            .with_signer(&[&vault.vault_seeds()]),
-        amount,
-    )?;
 
     // record total number of gem boxes in vault's state
     let vault = &mut ctx.accounts.vault;
