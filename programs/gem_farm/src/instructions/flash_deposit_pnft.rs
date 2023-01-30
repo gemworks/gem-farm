@@ -11,7 +11,7 @@ use anchor_spl::{
 use gem_bank::{
     self,
     cpi::accounts::{DepositGemPnft, ProgNftShared, SetVaultLock},
-    instructions::{calc_rarity_points, shared::AuthorizationDataLocal},
+    instructions::calc_rarity_points,
     program::GemBank,
     state::{Bank, Vault},
 };

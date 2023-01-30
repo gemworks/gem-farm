@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token::{self, CloseAccount, Mint, Token, TokenAccount, Transfer},
+    token::{self, CloseAccount, Mint, Token, TokenAccount},
 };
 use gem_common::{errors::ErrorCode, *};
 

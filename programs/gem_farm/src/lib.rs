@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use gem_bank::instructions::{record_rarity_points::RarityConfig, shared::AuthorizationDataLocal};
+use gem_bank::instructions::record_rarity_points::RarityConfig;
 use instructions::*;
 use state::*;
 

@@ -17,7 +17,7 @@ import { createMetadata } from '../metaplex';
 
 chai.use(chaiAsPromised);
 
-describe.only('gem bank', () => {
+describe('gem bank', () => {
   const _provider = AnchorProvider.local();
   const gb = new GemBankClient(_provider.connection, _provider.wallet as any);
   const nw = new NodeWallet(_provider.connection, _provider.wallet as any);
