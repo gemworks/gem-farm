@@ -86,7 +86,8 @@ export class GemBank extends GemBankClient {
       gemSource,
       mintProof,
       metadata,
-      creatorProof
+      creatorProof,
+      true
     );
   }
 
@@ -102,7 +103,8 @@ export class GemBank extends GemBankClient {
       this.wallet.publicKey,
       gemAmount,
       gemMint,
-      this.wallet.publicKey
+      this.wallet.publicKey,
+      true
     );
   }
 
