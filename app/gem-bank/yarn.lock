@@ -1358,10 +1358,10 @@
   dependencies:
     purgecss "^3.1.3"
 
-"@gemworks/gem-farm-ts@^0.26.1":
-  version "0.26.1"
-  resolved "https://registry.yarnpkg.com/@gemworks/gem-farm-ts/-/gem-farm-ts-0.26.1.tgz#66f543156b99bb92223c270c1c7a27f3718dea46"
-  integrity sha512-GxJAMGMZ/gB5oQECkh52j1ovBOv4Xh7KkRnNKEpqysNuNeE/PwQPhB4q+UL5ipEvgA0XK20FBKqqPMiin08ZGQ==
+"@gemworks/gem-farm-ts@^0.26.2":
+  version "0.26.2"
+  resolved "https://registry.yarnpkg.com/@gemworks/gem-farm-ts/-/gem-farm-ts-0.26.2.tgz#329cf6f76ca799db697fb2eb41d71adcf27f4bc9"
+  integrity sha512-M9Dk79WCR79z2IHVcJsBynt8YU/7Q7kigeBLX5Vrh2RbEsNVvBudOM4+N+MSAMyZDXhi97mDxqQxNTXKKCqjww==
   dependencies:
     "@metaplex-foundation/js" "^0.18.0"
     "@metaplex-foundation/mpl-token-auth-rules" "^1.0.0"
