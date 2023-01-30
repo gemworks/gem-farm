@@ -1,6 +1,6 @@
 {
   "name": "@gemworks/gem-farm-ts",
-  "version": "0.26.2",
+  "version": "0.26.3",
   "description": "sdk for Gem Farm (by GemWorks 💎)",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -34,7 +34,6 @@
     "update:anchor": "yarn upgrade @project-serum/anchor --latest --check-files"
   },
   "dependencies": {
-    "@metaplex-foundation/js": "^0.18.0",
     "@metaplex-foundation/mpl-token-auth-rules": "^1.0.0",
     "@metaplex-foundation/mpl-token-metadata": "^2.7.0",
     "@metaplex/js": "^4.9.0",
@@ -47,6 +46,7 @@
     "exponential-backoff": "^3.1.0"
   },
   "devDependencies": {
+    "@metaplex-foundation/js": "^0.18.0",
     "@types/chai": "^4.2.22",
     "@types/chai-as-promised": "^7.1.4",
     "@types/mocha": "^9.0.0",
