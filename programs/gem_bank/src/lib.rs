@@ -6,6 +6,9 @@ declare_id!("bankHHdqMuaaST4qQk6mkzxGeKPHWmqdgor6Gs8r88m");
 pub mod instructions;
 pub mod state;
 
+pub use instructions::*;
+pub use state::*;
+
 #[program]
 pub mod gem_bank {
     use super::*;
@@ -30,8 +33,8 @@ pub mod gem_bank {
         instructions::update_vault_owner::handler(ctx, new_owner)
     }
 
-    pub fn deposit_gem(
-        ctx: Context<DepositGem>,
+    pub fn deposit_gem<'info>(
+        ctx: Context<'_, '_, '_, 'info, DepositGem<'info>>,
         _bump_auth: u8,
         _bump_rarity: u8,
         amount: u64,
@@ -72,5 +75,29 @@ pub mod gem_bank {
 
     pub fn withdraw_tokens_auth(ctx: Context<WithdrawTokensAuthority>) -> Result<()> {
         instructions::withdraw_tokens_auth::handler(ctx)
+    }
+
+    pub fn deposit_gem_pnft<'info>(
+        ctx: Context<'_, '_, '_, 'info, DepositGemPnft<'info>>,
+        _bump_auth: u8,
+        _bump_rarity: u8,
+        amount: u64,
+        authorization_data: Option<AuthorizationDataLocal>,
+        rules_acc_present: bool,
+    ) -> Result<()> {
+        instructions::deposit_gem_pnft::handler(ctx, amount, authorization_data, rules_acc_present)
+    }
+
+    pub fn withdraw_gem_pnft<'info>(
+        ctx: Context<'_, '_, '_, 'info, WithdrawGemPnft<'info>>,
+        _bump_auth: u8,
+        _bump_gem_box: u8,
+        _bump_gdr: u8,
+        _bump_rarity: u8,
+        amount: u64,
+        authorization_data: Option<AuthorizationDataLocal>,
+        rules_acc_present: bool,
+    ) -> Result<()> {
+        instructions::withdraw_gem_pnft::handler(ctx, amount, authorization_data, rules_acc_present)
     }
 }

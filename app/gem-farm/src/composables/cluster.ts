@@ -1,6 +1,5 @@
 import { readonly, ref } from 'vue';
 import { Commitment, Connection } from '@solana/web3.js';
-import { tokenAuthFetchMiddleware } from '@strata-foundation/web3-token-auth';
 import axios from 'axios';
 
 export enum Cluster {

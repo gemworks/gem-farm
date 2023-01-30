@@ -4,10 +4,13 @@ use anchor_lang::{
     prelude::*,
     solana_program::{program::invoke, system_instruction},
 };
-use anchor_spl::token::{Mint, Token, TokenAccount};
+use anchor_spl::{
+    associated_token::AssociatedToken,
+    token::{Mint, Token, TokenAccount},
+};
 use gem_bank::{
     self,
-    cpi::accounts::{DepositGem, SetVaultLock},
+    cpi::accounts::{DepositGemPnft, ProgNftShared, SetVaultLock},
     instructions::calc_rarity_points,
     program::GemBank,
     state::{Bank, Vault},
@@ -21,7 +24,7 @@ const FD_FEE_LAMPORTS: u64 = 1_000_000; // half of that for FDs
 
 #[derive(Accounts)]
 #[instruction(bump_farmer: u8)]
-pub struct FlashDeposit<'info> {
+pub struct FlashDepositPnft<'info> {
     // farm
     #[account(mut, has_one = farm_authority)]
     pub farm: Box<Account<'info, Farm>>,
@@ -67,14 +70,32 @@ pub struct FlashDeposit<'info> {
     /// CHECK:
     #[account(mut, address = Pubkey::from_str(FEE_WALLET).unwrap())]
     pub fee_acc: AccountInfo<'info>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    ///CHECK: downstream
+    #[account(mut)]
+    pub gem_metadata: UncheckedAccount<'info>,
+    ///CHECK: downstream
+    pub gem_edition: UncheckedAccount<'info>,
+    ///CHECK: downstream
+    #[account(mut)]
+    pub owner_token_record: UncheckedAccount<'info>,
+    ///CHECK: downstream
+    #[account(mut)]
+    pub dest_token_record: UncheckedAccount<'info>,
+    ///CHECK: downstream
+    pub token_metadata_program: UncheckedAccount<'info>,
+    ///CHECK: downstream
+    pub instructions: UncheckedAccount<'info>,
+    ///CHECK: downstream
+    pub authorization_rules_program: UncheckedAccount<'info>,
     //
     // remaining accounts could be passed, in this order:
+    // - rules account
     // - mint_whitelist_proof
-    // - gem_metadata <- if we got to this point we can assume gem = NFT, not a fungible token
     // - creator_whitelist_proof
 }
 
-impl<'info> FlashDeposit<'info> {
+impl<'info> FlashDepositPnft<'info> {
     fn set_lock_vault_ctx(&self) -> CpiContext<'_, '_, '_, 'info, SetVaultLock<'info>> {
         CpiContext::new(
             self.gem_bank.to_account_info(),
@@ -86,10 +107,10 @@ impl<'info> FlashDeposit<'info> {
         )
     }
 
-    fn deposit_gem_ctx(&self) -> CpiContext<'_, '_, '_, 'info, DepositGem<'info>> {
+    fn deposit_gem_ctx(&self) -> CpiContext<'_, '_, '_, 'info, DepositGemPnft<'info>> {
         CpiContext::new(
             self.gem_bank.to_account_info(),
-            DepositGem {
+            DepositGemPnft {
                 bank: self.bank.to_account_info(),
                 vault: self.vault.to_account_info(),
                 owner: self.identity.to_account_info(),
@@ -102,6 +123,16 @@ impl<'info> FlashDeposit<'info> {
                 token_program: self.token_program.to_account_info(),
                 system_program: self.system_program.to_account_info(),
                 rent: self.rent.to_account_info(),
+                associated_token_program: self.associated_token_program.to_account_info(),
+                gem_metadata: self.gem_metadata.to_account_info(),
+                gem_edition: self.gem_edition.to_account_info(),
+                owner_token_record: self.owner_token_record.to_account_info(),
+                dest_token_record: self.dest_token_record.to_account_info(),
+                pnft_shared: ProgNftShared {
+                    token_metadata_program: self.token_metadata_program.to_account_info(),
+                    instructions: self.instructions.to_account_info(),
+                    authorization_rules_program: self.authorization_rules_program.to_account_info(),
+                },
             },
         )
     }
@@ -120,10 +151,11 @@ impl<'info> FlashDeposit<'info> {
 }
 
 pub fn handler<'a, 'b, 'c, 'info>(
-    ctx: Context<'a, 'b, 'c, 'info, FlashDeposit<'info>>,
+    ctx: Context<'a, 'b, 'c, 'info, FlashDepositPnft<'info>>,
     bump_vault_auth: u8,
     bump_rarity: u8,
     amount: u64,
+    rules_acc_present: bool,
 ) -> Result<()> {
     // flash deposit a gem into a locked vault
     gem_bank::cpi::set_vault_lock(
@@ -133,13 +165,15 @@ pub fn handler<'a, 'b, 'c, 'info>(
         false,
     )?;
 
-    gem_bank::cpi::deposit_gem(
+    gem_bank::cpi::deposit_gem_pnft(
         ctx.accounts
             .deposit_gem_ctx()
             .with_remaining_accounts(ctx.remaining_accounts.to_vec()),
         bump_vault_auth,
         bump_rarity,
         amount,
+        None, //fuck this
+        rules_acc_present,
     )?;
 
     gem_bank::cpi::set_vault_lock(

@@ -29,8 +29,13 @@ pub enum ErrorCode {
 
     #[msg("account discriminator doesn't match")]
     AccountDiscriminatorMismatch,
-    Reserved6,
-    Reserved7,
+
+    #[msg("bad ruleset passed")]
+    BadRuleset,
+
+    #[msg("bad metadata passed")]
+    BadMetadata,
+
     Reserved8,
     Reserved9,
     Reserved10,

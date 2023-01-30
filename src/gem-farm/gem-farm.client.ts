@@ -5,6 +5,7 @@ import {
   Keypair,
   PublicKey,
   SystemProgram,
+  SYSVAR_INSTRUCTIONS_PUBKEY,
   Transaction,
   TransactionInstruction,
 } from '@solana/web3.js';
@@ -31,6 +32,8 @@ import {
   findFarmTreasuryPDA,
   findRewardsPotPDA,
 } from './gem-farm.pda';
+import { PROGRAM_ID as AUTH_PROG_ID } from '@metaplex-foundation/mpl-token-auth-rules/dist/src/generated';
+import { PROGRAM_ID as TMETA_PROG_ID } from '@metaplex-foundation/mpl-token-metadata/dist/src/generated';
 
 export const feeAccount = new PublicKey(
   '2xhBxVVuXkdq2MRKerE9mr2s1szfHSedy21MVqf8gPoM'
@@ -781,6 +784,150 @@ export class GemFarmClient extends GemBankClient {
       vaultAuth,
       vaultAuthBump,
       txSig,
+    };
+  }
+
+  async flashDepositPnft(
+    farm: PublicKey,
+    farmerIdentity: PublicKey | Keypair,
+    gemAmount: BN,
+    gemMint: PublicKey,
+    gemSource: PublicKey,
+    mintProof?: PublicKey,
+    creatorProof?: PublicKey
+  ) {
+    const identityPk = isKp(farmerIdentity)
+      ? (<Keypair>farmerIdentity).publicKey
+      : <PublicKey>farmerIdentity;
+
+    const farmAcc = await this.fetchFarmAcc(farm);
+
+    const [farmer, farmerBump] = await findFarmerPDA(farm, identityPk);
+    const [vault, vaultBump] = await findVaultPDA(farmAcc.bank, identityPk);
+    const [farmAuth, farmAuthBump] = await findFarmAuthorityPDA(farm);
+
+    const [gemBox, gemBoxBump] = await findGemBoxPDA(vault, gemMint);
+    const [GDR, GDRBump] = await findGdrPDA(vault, gemMint);
+    const [vaultAuth, vaultAuthBump] = await findVaultAuthorityPDA(vault);
+    const [gemRarity, gemRarityBump] = await findRarityPDA(
+      farmAcc.bank,
+      gemMint
+    );
+
+    //pnft
+    const {
+      meta,
+      ownerTokenRecordBump,
+      ownerTokenRecordPda,
+      destTokenRecordBump,
+      destTokenRecordPda,
+      ruleSet,
+      nftEditionPda,
+      authDataSerialized,
+    } = await this.prepPnftAccounts({
+      nftMint: gemMint,
+      destAta: gemBox,
+      authData: null, //currently useless
+      sourceAta: gemSource,
+    });
+    const remainingAccounts = [];
+    if (!!ruleSet) {
+      remainingAccounts.push({
+        pubkey: ruleSet,
+        isSigner: false,
+        isWritable: false,
+      });
+    }
+    if (mintProof)
+      remainingAccounts.push({
+        pubkey: mintProof,
+        isWritable: false,
+        isSigner: false,
+      });
+    if (creatorProof)
+      remainingAccounts.push({
+        pubkey: creatorProof,
+        isWritable: false,
+        isSigner: false,
+      });
+
+    const signers: Keypair[] = [];
+    if (isKp(farmerIdentity)) signers.push(<Keypair>farmerIdentity);
+
+    console.log('(PNFT) flash depositing on behalf of', identityPk.toBase58());
+    const flashDepositIx = await this.farmProgram.instruction.flashDepositPnft(
+      farmerBump,
+      vaultAuthBump,
+      gemRarityBump,
+      gemAmount,
+      !!ruleSet,
+      {
+        accounts: {
+          farm,
+          farmAuthority: farmAuth,
+          farmer,
+          identity: identityPk,
+          bank: farmAcc.bank,
+          vault,
+          vaultAuthority: vaultAuth,
+          gemBox,
+          gemDepositReceipt: GDR,
+          gemSource,
+          gemMint,
+          gemRarity,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+          gemBank: this.bankProgram.programId,
+          feeAcc: feeAccount,
+          gemMetadata: meta,
+          gemEdition: nftEditionPda,
+          ownerTokenRecord: ownerTokenRecordPda,
+          destTokenRecord: destTokenRecordPda,
+          authorizationRulesProgram: AUTH_PROG_ID,
+          tokenMetadataProgram: TMETA_PROG_ID,
+          instructions: SYSVAR_INSTRUCTIONS_PUBKEY,
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        },
+        remainingAccounts,
+      }
+    );
+
+    //will have no effect on solana networks < 1.9.2
+    const extraComputeIx = this.createExtraComputeIx(400000);
+
+    //craft transaction
+    let tx = new Transaction({
+      feePayer: this.wallet.publicKey,
+      recentBlockhash: (await this.conn.getRecentBlockhash()).blockhash,
+    });
+    tx.add(extraComputeIx);
+    tx.add(flashDepositIx);
+    tx = await this.wallet.signTransaction(tx);
+    if (signers.length > 0) {
+      tx.partialSign(...signers);
+    }
+    const txSig = await this.conn.sendRawTransaction(tx.serialize());
+
+    return {
+      farmer,
+      farmerBump,
+      vault,
+      vaultBump,
+      farmAuth,
+      farmAuthBump,
+      gemBox,
+      gemBoxBump,
+      GDR,
+      GDRBump,
+      vaultAuth,
+      vaultAuthBump,
+      txSig,
+      meta,
+      ownerTokenRecordBump,
+      ownerTokenRecordPda,
+      destTokenRecordBump,
+      destTokenRecordPda,
     };
   }
 
