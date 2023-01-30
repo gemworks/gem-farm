@@ -1,6 +1,6 @@
 {
   "name": "@gemworks/gem-farm-ts",
-  "version": "0.26.0",
+  "version": "0.26.1",
   "description": "sdk for Gem Farm (by GemWorks 💎)",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
