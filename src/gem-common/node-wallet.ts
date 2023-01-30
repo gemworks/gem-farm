@@ -9,7 +9,8 @@ import {
 } from '@solana/web3.js';
 import { BN } from '@project-serum/anchor';
 import { AccountUtils, ITokenData } from './account-utils';
-import { NATIVE_MINT, Token, TOKEN_PROGRAM_ID } from '@solana/spl-token';
+//@ts-ignore
+import { NATIVE_MINT, Token, TOKEN_PROGRAM_ID } from '@solana/spl-token-018';
 
 export class NodeWallet extends AccountUtils {
   wallet: anchor.Wallet; //node wallet

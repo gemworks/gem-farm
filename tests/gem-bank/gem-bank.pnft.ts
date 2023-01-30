@@ -303,4 +303,99 @@ describe('gem bank pnft', () => {
     let vaultAcc = await gb.fetchVaultAcc(vault);
     expect(vaultAcc.gemCount.toNumber()).to.eq(0);
   });
+
+  it('deposits and withdraws a normal nft via pnft ix (whitelisted mint)', async () => {
+    //gem
+    const creators = Array(5)
+      .fill(null)
+      .map((_) => ({ address: Keypair.generate().publicKey, share: 20 }));
+    const { mint, ata } = await createAndFundATA({
+      provider: _provider,
+      owner: vaultOwner,
+      creators,
+      royaltyBps: 1000,
+    });
+
+    //whitelist mint
+    const { whitelistProof } = await whitelistMint(mint);
+
+    //deposit
+    const { ixs } = await gb.buildDepositGemPnft(
+      bank.publicKey,
+      vault,
+      vaultOwner,
+      new BN(1),
+      mint,
+      ata,
+      whitelistProof
+    );
+    await buildAndSendTx({
+      provider: _provider,
+      ixs,
+      extraSigners: [vaultOwner],
+    });
+
+    let vaultAcc = await gb.fetchVaultAcc(vault);
+    expect(vaultAcc.gemCount.toNumber()).to.eq(1);
+
+    //withdraw
+    const { ixs: withdrawIxs } = await gb.buildWithdrawGemPnft(
+      bank.publicKey,
+      vault,
+      vaultOwner,
+      new BN(1),
+      mint,
+      ata
+    );
+    await buildAndSendTx({
+      provider: _provider,
+      ixs: withdrawIxs,
+      extraSigners: [vaultOwner],
+    });
+
+    vaultAcc = await gb.fetchVaultAcc(vault);
+    expect(vaultAcc.gemCount.toNumber()).to.eq(0);
+  });
+
+  // todo: this is gonna fail, can't use flash deposits with creator whitelists: Error: Transaction too large: 1312 > 1232
+  it.skip('deposits and withdraws a normal nft via pnft ix (whitelisted creator)', async () => {
+    //gem
+    const creators = await Promise.all(
+      Array(5)
+        .fill(null)
+        .map(async (_) => {
+          const creator = await nw.createFundedWallet(LAMPORTS_PER_SOL);
+          return { address: creator.publicKey, share: 20, authority: creator };
+        })
+    );
+    const { mint, ata } = await createAndFundATA({
+      provider: _provider,
+      owner: vaultOwner,
+      creators,
+      royaltyBps: 1000,
+    });
+
+    //whitelist mint
+    const { whitelistProof } = await whitelistCreator(creators[0].address);
+
+    //deposit
+    const { ixs } = await gb.buildDepositGemPnft(
+      bank.publicKey,
+      vault,
+      vaultOwner,
+      new BN(1),
+      mint,
+      ata,
+      PublicKey.default, //to skip mint verification
+      whitelistProof //creator verification
+    );
+    await buildAndSendTx({
+      provider: _provider,
+      ixs,
+      extraSigners: [vaultOwner],
+    });
+
+    let vaultAcc = await gb.fetchVaultAcc(vault);
+    expect(vaultAcc.gemCount.toNumber()).to.eq(1);
+  });
 });

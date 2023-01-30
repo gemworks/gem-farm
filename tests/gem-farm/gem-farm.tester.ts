@@ -335,6 +335,24 @@ export class GemFarmTester extends GemFarmClient {
     return this.refreshFarmer(this.farm.publicKey, identity, reenroll);
   }
 
+  async callFlashDepositPnft(
+    mint: PublicKey,
+    ata: PublicKey,
+    identity: Keypair,
+    mintProof?: PublicKey,
+    creatorProof?: PublicKey
+  ) {
+    return this.flashDepositPnft(
+      this.farm.publicKey,
+      identity,
+      toBN(1),
+      mint,
+      ata,
+      mintProof,
+      creatorProof
+    );
+  }
+
   // ----------------- funder
 
   async callAuthorize() {

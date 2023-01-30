@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use gem_bank::instructions::record_rarity_points::RarityConfig;
+use gem_bank::instructions::{record_rarity_points::RarityConfig, shared::AuthorizationDataLocal};
 use instructions::*;
 use state::*;
 
@@ -180,5 +180,23 @@ pub mod gem_farm {
     ) -> Result<()> {
         msg!("add rarities to bank");
         instructions::add_rarities_to_bank::handler(ctx, rarity_configs)
+    }
+
+    pub fn flash_deposit_pnft<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, FlashDepositPnft<'info>>,
+        _bump_farmer: u8,
+        bump_vault_auth: u8,
+        bump_rarity: u8,
+        amount: u64,
+        rules_acc_present: bool,
+    ) -> Result<()> {
+        // msg!("flash deposit"); //have to remove all msgs! or run out of compute budget for this ix
+        instructions::flash_deposit_pnft::handler(
+            ctx,
+            bump_vault_auth,
+            bump_rarity,
+            amount,
+            rules_acc_present,
+        )
     }
 }

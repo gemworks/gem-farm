@@ -544,6 +544,7 @@ export class GemBankClient extends AccountUtils {
         tokenProgram: TOKEN_PROGRAM_ID,
         systemProgram: SystemProgram.programId,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         gemMetadata: meta,
         gemEdition: nftEditionPda,
         ownerTokenRecord: ownerTokenRecordPda,
