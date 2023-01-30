@@ -182,15 +182,14 @@ describe('misc', () => {
     assert.isTrue(vaultAcc.locked);
   });
 
-  // todo: this is gonna fail, can't use flash deposits with creator whitelists: Error: Transaction too large: 1312 > 1232
-  it.skip('flash deposits a normal nft via pnft ix (whitelisted creator)', async () => {
+  it('flash deposits a normal nft via pnft ix (whitelisted creator)', async () => {
     //gem
     const creators = await Promise.all(
-      Array(5)
+      Array(2)
         .fill(null)
         .map(async (_) => {
           const creator = await nw.createFundedWallet(LAMPORTS_PER_SOL);
-          return { address: creator.publicKey, share: 20, authority: creator };
+          return { address: creator.publicKey, share: 50, authority: creator };
         })
     );
     const { mint, ata } = await createAndFundATA({

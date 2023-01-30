@@ -1,4 +1,5 @@
 import {
+  AddressLookupTableAccount, AddressLookupTableProgram,
   Commitment,
   ComputeBudgetProgram,
   ConfirmOptions,
@@ -8,9 +9,9 @@ import {
   PublicKey,
   Signer,
   SystemProgram,
-  SYSVAR_INSTRUCTIONS_PUBKEY,
+  SYSVAR_INSTRUCTIONS_PUBKEY, SYSVAR_RENT_PUBKEY,
   Transaction,
-  TransactionInstruction,
+  TransactionInstruction, TransactionMessage, VersionedTransaction,
 } from '@solana/web3.js';
 import {
   keypairIdentity,
@@ -42,6 +43,7 @@ import {
 } from '@solana/spl-token';
 import { encode } from '@msgpack/msgpack';
 import { BaseWalletAdapter } from '@solana/wallet-adapter-base';
+import {backOff} from "exponential-backoff";
 
 export const fetchNft = async (conn: Connection, mint: PublicKey) => {
   const mplex = new Metaplex(conn);
@@ -77,14 +79,19 @@ type BuildAndSendTxArgs = {
   opts?: ConfirmOptions;
   // Prints out transaction (w/ logs) to stdout
   debug?: boolean;
+  // Optional, if present signify that a V0 tx should be sent
+  lookupTableAccounts?: [AddressLookupTableAccount] | undefined;
+  v0SignKeypair?: Keypair;
+  v0SignCallback?: (tx: any) => any;
 };
 
+//simplified version from tensor-common
 const _buildTx = async ({
   connections,
   feePayer,
   instructions,
   additionalSigners,
-  commitment = 'confirmed',
+  commitment = "confirmed",
 }: {
   //(!) ideally this should be the same RPC node that will then try to send/confirm the tx
   connections: Array<Connection>;
@@ -94,16 +101,18 @@ const _buildTx = async ({
   commitment?: Commitment;
 }) => {
   if (!instructions.length) {
-    throw new Error('must pass at least one instruction');
+    throw new Error("must pass at least one instruction");
   }
 
   const tx = new Transaction();
   tx.add(...instructions);
   tx.feePayer = feePayer;
 
-  const latestBlockhash = await connections[0].getRecentBlockhash(commitment);
+  const latestBlockhash = await connections[0].getLatestBlockhash({
+    commitment,
+  });
   tx.recentBlockhash = latestBlockhash.blockhash;
-  const lastValidBlockHeight = latestBlockhash;
+  const lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
 
   if (additionalSigners) {
     additionalSigners
@@ -116,35 +125,118 @@ const _buildTx = async ({
   return { tx, lastValidBlockHeight };
 };
 
+//simplified version from tensor-common
+const _buildTxV0 = async ({
+  connections,
+  feePayer,
+  instructions,
+  additionalSigners,
+  commitment = "confirmed",
+  addressLookupTableAccs,
+}: {
+  //(!) ideally this should be the same RPC node that will then try to send/confirm the tx
+  connections: Array<Connection>;
+  feePayer: PublicKey;
+  instructions: TransactionInstruction[];
+  additionalSigners?: Array<Signer>;
+  commitment?: Commitment;
+  addressLookupTableAccs: AddressLookupTableAccount[];
+}) => {
+  if (!instructions.length) {
+    throw new Error("must pass at least one instruction");
+  }
+
+  const latestBlockhash = await connections[0].getLatestBlockhash({
+    commitment,
+  });
+  const lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
+
+  const msg = new TransactionMessage({
+    payerKey: feePayer,
+    recentBlockhash: latestBlockhash.blockhash,
+    instructions,
+  }).compileToV0Message(addressLookupTableAccs);
+  const tx = new VersionedTransaction(msg);
+
+  if (additionalSigners) {
+    tx.sign(additionalSigners.filter((s): s is Signer => s !== undefined));
+  }
+
+  return { tx, lastValidBlockHeight };
+};
+
 export const buildAndSendTx = async ({
   provider,
   ixs,
   extraSigners,
   opts,
   debug,
+  lookupTableAccounts,
+  v0SignKeypair,
+  v0SignCallback,
 }: BuildAndSendTxArgs) => {
-  const { tx } = await _buildTx({
-    connections: [provider.connection],
-    instructions: ixs,
-    additionalSigners: extraSigners,
-    feePayer: provider.publicKey,
-  });
-  await provider.wallet.signTransaction(tx);
+  let tx: Transaction | VersionedTransaction;
+
+  if (!lookupTableAccounts?.length) {
+    //build legacy
+    ({ tx } = await backOff(
+      () =>
+        _buildTx({
+          connections: [provider.connection],
+          instructions: ixs,
+          additionalSigners: extraSigners,
+          feePayer: provider.publicKey,
+        }),
+      {
+        // Retry blockhash errors (happens during tests sometimes).
+        retry: (e: any) => {
+          return e.message.includes("blockhash");
+        },
+      }
+    ));
+    await provider.wallet.signTransaction(tx);
+  } else {
+    //build v0
+    ({ tx } = await backOff(
+      () =>
+        _buildTxV0({
+          connections: [provider.connection],
+          instructions: ixs,
+          //have to add TEST_KEYPAIR here instead of wallet.signTx() since partialSign not impl on v0 txs
+          additionalSigners: [...(v0SignKeypair ? [v0SignKeypair] : []), ...(extraSigners ?? [])],
+          feePayer: provider.publicKey,
+          addressLookupTableAccs: lookupTableAccounts,
+        }),
+      {
+        // Retry blockhash errors (happens during tests sometimes).
+        retry: (e: any) => {
+          return e.message.includes("blockhash");
+        },
+      }
+    ));
+    if (v0SignCallback) {
+      await v0SignCallback(tx);
+    }
+  }
+
   try {
-    if (debug) opts = { ...opts, commitment: 'confirmed' };
-    //(!) SUPER IMPORTANT TO USE THIS METHOD AND NOT sendRawTransaction()
-    const sig = await provider.sendAndConfirm(tx, extraSigners, opts);
+    if (debug) opts = { ...opts, commitment: "confirmed" };
+    const sig = await provider.connection.sendRawTransaction(
+      tx.serialize(),
+      opts
+    );
+    await provider.connection.confirmTransaction(sig, "confirmed");
     if (debug) {
       console.log(
         await provider.connection.getTransaction(sig, {
-          commitment: 'confirmed',
+          commitment: "confirmed",
         })
       );
     }
     return sig;
   } catch (e) {
     //this is needed to see program error logs
-    console.error('❌ FAILED TO SEND TX, FULL ERROR: ❌');
+    console.error("❌ FAILED TO SEND TX, FULL ERROR: ❌");
     console.error(e);
     throw e;
   }
@@ -494,4 +586,51 @@ export const createTokenAuthorizationRules = async (
   await buildAndSendTx({ provider, ixs: [createIX], extraSigners: [payer] });
 
   return ruleSetAddress;
+};
+
+export const createCoreGemLUT = async (provider: AnchorProvider) => {
+  //intentionally going for > confirmed, otherwise get "is not a recent slot err"
+  const slot = await provider.connection.getSlot("finalized");
+
+  //create
+  const [lookupTableInst, lookupTableAddress] =
+    AddressLookupTableProgram.createLookupTable({
+      authority: provider.publicKey,
+      payer: provider.publicKey,
+      recentSlot: slot,
+    });
+
+  //see if already created
+  let lookupTableAccount = (
+    await provider.connection.getAddressLookupTable(lookupTableAddress)
+  ).value;
+  if (!!lookupTableAccount) {
+    console.log('table already exists', lookupTableAddress.toBase58());
+    return lookupTableAccount;
+  }
+
+  console.log('creating fresh lut')
+
+  //add addresses
+  const extendInstruction = AddressLookupTableProgram.extendLookupTable({
+    payer: provider.publicKey,
+    authority: provider.publicKey,
+    lookupTable: lookupTableAddress,
+    addresses: [
+      TOKEN_PROGRAM_ID,
+      SystemProgram.programId,
+      SYSVAR_RENT_PUBKEY,
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+      AUTH_PROG_ID,
+      TMETA_PROG_ID,
+      SYSVAR_INSTRUCTIONS_PUBKEY,
+    ],
+  });
+  await buildAndSendTx({ provider, ixs: [lookupTableInst, extendInstruction] });
+
+  //fetch
+  lookupTableAccount = (await provider.connection.getAddressLookupTable(lookupTableAddress))
+    .value;
+
+  return lookupTableAccount;
 };

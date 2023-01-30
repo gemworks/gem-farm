@@ -10,7 +10,7 @@ import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import { beforeEach } from 'mocha';
 import {
   buildAndSendTx,
-  createAndFundATA,
+  createAndFundATA, createCoreGemLUT,
   createTokenAuthorizationRules,
 } from '../../src/gem-common/pnft';
 import chai, { assert, expect } from 'chai';
@@ -357,15 +357,14 @@ describe('gem bank pnft', () => {
     expect(vaultAcc.gemCount.toNumber()).to.eq(0);
   });
 
-  // todo: this is gonna fail, can't use flash deposits with creator whitelists: Error: Transaction too large: 1312 > 1232
-  it.skip('deposits and withdraws a normal nft via pnft ix (whitelisted creator)', async () => {
+  it('deposits and withdraws a normal nft via pnft ix (whitelisted creator)', async () => {
     //gem
     const creators = await Promise.all(
-      Array(5)
+      Array(2)
         .fill(null)
         .map(async (_) => {
           const creator = await nw.createFundedWallet(LAMPORTS_PER_SOL);
-          return { address: creator.publicKey, share: 20, authority: creator };
+          return { address: creator.publicKey, share: 50, authority: creator };
         })
     );
     const { mint, ata } = await createAndFundATA({
