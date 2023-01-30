@@ -854,7 +854,7 @@ export class GemFarmClient extends GemBankClient {
     const signers: Keypair[] = [];
     if (isKp(farmerIdentity)) signers.push(<Keypair>farmerIdentity);
 
-    console.log('flash depositing on behalf of', identityPk.toBase58());
+    console.log('(PNFT) flash depositing on behalf of', identityPk.toBase58());
     const flashDepositIx = await this.farmProgram.instruction.flashDepositPnft(
       farmerBump,
       vaultAuthBump,

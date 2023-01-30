@@ -563,7 +563,7 @@ export class GemBankClient extends AccountUtils {
     if (isKp(vaultOwner)) signers.push(<Keypair>vaultOwner);
 
     console.log(
-      `depositing ${gemAmount} gems into ${gemBox.toBase58()}, GDR ${GDR.toBase58()}`
+      `depositing ${gemAmount} gems into ${gemBox.toBase58()}, GDR ${GDR.toBase58()} (PNFT)`
     );
     const builder = this.bankProgram.methods
       .depositGemPnft(
@@ -816,7 +816,7 @@ export class GemBankClient extends AccountUtils {
     }
 
     console.log(
-      `withdrawing ${gemAmount} gems from ${gemBox.toBase58()}, GDR ${GDR.toBase58()}`
+      `withdrawing ${gemAmount} gems from ${gemBox.toBase58()}, GDR ${GDR.toBase58()} (PNFT)`
     );
     const builder = this.bankProgram.methods
       .withdrawGemPnft(
