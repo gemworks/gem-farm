@@ -1,33 +1,24 @@
 import * as anchor from '@project-serum/anchor';
 import { AnchorProvider, BN } from '@project-serum/anchor';
-import { GemBankClient, ITokenData, NodeWallet } from '../../src';
+import {
+  GemBankClient,
+  ITokenData,
+  NodeWallet,
+  WhitelistType,
+} from '../../src';
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
-import { assert, expect } from 'chai';
 import { beforeEach } from 'mocha';
 import {
   buildAndSendTx,
   createAndFundATA,
   createTokenAuthorizationRules,
 } from '../../src/gem-common/pnft';
+import chai, { assert, expect } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
+import { describe } from 'mocha';
 
-interface IGem {
-  gem: ITokenData;
-  gemBox: PublicKey;
-  gemAmount: BN;
-}
+chai.use(chaiAsPromised);
 
-interface IVault {
-  vault: PublicKey;
-  vaultOwner: Keypair;
-  vaultAuth: PublicKey;
-  gemBoxes: IGem[];
-}
-
-/*
- * The purpose of this test is to:
- * 1) create A LOT of concurrent deposits -> make sure the program can handle
- * 2) test finding & deserializing appropriate PDA state accounts
- */
 describe('gem bank pnft', () => {
   const _provider = AnchorProvider.local();
   const gb = new GemBankClient(
@@ -39,24 +30,103 @@ describe('gem bank pnft', () => {
     _provider.wallet as anchor.Wallet
   );
 
-  it.only('deposits and withdraws pnft (no ruleset)', async () => {
+  let bank;
+  let bankManager;
+  let vault;
+  let vaultAuth;
+  let vaultOwner;
+  let gemOwner;
+
+  async function prepAddToWhitelist(addr: PublicKey, type: WhitelistType) {
+    return gb.addToWhitelist(bank.publicKey, bankManager, addr, type);
+  }
+
+  async function whitelistMint(whitelistedMint: PublicKey) {
+    const { whitelistProof } = await prepAddToWhitelist(
+      whitelistedMint,
+      WhitelistType.Mint
+    );
+    return { whitelistedMint, whitelistProof };
+  }
+
+  async function whitelistCreator(whitelistedCreator: PublicKey) {
+    const { whitelistProof } = await prepAddToWhitelist(
+      whitelistedCreator,
+      WhitelistType.Creator
+    );
+    return { whitelistedCreator, whitelistProof };
+  }
+
+  beforeEach(async () => {
     //bank
-    const bank = Keypair.generate();
-    const bankManager = nw.wallet.publicKey;
+    bank = Keypair.generate();
+    bankManager = nw.wallet.publicKey;
     await gb.initBank(bank, bankManager, bankManager);
 
     //vault
-    const vaultOwner = await nw.createFundedWallet(100 * LAMPORTS_PER_SOL);
-    const { vault, vaultAuth } = await gb.initVault(
+    vaultOwner = await nw.createFundedWallet(100 * LAMPORTS_PER_SOL);
+    ({ vault, vaultAuth } = await gb.initVault(
       bank.publicKey,
       vaultOwner,
       vaultOwner,
       vaultOwner.publicKey,
       'test_vault'
+    ));
+
+    gemOwner = await nw.createFundedWallet(100 * LAMPORTS_PER_SOL);
+  });
+
+  it('deposits and withdraws pnft (no ruleset)', async () => {
+    //gem
+    const creators = Array(5)
+      .fill(null)
+      .map((_) => ({ address: Keypair.generate().publicKey, share: 20 }));
+    const { mint, ata } = await createAndFundATA({
+      provider: _provider,
+      owner: vaultOwner,
+      creators,
+      royaltyBps: 1000,
+      programmable: true,
+    });
+
+    //deposit
+    const { ixs } = await gb.buildDepositGemPnft(
+      bank.publicKey,
+      vault,
+      vaultOwner,
+      new BN(1),
+      mint,
+      ata
     );
+    await buildAndSendTx({
+      provider: _provider,
+      ixs,
+      extraSigners: [vaultOwner],
+    });
 
-    const gemOwner = await nw.createFundedWallet(100 * LAMPORTS_PER_SOL);
+    let vaultAcc = await gb.fetchVaultAcc(vault);
+    expect(vaultAcc.gemCount.toNumber()).to.eq(1);
 
+    //withdraw
+    const { ixs: withdrawIxs } = await gb.buildWithdrawGemPnft(
+      bank.publicKey,
+      vault,
+      vaultOwner,
+      new BN(1),
+      mint,
+      ata
+    );
+    await buildAndSendTx({
+      provider: _provider,
+      ixs: withdrawIxs,
+      extraSigners: [vaultOwner],
+    });
+
+    vaultAcc = await gb.fetchVaultAcc(vault);
+    expect(vaultAcc.gemCount.toNumber()).to.eq(0);
+  });
+
+  it('deposits and withdraws pnft (1 ruleset)', async () => {
     //ruleset
     const name = 'PlayRule123';
     const ruleSetAddr = await createTokenAuthorizationRules(
@@ -115,5 +185,122 @@ describe('gem bank pnft', () => {
     expect(vaultAcc.gemCount.toNumber()).to.eq(0);
   });
 
-  it('deposits and withdraws pnft (1 ruleset)', async () => {});
+  it('deposits and withdraws pnft (1 ruleset + whitelisted mint)', async () => {
+    //ruleset
+    const name = 'PlayRule123';
+    const ruleSetAddr = await createTokenAuthorizationRules(
+      _provider,
+      gemOwner,
+      name
+    );
+
+    //gem
+    const creators = Array(5)
+      .fill(null)
+      .map((_) => ({ address: Keypair.generate().publicKey, share: 20 }));
+    const { mint, ata } = await createAndFundATA({
+      provider: _provider,
+      owner: vaultOwner,
+      creators,
+      royaltyBps: 1000,
+      programmable: true,
+      ruleSetAddr,
+    });
+
+    //whitelist mint
+    const { whitelistProof } = await whitelistMint(mint);
+
+    //deposit
+    const { ixs } = await gb.buildDepositGemPnft(
+      bank.publicKey,
+      vault,
+      vaultOwner,
+      new BN(1),
+      mint,
+      ata,
+      whitelistProof
+    );
+    await buildAndSendTx({
+      provider: _provider,
+      ixs,
+      extraSigners: [vaultOwner],
+    });
+
+    let vaultAcc = await gb.fetchVaultAcc(vault);
+    expect(vaultAcc.gemCount.toNumber()).to.eq(1);
+
+    //withdraw
+    const { ixs: withdrawIxs } = await gb.buildWithdrawGemPnft(
+      bank.publicKey,
+      vault,
+      vaultOwner,
+      new BN(1),
+      mint,
+      ata
+    );
+    await buildAndSendTx({
+      provider: _provider,
+      ixs: withdrawIxs,
+      extraSigners: [vaultOwner],
+    });
+
+    vaultAcc = await gb.fetchVaultAcc(vault);
+    expect(vaultAcc.gemCount.toNumber()).to.eq(0);
+  });
+
+  it('deposits and withdraws pnft (1 ruleset + whitelisted creator)', async () => {
+    //ruleset
+    const name = 'PlayRule123';
+    const ruleSetAddr = await createTokenAuthorizationRules(
+      _provider,
+      gemOwner,
+      name
+    );
+
+    //gem
+    const creators = await Promise.all(
+      Array(5)
+        .fill(null)
+        .map(async (_) => {
+          const creator = await nw.createFundedWallet(LAMPORTS_PER_SOL);
+          // TODO: creator verification currently not supported for pNFTs
+          // return { address: creator.publicKey, share: 20, authority: creator };
+          return { address: creator.publicKey, share: 20 };
+        })
+    );
+    const { mint, ata } = await createAndFundATA({
+      provider: _provider,
+      owner: vaultOwner,
+      creators,
+      royaltyBps: 1000,
+      programmable: true,
+      ruleSetAddr,
+    });
+
+    //whitelist mint
+    const { whitelistProof } = await whitelistCreator(creators[0].address);
+
+    //deposit
+    const { ixs } = await gb.buildDepositGemPnft(
+      bank.publicKey,
+      vault,
+      vaultOwner,
+      new BN(1),
+      mint,
+      ata,
+      PublicKey.default, //to skip mint verification
+      whitelistProof //creator verification
+    );
+    // TODO: hence expect this to fail
+    await expect(
+      buildAndSendTx({
+        provider: _provider,
+        ixs,
+        extraSigners: [vaultOwner],
+      })
+    ).to.be.rejectedWith('0x1786');
+
+    let vaultAcc = await gb.fetchVaultAcc(vault);
+    expect(vaultAcc.gemCount.toNumber()).to.eq(0);
+  });
 });

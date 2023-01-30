@@ -14,8 +14,10 @@ import {
 } from '@solana/web3.js';
 import {
   keypairIdentity,
+  KeypairIdentityDriver,
   Metaplex,
   toBigNumber,
+  walletAdapterIdentity,
 } from '@metaplex-foundation/js';
 import {
   createCreateInstruction,
@@ -39,6 +41,7 @@ import {
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token';
 import { encode } from '@msgpack/msgpack';
+import { BaseWalletAdapter } from '@solana/wallet-adapter-base';
 
 export const fetchNft = async (conn: Connection, mint: PublicKey) => {
   const mplex = new Metaplex(conn);
@@ -249,7 +252,7 @@ const _createAndMintPNft = async ({
             return {
               address: c.address,
               share: c.share,
-              verified: !!c.authority,
+              verified: false, //done manually below
             };
           }) ?? null,
         primarySaleHappened: true,
@@ -331,6 +334,20 @@ const _createAndMintPNft = async ({
     ixs: [createIx, mintIx],
     extraSigners: [owner, mint],
   });
+
+  //manually verify creators (auto doesn't work)
+  const creatorSigners = creators
+    .map((c) => c.authority)
+    .filter((s): s is Keypair => !!s);
+  const metaplex = new Metaplex(provider.connection);
+  await Promise.all(
+    creatorSigners.map(async (s) => {
+      await metaplex
+        .use(keypairIdentity(s))
+        .nfts()
+        .verifyCreator({ mintAddress: mint.publicKey, creator: s });
+    })
+  );
 
   return {
     tokenAddress: tokenPda,
