@@ -1,5 +1,5 @@
 import * as anchor from '@project-serum/anchor';
-import {AnchorProvider, BN} from '@project-serum/anchor';
+import { AnchorProvider, BN } from '@project-serum/anchor';
 import {
   Transaction,
   TransactionInstruction,
@@ -11,19 +11,21 @@ import {
 } from '@solana/web3.js';
 import {
   findVaultAuthorityPDA,
-  GemBankClient, isKp,
+  GemBankClient,
   ITokenData,
-  NodeWallet, stringifyPKsAndBNs,
+  NodeWallet,
   stringToBytes,
 } from '../../src';
-import chai, {assert, expect} from 'chai';
+import chai, { assert, expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import {describe} from 'mocha';
+import { describe } from 'mocha';
 import {
   Token,
   TOKEN_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
-} from '@solana/spl-token';
+  //@ts-ignore
+} from '@solana/spl-token-018';
+import { buildAndSendTx } from '../../src/gem-common/pnft';
 
 chai.use(chaiAsPromised);
 
@@ -36,13 +38,13 @@ function createAssociatedTokenAccountInstruction(
   associatedTokenProgramId = ASSOCIATED_TOKEN_PROGRAM_ID
 ): TransactionInstruction {
   const keys = [
-    {pubkey: payer, isSigner: true, isWritable: true},
-    {pubkey: associatedToken, isSigner: false, isWritable: true},
-    {pubkey: owner, isSigner: false, isWritable: false},
-    {pubkey: mint, isSigner: false, isWritable: false},
-    {pubkey: SystemProgram.programId, isSigner: false, isWritable: false},
-    {pubkey: programId, isSigner: false, isWritable: false},
-    {pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false},
+    { pubkey: payer, isSigner: true, isWritable: true },
+    { pubkey: associatedToken, isSigner: false, isWritable: true },
+    { pubkey: owner, isSigner: false, isWritable: false },
+    { pubkey: mint, isSigner: false, isWritable: false },
+    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    { pubkey: programId, isSigner: false, isWritable: false },
+    { pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
   ];
 
   return new TransactionInstruction({
@@ -91,7 +93,7 @@ describe('Withdraw tokens owned by authority', () => {
     assert(bankAcc.vaultCount.eq(new BN(0)));
 
     //init vault
-    ({vault} = await gb.initVault(
+    ({ vault } = await gb.initVault(
       bank.publicKey,
       vaultOwner,
       vaultOwner,
@@ -106,13 +108,10 @@ describe('Withdraw tokens owned by authority', () => {
     expect(vaultAcc.name).to.deep.include.members(stringToBytes('test_vault'));
     assert.equal(vaultAcc.bank.toBase58(), bank.publicKey.toBase58());
     assert.equal(vaultAcc.owner.toBase58(), vaultOwner.publicKey.toBase58());
-    assert.equal(
-      vaultAcc.creator.toBase58(),
-      vaultOwner.publicKey.toBase58()
-    );
+    assert.equal(vaultAcc.creator.toBase58(), vaultOwner.publicKey.toBase58());
 
     //prep gem
-    ({gemAmount, gem} = await prepGem(vaultOwner));
+    ({ gemAmount, gem } = await prepGem(vaultOwner));
 
     // bonk set-up
     bonkToken = await Token.createMint(
@@ -135,7 +134,8 @@ describe('Withdraw tokens owned by authority', () => {
 
     const transaction = new Transaction({
       feePayer: bonkAuth.publicKey,
-      recentBlockhash: (await _provider.connection.getRecentBlockhash()).blockhash
+      recentBlockhash: (await _provider.connection.getRecentBlockhash())
+        .blockhash,
     }).add(
       createAssociatedTokenAccountInstruction(
         bonkAuth.publicKey,
@@ -144,7 +144,11 @@ describe('Withdraw tokens owned by authority', () => {
         bonkToken.publicKey
       )
     );
-    await _provider.sendAndConfirm(transaction, [bonkAuth]);
+    await buildAndSendTx({
+      provider: _provider,
+      ixs: transaction.instructions,
+      extraSigners: [bonkAuth],
+    });
     await bonkToken.mintTo(authAta, bonkAuth, [], 9); // Top-up vault recipient with bonk
     console.log('Bonk top up done');
   });
@@ -174,7 +178,7 @@ describe('Withdraw tokens owned by authority', () => {
       owner ?? (await nw.createFundedWallet(100 * LAMPORTS_PER_SOL));
     const gem = await nw.createMintAndFundATA(gemOwner.publicKey, gemAmount);
 
-    return {gemAmount, gemOwner, gem};
+    return { gemAmount, gemOwner, gem };
   }
 
   it('withdraws bonk (no gems)', async () => {
@@ -187,17 +191,15 @@ describe('Withdraw tokens owned by authority', () => {
     expect(vaultBonkStart).to.be.gt(0);
     expect(recipientBonkStart).to.eq(0);
 
-    const {builder} = await gb.withdrawTokensAuth(
+    const { builder } = await gb.withdrawTokensAuth(
       bank.publicKey,
       vault,
       vaultOwner,
-      bonkToken.publicKey,
+      bonkToken.publicKey
     );
     await builder.rpc();
 
-    let vaultBonkEnd = Number(
-      (await bonkToken.getAccountInfo(authAta)).amount
-    );
+    let vaultBonkEnd = Number((await bonkToken.getAccountInfo(authAta)).amount);
     let recipientBonkEnd = Number(
       (await bonkToken.getAccountInfo(recipientAta_bonk.address)).amount
     );
@@ -206,7 +208,7 @@ describe('Withdraw tokens owned by authority', () => {
   });
 
   it('withdraws bonk (gems present)', async () => {
-    ({vaultAuth, gemBox} = await prepDeposit(vaultOwner));
+    ({ vaultAuth, gemBox } = await prepDeposit(vaultOwner));
     let gemBoxAcc = await gb.fetchGemAcc(gem.tokenMint, gemBox);
     assert(gemBoxAcc.amount.eq(gemAmount));
 
@@ -219,17 +221,15 @@ describe('Withdraw tokens owned by authority', () => {
     expect(vaultBonkStart).to.be.gt(0);
     expect(recipientBonkStart).to.eq(0);
 
-    const {builder} = await gb.withdrawTokensAuth(
+    const { builder } = await gb.withdrawTokensAuth(
       bank.publicKey,
       vault,
       vaultOwner,
-      bonkToken.publicKey,
+      bonkToken.publicKey
     );
     await builder.rpc();
 
-    let vaultBonkEnd = Number(
-      (await bonkToken.getAccountInfo(authAta)).amount
-    );
+    let vaultBonkEnd = Number((await bonkToken.getAccountInfo(authAta)).amount);
     let recipientBonkEnd = Number(
       (await bonkToken.getAccountInfo(recipientAta_bonk.address)).amount
     );
@@ -241,7 +241,7 @@ describe('Withdraw tokens owned by authority', () => {
   });
 
   it('fails to withdraw actual gems', async () => {
-    ({vaultAuth, gemBox} = await prepDeposit(vaultOwner));
+    ({ vaultAuth, gemBox } = await prepDeposit(vaultOwner));
     let gemBoxAcc = await gb.fetchGemAcc(gem.tokenMint, gemBox);
     assert(gemBoxAcc.amount.eq(gemAmount));
 
@@ -258,7 +258,7 @@ describe('Withdraw tokens owned by authority', () => {
     const maliciousMint = gem.tokenMint;
     const maliciousRecipient = await gb.findATA(
       maliciousMint,
-      vaultOwner.publicKey,
+      vaultOwner.publicKey
     );
     const builder = gb.bankProgram.methods
       .withdrawTokensAuth()
@@ -278,12 +278,10 @@ describe('Withdraw tokens owned by authority', () => {
       .signers([vaultOwner]);
 
     //fire off
-    await expect(builder.rpc()).to.be.rejectedWith("TransferNotAllowed");
+    await expect(builder.rpc()).to.be.rejectedWith('TransferNotAllowed');
 
     //bonk should not have changed
-    let vaultBonkEnd = Number(
-      (await bonkToken.getAccountInfo(authAta)).amount
-    );
+    let vaultBonkEnd = Number((await bonkToken.getAccountInfo(authAta)).amount);
     let recipientBonkEnd = Number(
       (await bonkToken.getAccountInfo(recipientAta_bonk.address)).amount
     );

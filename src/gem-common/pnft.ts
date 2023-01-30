@@ -71,7 +71,7 @@ export const findRuleSetPDA = async (payer: PublicKey, name: string) => {
 };
 
 type BuildAndSendTxArgs = {
-  provider?: AnchorProvider;
+  provider: AnchorProvider;
   ixs: TransactionInstruction[];
   extraSigners?: Signer[];
   opts?: ConfirmOptions;

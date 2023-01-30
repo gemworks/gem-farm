@@ -29,6 +29,7 @@ import {
 import { Metaplex } from '@metaplex-foundation/js';
 import { PROGRAM_ID as AUTH_PROG_ID } from '@metaplex-foundation/mpl-token-auth-rules';
 import {
+  buildAndSendTx,
   fetchNft,
   findTokenRecordPDA,
   getTotalComputeIxs,
@@ -350,8 +351,49 @@ export class GemBankClient extends AccountUtils {
     gemSource: PublicKey,
     mintProof?: PublicKey,
     metadata?: PublicKey,
-    creatorProof?: PublicKey
+    creatorProof?: PublicKey,
+    pnft = false
   ) {
+    if (pnft) {
+      const {
+        vaultAuth,
+        vaultAuthBump,
+        gemBox,
+        gemBoxBump,
+        GDR,
+        GDRBump,
+        gemRarity,
+        gemRarityBump,
+        ixs,
+      } = await this.buildDepositGemPnft(
+        bank,
+        vault,
+        vaultOwner,
+        gemAmount,
+        gemMint,
+        gemSource,
+        mintProof,
+        creatorProof
+      );
+
+      const txSig = await buildAndSendTx({
+        provider: this.provider as AnchorProvider,
+        ixs,
+      });
+
+      return {
+        vaultAuth,
+        vaultAuthBump,
+        gemBox,
+        gemBoxBump,
+        GDR,
+        GDRBump,
+        gemRarity,
+        gemRarityBump,
+        txSig,
+      };
+    }
+
     const {
       vaultAuth,
       vaultAuthBump,
@@ -594,8 +636,49 @@ export class GemBankClient extends AccountUtils {
     vaultOwner: PublicKey | Keypair,
     gemAmount: BN,
     gemMint: PublicKey,
-    receiver: PublicKey
+    receiver: PublicKey,
+    pnft = false
   ) {
+    if (pnft) {
+      const {
+        gemBox,
+        gemBoxBump,
+        GDR,
+        GDRBump,
+        gemRarity,
+        gemRarityBump,
+        vaultAuth,
+        vaultAuthBump,
+        gemDestination,
+        ixs,
+      } = await this.buildWithdrawGemPnft(
+        bank,
+        vault,
+        vaultOwner,
+        gemAmount,
+        gemMint,
+        receiver
+      );
+
+      const txSig = await buildAndSendTx({
+        provider: this.provider as AnchorProvider,
+        ixs,
+      });
+
+      return {
+        gemBox,
+        gemBoxBump,
+        GDR,
+        GDRBump,
+        gemRarity,
+        gemRarityBump,
+        vaultAuth,
+        vaultAuthBump,
+        gemDestination,
+        txSig,
+      };
+    }
+
     const {
       gemBox,
       gemBoxBump,
