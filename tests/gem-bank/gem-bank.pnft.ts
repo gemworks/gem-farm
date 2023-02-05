@@ -10,7 +10,8 @@ import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import { beforeEach } from 'mocha';
 import {
   buildAndSendTx,
-  createAndFundATA, createCoreGemLUT,
+  createAndFundATA,
+  createCoreGemLUT,
   createTokenAuthorizationRules,
 } from '../../src/gem-common/pnft';
 import chai, { assert, expect } from 'chai';
@@ -128,11 +129,9 @@ describe('gem bank pnft', () => {
 
   it('deposits and withdraws pnft (1 ruleset)', async () => {
     //ruleset
-    const name = 'PlayRule123';
     const ruleSetAddr = await createTokenAuthorizationRules(
       _provider,
-      gemOwner,
-      name
+      gemOwner
     );
 
     //gem
@@ -187,11 +186,9 @@ describe('gem bank pnft', () => {
 
   it('deposits and withdraws pnft (1 ruleset + whitelisted mint)', async () => {
     //ruleset
-    const name = 'PlayRule123';
     const ruleSetAddr = await createTokenAuthorizationRules(
       _provider,
-      gemOwner,
-      name
+      gemOwner
     );
 
     //gem
@@ -250,11 +247,9 @@ describe('gem bank pnft', () => {
 
   it('deposits and withdraws pnft (1 ruleset + whitelisted creator)', async () => {
     //ruleset
-    const name = 'PlayRule123';
     const ruleSetAddr = await createTokenAuthorizationRules(
       _provider,
-      gemOwner,
-      name
+      gemOwner
     );
 
     //gem

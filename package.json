@@ -34,9 +34,9 @@
     "update:anchor": "yarn upgrade @project-serum/anchor --latest --check-files"
   },
   "dependencies": {
-    "@metaplex-foundation/mpl-token-auth-rules": "^1.0.0",
-    "@metaplex-foundation/mpl-token-metadata": "^2.7.0",
-    "@metaplex/js": "^4.9.0",
+    "@metaplex-foundation/mpl-token-auth-rules": "^1.1.0",
+    "@metaplex-foundation/mpl-token-metadata": "^2.8.1",
+    "@metaplex/js": "4.9.0",
     "@msgpack/msgpack": "^2.8.0",
     "@project-serum/anchor": "0.26.0",
     "@solana/spl-token": "^0.3.7",

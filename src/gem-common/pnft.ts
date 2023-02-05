@@ -1,5 +1,6 @@
 import {
-  AddressLookupTableAccount, AddressLookupTableProgram,
+  AddressLookupTableAccount,
+  AddressLookupTableProgram,
   Commitment,
   ComputeBudgetProgram,
   ConfirmOptions,
@@ -9,9 +10,12 @@ import {
   PublicKey,
   Signer,
   SystemProgram,
-  SYSVAR_INSTRUCTIONS_PUBKEY, SYSVAR_RENT_PUBKEY,
+  SYSVAR_INSTRUCTIONS_PUBKEY,
+  SYSVAR_RENT_PUBKEY,
   Transaction,
-  TransactionInstruction, TransactionMessage, VersionedTransaction,
+  TransactionInstruction,
+  TransactionMessage,
+  VersionedTransaction,
 } from '@solana/web3.js';
 import {
   keypairIdentity,
@@ -43,7 +47,8 @@ import {
 } from '@solana/spl-token';
 import { encode } from '@msgpack/msgpack';
 import { BaseWalletAdapter } from '@solana/wallet-adapter-base';
-import {backOff} from "exponential-backoff";
+import { backOff } from 'exponential-backoff';
+import { GEM_BANK_PROG_ID } from '../index';
 
 export const fetchNft = async (conn: Connection, mint: PublicKey) => {
   const mplex = new Metaplex(conn);
@@ -91,7 +96,7 @@ const _buildTx = async ({
   feePayer,
   instructions,
   additionalSigners,
-  commitment = "confirmed",
+  commitment = 'confirmed',
 }: {
   //(!) ideally this should be the same RPC node that will then try to send/confirm the tx
   connections: Array<Connection>;
@@ -101,7 +106,7 @@ const _buildTx = async ({
   commitment?: Commitment;
 }) => {
   if (!instructions.length) {
-    throw new Error("must pass at least one instruction");
+    throw new Error('must pass at least one instruction');
   }
 
   const tx = new Transaction();
@@ -131,7 +136,7 @@ const _buildTxV0 = async ({
   feePayer,
   instructions,
   additionalSigners,
-  commitment = "confirmed",
+  commitment = 'confirmed',
   addressLookupTableAccs,
 }: {
   //(!) ideally this should be the same RPC node that will then try to send/confirm the tx
@@ -143,7 +148,7 @@ const _buildTxV0 = async ({
   addressLookupTableAccs: AddressLookupTableAccount[];
 }) => {
   if (!instructions.length) {
-    throw new Error("must pass at least one instruction");
+    throw new Error('must pass at least one instruction');
   }
 
   const latestBlockhash = await connections[0].getLatestBlockhash({
@@ -190,7 +195,7 @@ export const buildAndSendTx = async ({
       {
         // Retry blockhash errors (happens during tests sometimes).
         retry: (e: any) => {
-          return e.message.includes("blockhash");
+          return e.message.includes('blockhash');
         },
       }
     ));
@@ -203,14 +208,17 @@ export const buildAndSendTx = async ({
           connections: [provider.connection],
           instructions: ixs,
           //have to add TEST_KEYPAIR here instead of wallet.signTx() since partialSign not impl on v0 txs
-          additionalSigners: [...(v0SignKeypair ? [v0SignKeypair] : []), ...(extraSigners ?? [])],
+          additionalSigners: [
+            ...(v0SignKeypair ? [v0SignKeypair] : []),
+            ...(extraSigners ?? []),
+          ],
           feePayer: provider.publicKey,
           addressLookupTableAccs: lookupTableAccounts,
         }),
       {
         // Retry blockhash errors (happens during tests sometimes).
         retry: (e: any) => {
-          return e.message.includes("blockhash");
+          return e.message.includes('blockhash');
         },
       }
     ));
@@ -220,23 +228,23 @@ export const buildAndSendTx = async ({
   }
 
   try {
-    if (debug) opts = { ...opts, commitment: "confirmed" };
+    if (debug) opts = { ...opts, commitment: 'confirmed' };
     const sig = await provider.connection.sendRawTransaction(
       tx.serialize(),
       opts
     );
-    await provider.connection.confirmTransaction(sig, "confirmed");
+    await provider.connection.confirmTransaction(sig, 'confirmed');
     if (debug) {
       console.log(
         await provider.connection.getTransaction(sig, {
-          commitment: "confirmed",
+          commitment: 'confirmed',
         })
       );
     }
     return sig;
   } catch (e) {
     //this is needed to see program error logs
-    console.error("❌ FAILED TO SEND TX, FULL ERROR: ❌");
+    console.error('❌ FAILED TO SEND TX, FULL ERROR: ❌');
     console.error(e);
     throw e;
   }
@@ -554,22 +562,104 @@ export const createAndFundATA = async ({
 export const createTokenAuthorizationRules = async (
   provider: AnchorProvider,
   payer: Keypair,
-  name: string,
+  name = 'a', //keep it short or we wont have space for tx to pass
   data?: Uint8Array
 ) => {
   const [ruleSetAddress] = await findRuleSetPDA(payer.publicKey, name);
 
-  // Encode the file using msgpack so the pre-encoded data can be written directly to a Solana program account
-  let finalData =
-    data ??
-    encode([
-      1,
-      payer.publicKey.toBuffer().toJSON().data,
-      name,
-      {
-        'Transfer:Owner': 'Pass',
+  //ruleset relevant for transfers
+  const ruleSet = {
+    libVersion: 1,
+    ruleSetName: name,
+    owner: Array.from(payer.publicKey.toBytes()),
+    operations: {
+      'Delegate:Transfer': {
+        ProgramOwnedList: {
+          programs: [Array.from(GEM_BANK_PROG_ID.toBytes())],
+          field: 'Delegate',
+        },
       },
-    ]);
+      'Transfer:Owner': {
+        All: {
+          rules: [
+            //no space
+            // {
+            //   Amount: {
+            //     amount: 1,
+            //     operator: "Eq",
+            //     field: "Amount",
+            //   },
+            // },
+            {
+              Any: {
+                rules: [
+                  {
+                    ProgramOwnedList: {
+                      programs: [Array.from(GEM_BANK_PROG_ID.toBytes())],
+                      field: 'Source',
+                    },
+                  },
+                  {
+                    ProgramOwnedList: {
+                      programs: [Array.from(GEM_BANK_PROG_ID.toBytes())],
+                      field: 'Destination',
+                    },
+                  },
+                  {
+                    ProgramOwnedList: {
+                      programs: [Array.from(GEM_BANK_PROG_ID.toBytes())],
+                      field: 'Authority',
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+      'Transfer:TransferDelegate': {
+        All: {
+          rules: [
+            //no space
+            // {
+            //   Amount: {
+            //     amount: 1,
+            //     operator: "Eq",
+            //     field: "Amount",
+            //   },
+            // },
+            {
+              Any: {
+                rules: [
+                  {
+                    ProgramOwnedList: {
+                      programs: [Array.from(GEM_BANK_PROG_ID.toBytes())],
+                      field: 'Source',
+                    },
+                  },
+                  {
+                    ProgramOwnedList: {
+                      programs: [Array.from(GEM_BANK_PROG_ID.toBytes())],
+                      field: 'Destination',
+                    },
+                  },
+                  {
+                    ProgramOwnedList: {
+                      programs: [Array.from(GEM_BANK_PROG_ID.toBytes())],
+                      field: 'Authority',
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    },
+  };
+
+  // Encode the file using msgpack so the pre-encoded data can be written directly to a Solana program account
+  let finalData = data ?? encode(ruleSet);
 
   let createIX = createCreateOrUpdateInstruction(
     {
@@ -590,7 +680,7 @@ export const createTokenAuthorizationRules = async (
 
 export const createCoreGemLUT = async (provider: AnchorProvider) => {
   //intentionally going for > confirmed, otherwise get "is not a recent slot err"
-  const slot = await provider.connection.getSlot("finalized");
+  const slot = await provider.connection.getSlot('finalized');
 
   //create
   const [lookupTableInst, lookupTableAddress] =
@@ -609,7 +699,7 @@ export const createCoreGemLUT = async (provider: AnchorProvider) => {
     return lookupTableAccount;
   }
 
-  console.log('creating fresh lut')
+  console.log('creating fresh lut');
 
   //add addresses
   const extendInstruction = AddressLookupTableProgram.extendLookupTable({
@@ -629,8 +719,9 @@ export const createCoreGemLUT = async (provider: AnchorProvider) => {
   await buildAndSendTx({ provider, ixs: [lookupTableInst, extendInstruction] });
 
   //fetch
-  lookupTableAccount = (await provider.connection.getAddressLookupTable(lookupTableAddress))
-    .value;
+  lookupTableAccount = (
+    await provider.connection.getAddressLookupTable(lookupTableAddress)
+  ).value;
 
   return lookupTableAccount;
 };

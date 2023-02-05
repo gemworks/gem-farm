@@ -56,11 +56,9 @@ describe('misc', () => {
 
   it('flash deposits a pnft (1 ruleset, whitelisted mint)', async () => {
     //ruleset
-    const name = 'PlayRule123';
     const ruleSetAddr = await createTokenAuthorizationRules(
       _provider,
-      gemOwner,
-      name
+      gemOwner
     );
 
     //gem
