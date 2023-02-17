@@ -23,9 +23,14 @@
 
 <script lang="ts">
 import { computed, defineComponent } from 'vue';
-import { WalletName } from '@solana/wallet-adapter-wallets';
 import useCluster, { Cluster } from '@/composables/cluster';
 import useWallet from '@/composables/wallet';
+const WalletName = {
+  Phantom: "Phantom",
+  Sollet: "Sollet",
+  SolletExtension: "SolletExtension",
+  Solflare: "Solflare",
+}
 
 export default defineComponent({
   setup() {
@@ -46,7 +51,7 @@ export default defineComponent({
       get() {
         return getWalletName();
       },
-      set(newVal: WalletName | null) {
+      set(newVal: any | null) {
         setWallet(newVal, getClusterURL());
       },
     });
