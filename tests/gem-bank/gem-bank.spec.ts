@@ -14,6 +14,7 @@ import chai, { assert, expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { describe } from 'mocha';
 import { createMetadata } from '../metaplex';
+import { TokenAccountNotFoundError } from "@solana/spl-token";
 
 chai.use(chaiAsPromised);
 
@@ -243,7 +244,7 @@ describe.only('gem bank', () => {
 
       //these accounts are expected to close on emptying the gem box
       await expect(gb.fetchGemAcc(gem.tokenMint, gemBox)).to.be.rejectedWith(
-        'Failed to find account'
+          TokenAccountNotFoundError
       );
       await expect(gb.fetchGDRAcc(GDR)).to.be.rejectedWith(
         'Account does not exist'
@@ -281,7 +282,7 @@ describe.only('gem bank', () => {
 
       //these accounts are expected to close on emptying the gem box
       await expect(gb.fetchGemAcc(gem.tokenMint, gemBox)).to.be.rejectedWith(
-        'Failed to find account'
+          TokenAccountNotFoundError
       );
       await expect(gb.fetchGDRAcc(GDR)).to.be.rejectedWith(
         'Account does not exist'
