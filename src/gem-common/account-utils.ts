@@ -1,18 +1,18 @@
-import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import {
-  AccountInfo,
-  ASSOCIATED_TOKEN_PROGRAM_ID,
-  MintInfo,
-  Token,
+  Account,
+  getAccount,
+  getAssociatedTokenAddress,
   TOKEN_PROGRAM_ID,
-  //@ts-ignore
-} from '@solana/spl-token-018';
+  TokenAccountNotFoundError,
+  TokenError
+} from '@solana/spl-token';
+import {AccountInfo, Connection, Keypair, PublicKey} from '@solana/web3.js';
 
 export interface ITokenData {
   tokenMint: PublicKey;
   tokenAcc: PublicKey;
   owner: PublicKey;
-  token: Token;
+  token: PublicKey;
 }
 
 export class AccountUtils {
@@ -48,40 +48,14 @@ export class AccountUtils {
 
   // --------------------------------------- Token account
 
-  async deserializeToken(mint: PublicKey): Promise<Token> {
-    //doesn't matter which keypair goes here, we just need some key for instantiation
-    const throwawayKeypair = Keypair.fromSecretKey(
-      Uint8Array.from([
-        208, 175, 150, 242, 88, 34, 108, 88, 177, 16, 168, 75, 115, 181, 199,
-        242, 120, 4, 78, 75, 19, 227, 13, 215, 184, 108, 226, 53, 111, 149, 179,
-        84, 137, 121, 79, 1, 160, 223, 124, 241, 202, 203, 220, 237, 50, 242,
-        57, 158, 226, 207, 203, 188, 43, 28, 70, 110, 214, 234, 251, 15, 249,
-        157, 62, 80,
-      ])
-    );
-    return new Token(this.conn, mint, TOKEN_PROGRAM_ID, throwawayKeypair);
-  }
-
-  async deserializeTokenMint(mint: PublicKey): Promise<MintInfo> {
-    const t = await this.deserializeToken(mint);
-    return t.getMintInfo();
-  }
-
   async deserializeTokenAccount(
     mint: PublicKey,
     tokenAccount: PublicKey
-  ): Promise<AccountInfo> {
-    const token = await this.deserializeToken(mint);
-    return token.getAccountInfo(tokenAccount);
+  ): Promise<Account> {
+    return await getAccount(this.conn, tokenAccount);
   }
 
   async findATA(mint: PublicKey, owner: PublicKey): Promise<PublicKey> {
-    return Token.getAssociatedTokenAddress(
-      ASSOCIATED_TOKEN_PROGRAM_ID,
-      TOKEN_PROGRAM_ID,
-      mint,
-      owner,
-      true
-    );
+    return getAssociatedTokenAddress(mint, owner, true);
   }
 }
