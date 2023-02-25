@@ -20,11 +20,9 @@ import chai, { assert, expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { describe } from 'mocha';
 import {
-  Token,
   TOKEN_PROGRAM_ID,
-  ASSOCIATED_TOKEN_PROGRAM_ID,
-  //@ts-ignore
-} from '@solana/spl-token-018';
+  ASSOCIATED_TOKEN_PROGRAM_ID, createMint, getOrCreateAssociatedTokenAccount, Account, mintTo, getAccount,
+} from '@solana/spl-token';
 import { buildAndSendTx } from '../../src/gem-common/pnft';
 
 chai.use(chaiAsPromised);
@@ -72,8 +70,8 @@ describe('Withdraw tokens owned by authority', () => {
   let gem: ITokenData;
   let gemBox: PublicKey;
 
-  let bonkToken: Token;
-  let recipientAta_bonk;
+  let bonkToken: PublicKey;
+  let recipientAta_bonk: Account;
   let authAta;
 
   beforeEach('configures accounts', async () => {
@@ -114,23 +112,25 @@ describe('Withdraw tokens owned by authority', () => {
     ({ gemAmount, gem } = await prepGem(vaultOwner));
 
     // bonk set-up
-    bonkToken = await Token.createMint(
+    bonkToken = await createMint(
       _provider.connection,
       bonkAuth,
       bonkAuth.publicKey,
       bonkAuth.publicKey,
       4,
-      TOKEN_PROGRAM_ID
     );
 
     // Bonk recipient ATA
-    recipientAta_bonk = await bonkToken.getOrCreateAssociatedAccountInfo(
-      vaultOwner.publicKey
+    recipientAta_bonk = await getOrCreateAssociatedTokenAccount(
+        _provider.connection,
+        bonkAuth,
+        bonkToken,
+        vaultOwner.publicKey
     );
 
     // Bonk ATA controlled by gem farm
     [vaultAuth] = await findVaultAuthorityPDA(vault);
-    authAta = await gb.findATA(bonkToken.publicKey, vaultAuth);
+    authAta = await gb.findATA(bonkToken, vaultAuth);
 
     const transaction = new Transaction({
       feePayer: bonkAuth.publicKey,
@@ -141,7 +141,7 @@ describe('Withdraw tokens owned by authority', () => {
         bonkAuth.publicKey,
         authAta,
         vaultAuth,
-        bonkToken.publicKey
+        bonkToken
       )
     );
     await buildAndSendTx({
@@ -149,7 +149,13 @@ describe('Withdraw tokens owned by authority', () => {
       ixs: transaction.instructions,
       extraSigners: [bonkAuth],
     });
-    await bonkToken.mintTo(authAta, bonkAuth, [], 9); // Top-up vault recipient with bonk
+    await mintTo(
+        _provider.connection,
+        bonkAuth,
+        bonkToken,
+        authAta,
+        bonkAuth,
+        9); // Top-up vault recipient with bonk
     console.log('Bonk top up done');
   });
 
@@ -183,10 +189,10 @@ describe('Withdraw tokens owned by authority', () => {
 
   it('withdraws bonk (no gems)', async () => {
     let vaultBonkStart = Number(
-      (await bonkToken.getAccountInfo(authAta)).amount
+      (await getAccount(_provider.connection, authAta)).amount
     );
     let recipientBonkStart = Number(
-      (await bonkToken.getAccountInfo(recipientAta_bonk.address)).amount
+      (await getAccount(_provider.connection, recipientAta_bonk.address)).amount
     );
     expect(vaultBonkStart).to.be.gt(0);
     expect(recipientBonkStart).to.eq(0);
@@ -195,13 +201,13 @@ describe('Withdraw tokens owned by authority', () => {
       bank.publicKey,
       vault,
       vaultOwner,
-      bonkToken.publicKey
+      bonkToken
     );
     await builder.rpc();
 
-    let vaultBonkEnd = Number((await bonkToken.getAccountInfo(authAta)).amount);
+    let vaultBonkEnd = Number((await getAccount(_provider.connection, authAta)).amount);
     let recipientBonkEnd = Number(
-      (await bonkToken.getAccountInfo(recipientAta_bonk.address)).amount
+      (await getAccount(_provider.connection, recipientAta_bonk.address)).amount
     );
     expect(vaultBonkEnd).to.eq(0);
     expect(recipientBonkEnd).to.eq(vaultBonkStart);
@@ -213,10 +219,10 @@ describe('Withdraw tokens owned by authority', () => {
     assert(gemBoxAcc.amount.eq(gemAmount));
 
     let vaultBonkStart = Number(
-      (await bonkToken.getAccountInfo(authAta)).amount
+      (await getAccount(_provider.connection, authAta)).amount
     );
     let recipientBonkStart = Number(
-      (await bonkToken.getAccountInfo(recipientAta_bonk.address)).amount
+      (await getAccount(_provider.connection, recipientAta_bonk.address)).amount
     );
     expect(vaultBonkStart).to.be.gt(0);
     expect(recipientBonkStart).to.eq(0);
@@ -225,13 +231,13 @@ describe('Withdraw tokens owned by authority', () => {
       bank.publicKey,
       vault,
       vaultOwner,
-      bonkToken.publicKey
+      bonkToken
     );
     await builder.rpc();
 
-    let vaultBonkEnd = Number((await bonkToken.getAccountInfo(authAta)).amount);
+    let vaultBonkEnd = Number((await getAccount(_provider.connection, authAta)).amount);
     let recipientBonkEnd = Number(
-      (await bonkToken.getAccountInfo(recipientAta_bonk.address)).amount
+      (await getAccount(_provider.connection, recipientAta_bonk.address)).amount
     );
     expect(vaultBonkEnd).to.eq(0);
     expect(recipientBonkEnd).to.eq(vaultBonkStart);
@@ -246,10 +252,10 @@ describe('Withdraw tokens owned by authority', () => {
     assert(gemBoxAcc.amount.eq(gemAmount));
 
     let vaultBonkStart = Number(
-      (await bonkToken.getAccountInfo(authAta)).amount
+      (await getAccount(_provider.connection, authAta)).amount
     );
     let recipientBonkStart = Number(
-      (await bonkToken.getAccountInfo(recipientAta_bonk.address)).amount
+      (await getAccount(_provider.connection, recipientAta_bonk.address)).amount
     );
     expect(vaultBonkStart).to.be.gt(0);
     expect(recipientBonkStart).to.eq(0);
@@ -281,9 +287,9 @@ describe('Withdraw tokens owned by authority', () => {
     await expect(builder.rpc()).to.be.rejectedWith('TransferNotAllowed');
 
     //bonk should not have changed
-    let vaultBonkEnd = Number((await bonkToken.getAccountInfo(authAta)).amount);
+    let vaultBonkEnd = Number((await getAccount(_provider.connection, authAta)).amount);
     let recipientBonkEnd = Number(
-      (await bonkToken.getAccountInfo(recipientAta_bonk.address)).amount
+      (await getAccount(_provider.connection, recipientAta_bonk.address)).amount
     );
     expect(vaultBonkEnd).to.eq(vaultBonkStart);
     expect(recipientBonkEnd).to.eq(0);

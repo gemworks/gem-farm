@@ -18,8 +18,8 @@ import {
 } from '../../src';
 import * as anchor from '@project-serum/anchor';
 import { BN } from '@project-serum/anchor';
-import { Token } from '@solana/spl-token';
 import { assert } from 'chai';
+import { mintTo } from "@solana/spl-token";
 
 // --------------------------------------- configs
 
@@ -78,9 +78,9 @@ export class GemFarmTester extends GemFarmClient {
 
   //rewards + funder
   reward = 'rewardA';
-  rewardMint!: Token;
+  rewardMint!: PublicKey;
   rewardSource!: PublicKey;
-  rewardSecondMint!: Token;
+  rewardSecondMint!: PublicKey;
   funder: Keypair;
 
   //gem 1 used by farmer 1 / gem 2 by farmer 2
@@ -201,9 +201,9 @@ export class GemFarmTester extends GemFarmClient {
       this.farmManager,
       this.farmManager,
       this.bank,
-      isRewardA ? this.rewardMint.publicKey : this.rewardSecondMint.publicKey,
+      isRewardA ? this.rewardMint : this.rewardSecondMint,
       rewardType ?? RewardType.Variable,
-      isRewardA ? this.rewardSecondMint.publicKey : this.rewardMint.publicKey,
+      isRewardA ? this.rewardSecondMint : this.rewardMint,
       rewardType ?? RewardType.Variable,
       farmConfig,
       maxCounts
@@ -303,8 +303,8 @@ export class GemFarmTester extends GemFarmClient {
     return this.claim(
       this.farm.publicKey,
       identity,
-      isRewardA ? this.rewardMint.publicKey : this.rewardSecondMint.publicKey,
-      isRewardA ? this.rewardSecondMint.publicKey : this.rewardMint.publicKey
+      isRewardA ? this.rewardMint : this.rewardSecondMint,
+      isRewardA ? this.rewardSecondMint : this.rewardMint
     );
   }
 
@@ -379,7 +379,7 @@ export class GemFarmTester extends GemFarmClient {
   ) {
     return this.fundReward(
       this.farm.publicKey,
-      this.rewardMint.publicKey,
+      this.rewardMint,
       this.funder,
       this.rewardSource,
       varConfig,
@@ -391,7 +391,7 @@ export class GemFarmTester extends GemFarmClient {
     return this.cancelReward(
       this.farm.publicKey,
       this.farmManager,
-      this.rewardMint.publicKey,
+      this.rewardMint,
       this.funder.publicKey
     );
   }
@@ -400,7 +400,7 @@ export class GemFarmTester extends GemFarmClient {
     return this.lockReward(
       this.farm.publicKey,
       this.farmManager,
-      this.rewardMint.publicKey
+      this.rewardMint
     );
   }
 
@@ -518,7 +518,7 @@ export class GemFarmTester extends GemFarmClient {
 
   async verifyPotContains(pot: PublicKey, amount: Numerical, sign?: string) {
     const rewardsPotAcc = await this.fetchTokenAcc(
-      this.rewardMint.publicKey,
+      this.rewardMint,
       pot
     );
     switch (sign) {
@@ -534,7 +534,7 @@ export class GemFarmTester extends GemFarmClient {
 
   async verifyFunderAccContains(amount: Numerical, sign?: string) {
     const sourceAcc = await this.fetchTokenAcc(
-      this.rewardMint.publicKey,
+      this.rewardMint,
       this.rewardSource
     );
     switch (sign) {
@@ -643,11 +643,11 @@ export class GemFarmTester extends GemFarmClient {
 
   async verifyClaimedReward(identity: Keypair) {
     const rewardDest = await this.findATA(
-      this.rewardMint.publicKey,
+      this.rewardMint,
       identity.publicKey
     );
     const rewardDestAcc = await this.fetchTokenAcc(
-      this.rewardMint.publicKey,
+      this.rewardMint,
       rewardDest
     );
 
@@ -656,8 +656,8 @@ export class GemFarmTester extends GemFarmClient {
     //2)accrued = what's in the wallet
     await this.verifyFarmerReward(
       identity,
-      rewardDestAcc.amount,
-      rewardDestAcc.amount
+      new BN(rewardDestAcc.amount.toString()),
+      new BN(rewardDestAcc.amount.toString())
     );
 
     return rewardDestAcc.amount;
@@ -833,6 +833,6 @@ export class GemFarmTester extends GemFarmClient {
   }
 
   async mintMoreRewards(amount: number) {
-    await this.rewardMint.mintTo(this.rewardSource, this.funder, [], amount);
+    await mintTo(this.conn, this.wallet.payer, this.rewardMint, this.rewardSource, this.funder, amount);
   }
 }
