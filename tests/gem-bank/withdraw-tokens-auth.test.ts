@@ -216,7 +216,7 @@ describe('Withdraw tokens owned by authority', () => {
   it('withdraws bonk (gems present)', async () => {
     ({ vaultAuth, gemBox } = await prepDeposit(vaultOwner));
     let gemBoxAcc = await gb.fetchGemAcc(gem.tokenMint, gemBox);
-    assert(gemBoxAcc.amount.eq(gemAmount));
+    assert(gemBoxAcc.amount === BigInt(gemAmount.toString()));
 
     let vaultBonkStart = Number(
       (await getAccount(_provider.connection, authAta)).amount
@@ -243,13 +243,13 @@ describe('Withdraw tokens owned by authority', () => {
     expect(recipientBonkEnd).to.eq(vaultBonkStart);
 
     gemBoxAcc = await gb.fetchGemAcc(gem.tokenMint, gemBox);
-    assert(gemBoxAcc.amount.eq(gemAmount));
+    assert(gemBoxAcc.amount === BigInt(gemAmount.toString()));
   });
 
   it('fails to withdraw actual gems', async () => {
     ({ vaultAuth, gemBox } = await prepDeposit(vaultOwner));
     let gemBoxAcc = await gb.fetchGemAcc(gem.tokenMint, gemBox);
-    assert(gemBoxAcc.amount.eq(gemAmount));
+    assert(gemBoxAcc.amount === BigInt(gemAmount.toString()));
 
     let vaultBonkStart = Number(
       (await getAccount(_provider.connection, authAta)).amount
@@ -295,6 +295,6 @@ describe('Withdraw tokens owned by authority', () => {
     expect(recipientBonkEnd).to.eq(0);
 
     gemBoxAcc = await gb.fetchGemAcc(gem.tokenMint, gemBox);
-    assert(gemBoxAcc.amount.eq(gemAmount));
+    assert(gemBoxAcc.amount === BigInt(gemAmount.toString()));
   });
 });

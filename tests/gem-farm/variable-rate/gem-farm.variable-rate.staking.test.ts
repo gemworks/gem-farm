@@ -93,7 +93,7 @@ describe('staking (variable rate)', () => {
     const farmer1ClaimedNew = await gf.verifyClaimedReward(gf.farmer1Identity);
     const farmer2ClaimedNew = await gf.verifyClaimedReward(gf.farmer2Identity);
 
-    assert(farmer1ClaimedNew.eq(farmer1ClaimedOld));
-    assert(farmer2ClaimedNew.eq(farmer2ClaimedOld));
+    assert(farmer1ClaimedNew === farmer1ClaimedOld);
+    assert(farmer2ClaimedNew === farmer2ClaimedOld);
   });
 });

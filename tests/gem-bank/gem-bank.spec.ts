@@ -207,7 +207,7 @@ describe.only('gem bank', () => {
       assert(vaultAcc.rarityPoints.eq(gemAmount));
 
       const gemBoxAcc = await gb.fetchGemAcc(gem.tokenMint, gemBox);
-      assert(gemBoxAcc.amount.eq(gemAmount));
+      assert(gemBoxAcc.amount === BigInt(gemAmount.toString()));
       assert.equal(gemBoxAcc.mint.toBase58(), gem.tokenMint.toBase58());
       assert.equal(gemBoxAcc.owner.toBase58(), vaultAuth.toBase58());
 
@@ -239,7 +239,7 @@ describe.only('gem bank', () => {
       assert(vaultAcc2.rarityPoints.eq(oldGemCount.sub(gemAmount)));
 
       const gemAcc = await gb.fetchGemAcc(gem.tokenMint, gem.tokenAcc);
-      assert(gemAcc.amount.eq(gemAmount));
+      assert(gemAcc.amount === BigInt(gemAmount.toString()));
 
       //these accounts are expected to close on emptying the gem box
       await expect(gb.fetchGemAcc(gem.tokenMint, gemBox)).to.be.rejectedWith(
@@ -258,10 +258,10 @@ describe.only('gem bank', () => {
       await prepWithdrawal(vaultOwner, gem.owner, smallerAmount);
 
       const gemAcc = await gb.fetchGemAcc(gem.tokenMint, gem.tokenAcc);
-      assert(gemAcc.amount.eq(smallerAmount));
+      assert(gemAcc.amount === BigInt(smallerAmount.toString()));
 
       const gemBoxAcc = await gb.fetchGemAcc(gem.tokenMint, gemBox);
-      assert(gemBoxAcc.amount.eq(new BN(1)));
+      assert(gemBoxAcc.amount === BigInt(1));
 
       const GDRAcc = await gb.fetchGDRAcc(GDR);
       assert(GDRAcc.gemCount.eq(new BN(1)));
@@ -277,7 +277,7 @@ describe.only('gem bank', () => {
       await prepWithdrawal(vaultOwner, randomWallet.publicKey, gemAmount);
 
       const gemAcc = await gb.fetchGemAcc(gem.tokenMint, missingATA);
-      assert(gemAcc.amount.eq(gemAmount));
+      assert(gemAcc.amount === BigInt(gemAmount.toString()));
 
       //these accounts are expected to close on emptying the gem box
       await expect(gb.fetchGemAcc(gem.tokenMint, gemBox)).to.be.rejectedWith(

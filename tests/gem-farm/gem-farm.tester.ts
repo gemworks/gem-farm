@@ -523,10 +523,10 @@ export class GemFarmTester extends GemFarmClient {
     );
     switch (sign) {
       case 'lt':
-        assert(rewardsPotAcc.amount.lt(toBN(amount)));
+        assert(rewardsPotAcc.amount < BigInt(toBN(amount).toString()));
         break;
       default:
-        assert(rewardsPotAcc.amount.eq(toBN(amount)));
+        assert(rewardsPotAcc.amount === BigInt(toBN(amount).toString()));
     }
 
     return rewardsPotAcc;
@@ -539,10 +539,10 @@ export class GemFarmTester extends GemFarmClient {
     );
     switch (sign) {
       case 'gt':
-        assert(sourceAcc.amount.gt(toBN(amount)));
+        assert(sourceAcc.amount > BigInt(toBN(amount).toString()));
         break;
       default:
-        assert(sourceAcc.amount.eq(toBN(amount)));
+        assert(sourceAcc.amount == BigInt(toBN(amount).toString()));
     }
 
     return sourceAcc;
