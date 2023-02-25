@@ -1,4 +1,16 @@
 import {
+  AccountLayout as TokenAccountLayout,
+  createAssociatedTokenAccountInstruction,
+  createInitializeMintInstruction,
+  getMinimumBalanceForRentExemptMint,
+  createMintToInstruction,
+  MintLayout,
+  TOKEN_PROGRAM_ID,
+  getAssociatedTokenAddress,
+  createInitializeAccountInstruction,
+  getMinimumBalanceForRentExemptAccount,
+} from '@solana/spl-token';
+import {
   Connection,
   Keypair,
   PublicKey,
@@ -7,13 +19,6 @@ import {
   SystemProgram,
   Transaction,
 } from '@solana/web3.js';
-import {
-  AccountLayout as TokenAccountLayout,
-  ASSOCIATED_TOKEN_PROGRAM_ID,
-  MintLayout,
-  Token,
-  TOKEN_PROGRAM_ID,
-} from '@solana/spl-token';
 import { AccountUtils } from './account-utils';
 import { SignerWalletAdapter } from '@solana/wallet-adapter-base';
 
@@ -38,7 +43,7 @@ export class BrowserWallet extends AccountUtils {
     decimals: number
   ): Promise<[PublicKey, TxWithSigners]> {
     const mintAccount = Keypair.generate();
-    const balanceNeeded = await Token.getMinBalanceRentForExemptMint(this.conn);
+    const balanceNeeded = await getMinimumBalanceForRentExemptMint(this.conn);
     const tx = new Transaction({
       feePayer: payer,
       recentBlockhash: (await this.conn.getRecentBlockhash()).blockhash,
@@ -51,8 +56,7 @@ export class BrowserWallet extends AccountUtils {
         space: MintLayout.span,
         programId: TOKEN_PROGRAM_ID,
       }),
-      Token.createInitMintInstruction(
-        TOKEN_PROGRAM_ID,
+      createInitializeMintInstruction(
         mintAccount.publicKey,
         decimals,
         authority,
@@ -74,16 +78,7 @@ export class BrowserWallet extends AccountUtils {
       feePayer: payer,
       recentBlockhash: (await this.conn.getRecentBlockhash()).blockhash,
     });
-    tx.add(
-      Token.createMintToInstruction(
-        TOKEN_PROGRAM_ID,
-        mint,
-        dest,
-        authority,
-        [],
-        amount
-      )
-    );
+    tx.add(createMintToInstruction(mint, dest, authority, amount));
 
     return { tx, signers: [] };
   }
@@ -130,28 +125,22 @@ export class BrowserWallet extends AccountUtils {
     isAssociated: boolean
   ): Promise<[PublicKey, TxWithSigners]> {
     const newAccount = Keypair.generate();
-    let balanceNeeded = await Token.getMinBalanceRentForExemptAccount(
-      this.conn
-    );
+    let balanceNeeded = await getMinimumBalanceForRentExemptAccount(this.conn);
     const tx = new Transaction({
       feePayer: payer,
       recentBlockhash: (await this.conn.getRecentBlockhash()).blockhash,
     });
     if (isAssociated) {
-      const associatedAddress = await Token.getAssociatedTokenAddress(
-        ASSOCIATED_TOKEN_PROGRAM_ID,
-        TOKEN_PROGRAM_ID,
+      const associatedAddress = await getAssociatedTokenAddress(
         mint,
         authority
       );
       tx.add(
-        Token.createAssociatedTokenAccountInstruction(
-          ASSOCIATED_TOKEN_PROGRAM_ID,
-          TOKEN_PROGRAM_ID,
-          mint,
+        createAssociatedTokenAccountInstruction(
+          payer,
           associatedAddress,
           authority,
-          payer
+          mint
         )
       );
 
@@ -167,12 +156,7 @@ export class BrowserWallet extends AccountUtils {
       })
     );
     tx.add(
-      Token.createInitAccountInstruction(
-        TOKEN_PROGRAM_ID,
-        mint,
-        newAccount.publicKey,
-        authority
-      )
+      createInitializeAccountInstruction(newAccount.publicKey, mint, authority)
     );
 
     return [newAccount.publicKey, { tx, signers: [newAccount] }];

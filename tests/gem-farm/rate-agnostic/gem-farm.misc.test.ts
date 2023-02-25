@@ -51,7 +51,7 @@ describe('misc', () => {
     assert.equal(farmAcc.bank.toBase58(), gf.bank.publicKey.toBase58());
     assert.equal(
       farmAcc[gf.reward].rewardMint.toBase58(),
-      gf.rewardMint.publicKey.toBase58()
+      gf.rewardMint.toBase58()
     );
 
     let bal = await gf.getBalance(feeAccount);

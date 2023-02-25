@@ -10,7 +10,13 @@ import {
 import { BN } from '@project-serum/anchor';
 import { AccountUtils, ITokenData } from './account-utils';
 //@ts-ignore
-import { NATIVE_MINT, Token, TOKEN_PROGRAM_ID } from '@solana/spl-token-018';
+import {
+  createAssociatedTokenAccount,
+  createMint,
+  createWrappedNativeAccount, mintTo,
+  NATIVE_MINT,
+  TOKEN_PROGRAM_ID
+} from '@solana/spl-token';
 
 export class NodeWallet extends AccountUtils {
   wallet: anchor.Wallet; //node wallet
@@ -44,44 +50,33 @@ export class NodeWallet extends AccountUtils {
   async createMint(
     decimals: number,
     authority: Keypair = this.wallet.payer
-  ): Promise<Token> {
-    return Token.createMint(
+  ): Promise<PublicKey> {
+    return createMint(
       this.conn,
       authority,
       authority.publicKey,
       authority.publicKey,
       decimals,
-      TOKEN_PROGRAM_ID
-    );
-  }
-
-  async createNativeMint() {
-    return new Token(
-      this.conn,
-      NATIVE_MINT,
-      TOKEN_PROGRAM_ID,
-      this.wallet.payer
     );
   }
 
   async createAndFundATA(
-    token: Token,
+    token: PublicKey,
     owner: PublicKey,
     amount: BN
   ): Promise<PublicKey> {
-    if (token.publicKey == NATIVE_MINT) {
-      const account = await Token.createWrappedNativeAccount(
-        this.conn,
-        TOKEN_PROGRAM_ID,
-        owner,
-        this.wallet.payer,
-        amount.toNumber()
+    if (token == NATIVE_MINT) {
+      const account = await createWrappedNativeAccount(
+          this.conn,
+          this.wallet.payer,
+          owner,
+          amount.toNumber()
       );
       return account;
     } else {
-      const account = await token.createAssociatedTokenAccount(owner);
+      const account = await createAssociatedTokenAccount(this.conn, this.wallet.payer, token, owner);
       if (amount.toNumber() > 0) {
-        await token.mintTo(account, this.wallet.payer, [], amount.toNumber());
+        await mintTo(this.conn, this.wallet.payer, token, account, this.wallet.payer, amount.toNumber());
       }
       return account;
     }
@@ -94,7 +89,7 @@ export class NodeWallet extends AccountUtils {
     const token = await this.createMint(0);
     const tokenAcc = await this.createAndFundATA(token, owner, amount);
     return {
-      tokenMint: token.publicKey,
+      tokenMint: token,
       tokenAcc,
       owner,
       token,
