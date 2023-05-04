@@ -1,23 +1,7 @@
 <template>
-  <div class="footer pt-1 pb-1">
+  <div class="pt-1 pb-1 footer">
     <p class="px-3 pt-1">Built with</p>
     <i class="nes-icon heart"></i>
-    <p class="px-3 pt-1">
-      by
-      <a
-        class="nes-text is-primary"
-        href="https://twitter.com/_ilmoi"
-        target="_blank"
-        >@_ilmoi</a
-      >
-      | powered by
-      <a
-        class="nes-text is-primary"
-        href="https://twitter.com/heliuslabs"
-        target="_blank"
-        >Helius</a
-      >
-    </p>
     <img src="../../assets/helius.png" height="31" />
   </div>
 </template>
