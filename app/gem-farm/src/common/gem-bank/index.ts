@@ -4,7 +4,7 @@ import {
   GEM_BANK_PROG_ID,
   GemBankClient,
   WhitelistType,
-} from '@gemworks/gem-farm-ts';
+} from 'gem-farm-fix';
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import { SignerWalletAdapter } from '@solana/wallet-adapter-base';
 import { NodeWallet, programs } from '@metaplex/js';
