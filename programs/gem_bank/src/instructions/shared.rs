@@ -130,6 +130,8 @@ pub fn send_pnft<'info>(
         //passed in below, if needed
     ];
 
+    // We need to check dest_ata has no delegated
+
     let metadata = assert_decode_metadata(nft_mint, &nft_metadata.to_account_info())?;
     if let Some(standard) = metadata.token_standard {
         if standard == TokenStandard::ProgrammableNonFungible {
