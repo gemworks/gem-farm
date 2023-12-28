@@ -159,9 +159,9 @@ impl Farm {
         reward.fund_reward_by_type(now_ts, variable_rate_config, fixed_rate_config)
     }
 
-    pub fn cancel_reward_by_mint(&mut self, now_ts: u64, reward_mint: Pubkey) -> Result<u64> {
+    pub fn cancel_reward_by_mint(&mut self, now_ts: u64, reward_mint: Pubkey, skip_accrued: bool) -> Result<u64> {
         let reward = self.match_reward_by_mint(reward_mint)?;
-        reward.cancel_reward_by_type(now_ts)
+        reward.cancel_reward_by_type(now_ts, skip_accrued)
     }
 
     pub fn update_rewards(
@@ -373,10 +373,15 @@ pub struct FundsTracker {
 }
 
 impl FundsTracker {
-    pub fn pending_amount(&self) -> Result<u64> {
-        self.total_funded
+    pub fn pending_amount(&self, skip_accrued: bool) -> Result<u64> {
+        if skip_accrued {
+            return self.total_funded
+                .try_sub(self.total_refunded);
+        }
+
+        return self.total_funded
             .try_sub(self.total_refunded)?
-            .try_sub(self.total_accrued_to_stakers)
+            .try_sub(self.total_accrued_to_stakers);
     }
 }
 
@@ -502,7 +507,7 @@ impl FarmReward {
         }
     }
 
-    fn cancel_reward_by_type(&mut self, now_ts: u64) -> Result<u64> {
+    fn cancel_reward_by_type(&mut self, now_ts: u64, skip_accrued: bool) -> Result<u64> {
         if self.is_locked(now_ts) {
             return Err(error!(ErrorCode::RewardLocked));
         }
@@ -510,11 +515,11 @@ impl FarmReward {
         match self.reward_type {
             RewardType::Variable => {
                 self.variable_rate
-                    .cancel_reward(now_ts, &mut self.times, &mut self.funds)
+                    .cancel_reward(now_ts, &mut self.times, &mut self.funds, skip_accrued)
             }
             RewardType::Fixed => {
                 self.fixed_rate
-                    .cancel_reward(now_ts, &mut self.times, &mut self.funds)
+                    .cancel_reward(now_ts, &mut self.times, &mut self.funds, skip_accrued)
             }
         }
     }
@@ -602,6 +607,6 @@ mod tests {
             total_accrued_to_stakers: 30,
         };
 
-        assert_eq!(20, funds.pending_amount().unwrap());
+        assert_eq!(20, funds.pending_amount(false).unwrap());
     }
 }

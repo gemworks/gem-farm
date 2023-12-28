@@ -58,7 +58,7 @@ impl<'info> CancelReward<'info> {
     }
 }
 
-pub fn handler(ctx: Context<CancelReward>) -> Result<()> {
+pub fn handler(ctx: Context<CancelReward>, skip_accrued: bool) -> Result<()> {
     // update existing rewards
     let farm = &mut ctx.accounts.farm;
     let now_ts = now_ts()?;
@@ -66,7 +66,11 @@ pub fn handler(ctx: Context<CancelReward>) -> Result<()> {
     farm.update_rewards(now_ts, None, true)?;
 
     // calculate cancellation amount while recording cancellation
-    let cancel_amount = farm.cancel_reward_by_mint(now_ts, ctx.accounts.reward_mint.key())?;
+    let cancel_amount = farm.cancel_reward_by_mint(
+        now_ts, 
+        ctx.accounts.reward_mint.key(),
+        skip_accrued
+    )?;
 
     // do the transfer
     token::transfer(

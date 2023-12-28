@@ -55,7 +55,7 @@ impl VariableRateReward {
         // else if previous reward is still active (merge the two)
         } else {
             self.reward_rate = Number128::from(amount)
-                .try_add(Number128::from(funds.pending_amount()?))?
+                .try_add(Number128::from(funds.pending_amount(false)?))?
                 .try_div(Number128::from(duration_sec))?;
         }
 
@@ -75,9 +75,14 @@ impl VariableRateReward {
         now_ts: u64,
         times: &mut TimeTracker,
         funds: &mut FundsTracker,
+        skip_accrued: bool
     ) -> Result<u64> {
-        let refund_amount = funds.pending_amount()?;
+        let refund_amount = funds.pending_amount(skip_accrued)?;
         funds.total_refunded.try_add_assign(refund_amount)?;
+
+        if skip_accrued {
+            funds.total_accrued_to_stakers = 0;
+        }
 
         times.end_reward(now_ts)?;
 

@@ -287,9 +287,14 @@ impl FixedRateReward {
         now_ts: u64,
         times: &mut TimeTracker,
         funds: &mut FundsTracker,
+        skip_accrued: bool
     ) -> Result<u64> {
-        let refund_amount = funds.pending_amount()?.try_sub(self.reserved_amount)?;
+        let refund_amount = if skip_accrued { funds.pending_amount(skip_accrued)? } else { funds.pending_amount(skip_accrued)?.try_sub(self.reserved_amount)? };
         funds.total_refunded.try_add_assign(refund_amount)?;
+        
+        if skip_accrued {
+            funds.total_accrued_to_stakers = 0;
+        }
 
         times.end_reward(now_ts)?;
 
@@ -370,7 +375,7 @@ impl FixedRateReward {
             remaining_duration.try_add(bonus_time)?,
             farmer_rarity_points_staked,
         )?;
-        if reserve_amount > funds.pending_amount()? {
+        if reserve_amount > funds.pending_amount(false)? {
             return Err(error!(ErrorCode::RewardUnderfunded));
         }
 

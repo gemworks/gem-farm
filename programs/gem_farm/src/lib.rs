@@ -163,7 +163,12 @@ pub mod gem_farm {
 
     pub fn cancel_reward(ctx: Context<CancelReward>, _bump_auth: u8, _bump_pot: u8) -> Result<()> {
         msg!("cancel reward");
-        instructions::cancel_reward::handler(ctx)
+        instructions::cancel_reward::handler(ctx, false)
+    }
+
+    pub fn cancel_reward_skip_accrued(ctx: Context<CancelReward>, _bump_auth: u8, _bump_pot: u8) -> Result<()> {
+        msg!("cancel reward");
+        instructions::cancel_reward::handler(ctx, true)
     }
 
     pub fn lock_reward(ctx: Context<LockReward>) -> Result<()> {
