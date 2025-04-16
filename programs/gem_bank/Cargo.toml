@@ -24,7 +24,6 @@ bytemuck = "1.7.2"
 gem_common = { path = '../../lib/gem_common' }
 mpl-token-auth-rules = "1.1.0"
 mpl-token-metadata = { version = "1.8.1", features = ["no-entrypoint"] }
-# proc-macro2 = "=1.0.94"
 proc_macros = { path = '../../lib/proc_macros' }
 static_assertions = "1.1.0"
 thiserror = "1.0.30"

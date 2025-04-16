@@ -18,9 +18,6 @@ export async function createMetadata(
   //skips our creator entirely for negatives testing
   skipEntirely: boolean = false
 ) {
-  // const metadataData = parseMetadata(
-  //   readJSON('./tests/artifacts/testMetadata.json')
-  // );
   const metadataData = parseMetadataV2(
     readJSON('./tests/artifacts/testMetadata.json')
   );
@@ -38,13 +35,6 @@ export async function createMetadata(
       }
     );
   }
-
-  // await actions.createMetadata({
-  //   connection,
-  //   wallet,
-  //   editionMint,
-  //   metadataData,
-  // });
 
   const metadata = await programs.metadata.Metadata.getPDA(editionMint);
 

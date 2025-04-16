@@ -7,7 +7,6 @@ use gem_common::errors::ErrorCode;
 use mpl_token_auth_rules::payload::{Payload, PayloadType, ProofInfo, SeedsVec};
 use mpl_token_metadata::{
     self,
-    assertions::metadata,
     instruction::{builders::TransferBuilder, InstructionBuilder, TransferArgs},
     processor::AuthorizationData,
     state::{Metadata, ProgrammableConfig::V1, TokenMetadataAccount, TokenStandard},
